@@ -78,7 +78,7 @@
       (++) Enable instance by writing Start keyword in IWDG_KEY register. LSI
            clock is forced ON and IWDG counter starts counting down.
       (++) Enable write access to configuration registers:
-          IWDG_PR, IWDG_RLR, IWDG_WINR and EWCR.
+          IWDG_PR, IWDG_RLR, IWDG_WINR, IWDG_EWCR.
       (++) Configure the IWDG prescaler and counter reload value. This reload
            value will be loaded in the IWDG counter each time the watchdog is
            reloaded, then the IWDG will start counting down from this value.
@@ -128,14 +128,16 @@
 /** @defgroup IWDG_Private_Defines IWDG Private Defines
   * @{
   */
-/* Status register needs up to 5 LSI clock periods divided by the clock
-   prescaler to be updated. The number of LSI clock periods is upper-rounded to
-   6 for the timeout value calculation.
-   The timeout value is also calculated using the highest prescaler (256) and
+/* Status register needs up to 5 LSI clock periods to be updated. However a
+   synchronisation is added on prescaled LSI clock rising edge, so we only
+   consider a highest prescaler cycle.
+   The timeout value is calculated using the highest prescaler (1024) and
    the LSI_VALUE constant. The value of this constant can be changed by the user
    to take into account possible LSI clock period variations.
-   The timeout value is multiplied by 1000 to be converted in milliseconds. */
-#define HAL_IWDG_DEFAULT_TIMEOUT        ((6UL * 256UL * 1000UL) / LSI_VALUE)
+   The timeout value is multiplied by 1000 to be converted in milliseconds.
+   LSI startup time is also considered here by adding LSI_STARTUP_TIME
+   converted in milliseconds. */
+#define HAL_IWDG_DEFAULT_TIMEOUT        (((1UL * 1024UL * 1000UL) / LSI_VALUE) + ((LSI_STARTUP_TIME / 1000UL) + 1UL))
 #define IWDG_KERNEL_UPDATE_FLAGS        (IWDG_SR_EWU | IWDG_SR_WVU | IWDG_SR_RVU | IWDG_SR_PVU)
 /**
   * @}
@@ -214,7 +216,7 @@ HAL_StatusTypeDef HAL_IWDG_Init(IWDG_HandleTypeDef *hiwdg)
   /* Enable IWDG. LSI is turned on automatically */
   __HAL_IWDG_START(hiwdg);
 
-  /* Enable write access to IWDG_PR, IWDG_RLR, IWDG_WINR and EWCR registers by writing
+  /* Enable write access to IWDG_PR, IWDG_RLR, IWDG_WINR, IWDG_EWCR registers by writing
   0x5555 in KR */
   IWDG_ENABLE_WRITE_ACCESS(hiwdg);
 
@@ -224,20 +226,16 @@ HAL_StatusTypeDef HAL_IWDG_Init(IWDG_HandleTypeDef *hiwdg)
 
   if (hiwdg->Init.EWI == IWDG_EWI_DISABLE)
   {
-    /* EWI comparator value different from 0,
-     * Disable the early wakeup interrupt
+    /* EWI comparator value equal 0, disable the early wakeup interrupt
      * acknowledge the early wakeup interrupt in any cases. it clears the EWIF flag in SR register
-     * Set Watchdog Early Wakeup Comparator to 0x00
-     */
+     * Set Watchdog Early Wakeup Comparator to 0x00 */
     hiwdg->Instance->EWCR = IWDG_EWCR_EWIC;
   }
   else
   {
-    /* EWI comparator value different from 0,
-     * Enable the early wakeup interrupt
+    /* EWI comparator value different from 0, enable the early wakeup interrupt,
      * acknowledge the early wakeup interrupt in any cases. it clears the EWIF flag in SR register
-     * Set Watchdog Early Wakeup Comparator value
-     */
+     * Set Watchdog Early Wakeup Comparator value */
     hiwdg->Instance->EWCR = IWDG_EWCR_EWIE | IWDG_EWCR_EWIC | hiwdg->Init.EWI;
   }
 

@@ -30,6 +30,7 @@
        HAL_MMCEx_WriteBlocksDMAMultiBuffer() functions.
 
   @endverbatim
+  ******************************************************************************
   */
 
 /* Includes ------------------------------------------------------------------*/
@@ -44,6 +45,7 @@
   * @{
   */
 
+#if defined (SDMMC1) || defined (SDMMC2)
 #ifdef HAL_MMC_MODULE_ENABLED
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,7 +58,6 @@
 /** @addtogroup MMCEx_Exported_Functions
   * @{
   */
-
 
 
 /** @addtogroup MMCEx_Exported_Functions_Group1
@@ -425,7 +426,6 @@ HAL_StatusTypeDef HAL_MMCEx_DMALinkedList_WriteBlocks(MMC_HandleTypeDef *hmmc, M
 }
 
 
-
 /**
   * @}
   */
@@ -435,6 +435,7 @@ HAL_StatusTypeDef HAL_MMCEx_DMALinkedList_WriteBlocks(MMC_HandleTypeDef *hmmc, M
   */
 
 #endif /* HAL_MMC_MODULE_ENABLED */
+#endif /* SDMMC1 || SDMMC2 */
 
 /**
   * @}

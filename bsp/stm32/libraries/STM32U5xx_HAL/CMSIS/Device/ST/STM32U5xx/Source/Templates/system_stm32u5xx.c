@@ -120,15 +120,15 @@
   */
 
 #if !defined  (HSE_VALUE)
-  #define HSE_VALUE    16000000U /*!< Value of the External oscillator in Hz */
+#define HSE_VALUE    16000000U /*!< Value of the External oscillator in Hz */
 #endif /* HSE_VALUE */
 
 #if !defined  (MSI_VALUE)
-  #define MSI_VALUE    4000000U  /*!< Value of the Internal oscillator in Hz*/
+#define MSI_VALUE    4000000U  /*!< Value of the Internal oscillator in Hz*/
 #endif /* MSI_VALUE */
 
 #if !defined  (HSI_VALUE)
-  #define HSI_VALUE    16000000U /*!< Value of the Internal oscillator in Hz*/
+#define HSI_VALUE    16000000U /*!< Value of the Internal oscillator in Hz*/
 #endif /* HSI_VALUE */
 
 /************************* Miscellaneous Configuration ************************/
@@ -162,12 +162,12 @@
                is no need to call the 2 first functions listed above, since SystemCoreClock
                variable is updated automatically.
   */
-  uint32_t SystemCoreClock = 4000000U;
+uint32_t SystemCoreClock = 4000000U;
 
-  const uint8_t  AHBPrescTable[16] = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 1U, 2U, 3U, 4U, 6U, 7U, 8U, 9U};
-  const uint8_t  APBPrescTable[8] =  {0U, 0U, 0U, 0U, 1U, 2U, 3U, 4U};
-  const uint32_t MSIRangeTable[16] = {48000000U,24000000U,16000000U,12000000U, 4000000U, 2000000U, 1500000U,\
-                                      1000000U, 3072000U, 1536000U,1024000U, 768000U, 400000U, 200000U, 150000U, 100000U};
+const uint8_t  AHBPrescTable[16] = { 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 1U, 2U, 3U, 4U, 6U, 7U, 8U, 9U };
+const uint8_t  APBPrescTable[8] = { 0U, 0U, 0U, 0U, 1U, 2U, 3U, 4U };
+const uint32_t MSIRangeTable[16] = { 48000000U,24000000U,16000000U,12000000U, 4000000U, 2000000U, 1500000U,\
+                                    1000000U, 3072000U, 1536000U,1024000U, 768000U, 400000U, 200000U, 150000U, 100000U };
 /**
   * @}
   */
@@ -190,15 +190,14 @@
   * @retval None
   */
 
-void SystemInit(void)
-{
+void SystemInit(void) {
   /* FPU settings ------------------------------------------------------------*/
-  #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
-   SCB->CPACR |= ((3UL << 20U)|(3UL << 22U));  /* set CP10 and CP11 Full Access */
-  #endif
+#if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+  SCB->CPACR |= ((3UL << 20U) | (3UL << 22U));  /* set CP10 and CP11 Full Access */
+#endif
 
-  /* Reset the RCC clock configuration to the default reset state ------------*/
-  /* Set MSION bit */
+/* Reset the RCC clock configuration to the default reset state ------------*/
+/* Set MSION bit */
   RCC->CR = RCC_CR_MSISON;
 
   /* Reset CFGR register */
@@ -219,11 +218,11 @@ void SystemInit(void)
   RCC->CIER = 0U;
 
   /* Configure the Vector Table location add offset address ------------------*/
-  #ifdef VECT_TAB_SRAM
-    SCB->VTOR = SRAM1_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM */
-  #else
-    SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal FLASH */
-  #endif
+#ifdef VECT_TAB_SRAM
+  SCB->VTOR = SRAM1_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM */
+#else
+  SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal FLASH */
+#endif
 }
 
 /**
@@ -268,19 +267,16 @@ void SystemInit(void)
   * @param  None
   * @retval None
   */
-void SystemCoreClockUpdate(void)
-{
-  uint32_t pllr, pllsource, pllm , tmp, pllfracen, msirange;
+void SystemCoreClockUpdate(void) {
+  uint32_t pllr, pllsource, pllm, tmp, pllfracen, msirange;
   float_t fracn1, pllvco;
 
   /* Get MSI Range frequency--------------------------------------------------*/
-  if(READ_BIT(RCC->ICSCR1, RCC_ICSCR1_MSIRGSEL) == 0U)
-  {
+  if (READ_BIT(RCC->ICSCR1, RCC_ICSCR1_MSIRGSEL) == 0U) {
     /* MSISRANGE from RCC_CSR applies */
     msirange = (RCC->CSR & RCC_CSR_MSISSRANGE) >> RCC_CSR_MSISSRANGE_Pos;
   }
-  else
-  {
+  else {
     /* MSIRANGE from RCC_CR applies */
     msirange = (RCC->ICSCR1 & RCC_ICSCR1_MSISRANGE) >> RCC_ICSCR1_MSISRANGE_Pos;
   }
@@ -289,8 +285,7 @@ void SystemCoreClockUpdate(void)
   msirange = MSIRangeTable[msirange];
 
   /* Get SYSCLK source -------------------------------------------------------*/
-  switch (RCC->CFGR1 & RCC_CFGR1_SWS)
-  {
+  switch (RCC->CFGR1 & RCC_CFGR1_SWS) {
   case 0x00:  /* MSI used as system clock source */
     SystemCoreClock = msirange;
     break;
@@ -308,33 +303,32 @@ void SystemCoreClockUpdate(void)
     SYSCLK = PLL_VCO / PLLR
     */
     pllsource = (RCC->PLL1CFGR & RCC_PLL1CFGR_PLL1SRC);
-    pllm = ((RCC->PLL1CFGR & RCC_PLL1CFGR_PLL1M)>> RCC_PLL1CFGR_PLL1M_Pos) + 1U;
-    pllfracen = ((RCC->PLL1CFGR & RCC_PLL1CFGR_PLL1FRACEN)>>RCC_PLL1CFGR_PLL1FRACEN_Pos);
-    fracn1 = (float_t)(uint32_t)(pllfracen* ((RCC->PLL1FRACR & RCC_PLL1FRACR_PLL1FRACN)>> RCC_PLL1FRACR_PLL1FRACN_Pos));
+    pllm = ((RCC->PLL1CFGR & RCC_PLL1CFGR_PLL1M) >> RCC_PLL1CFGR_PLL1M_Pos) + 1U;
+    pllfracen = ((RCC->PLL1CFGR & RCC_PLL1CFGR_PLL1FRACEN) >> RCC_PLL1CFGR_PLL1FRACEN_Pos);
+    fracn1 = (float_t)(uint32_t)(pllfracen * ((RCC->PLL1FRACR & RCC_PLL1FRACR_PLL1FRACN) >> RCC_PLL1FRACR_PLL1FRACN_Pos));
 
-      switch (pllsource)
-      {
-      case 0x00:  /* No clock sent to PLL*/
-        pllvco = (float_t)0U;
-        break;
-
-      case 0x02:  /* HSI used as PLL clock source */
-        pllvco = ((float_t)HSI_VALUE / (float_t)pllm);
-        break;
-
-      case 0x03:  /* HSE used as PLL clock source */
-        pllvco = ((float_t)HSE_VALUE / (float_t)pllm);
-        break;
-
-      default:    /* MSI used as PLL clock source */
-        pllvco = ((float_t)msirange / (float_t)pllm);
-        break;
-      }
-
-      pllvco = pllvco * ((float_t)(uint32_t)(RCC->PLL1DIVR & RCC_PLL1DIVR_PLL1N) + (fracn1/(float_t)0x2000) + (float_t)1U);
-      pllr = (((RCC->PLL1DIVR & RCC_PLL1DIVR_PLL1R) >> RCC_PLL1DIVR_PLL1R_Pos) + 1U );
-      SystemCoreClock = (uint32_t)((uint32_t)pllvco/pllr);
+    switch (pllsource) {
+    case 0x00:  /* No clock sent to PLL*/
+      pllvco = (float_t)0U;
       break;
+
+    case 0x02:  /* HSI used as PLL clock source */
+      pllvco = ((float_t)HSI_VALUE / (float_t)pllm);
+      break;
+
+    case 0x03:  /* HSE used as PLL clock source */
+      pllvco = ((float_t)HSE_VALUE / (float_t)pllm);
+      break;
+
+    default:    /* MSI used as PLL clock source */
+      pllvco = ((float_t)msirange / (float_t)pllm);
+      break;
+    }
+
+    pllvco = pllvco * ((float_t)(uint32_t)(RCC->PLL1DIVR & RCC_PLL1DIVR_PLL1N) + (fracn1 / (float_t)0x2000) + (float_t)1U);
+    pllr = (((RCC->PLL1DIVR & RCC_PLL1DIVR_PLL1R) >> RCC_PLL1DIVR_PLL1R_Pos) + 1U);
+    SystemCoreClock = (uint32_t)((uint32_t)pllvco / pllr);
+    break;
 
   default:
     SystemCoreClock = msirange;
@@ -359,4 +353,3 @@ void SystemCoreClockUpdate(void)
 /**
   * @}
   */
-
