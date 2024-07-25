@@ -7,7 +7,7 @@
 **
 **  Abstract    : Linker script for STM32U585xx Device from STM32U5 series
 **                      2048Kbytes ROM
-**                      768Kbytes RAM
+**                      784Kbytes RAM
 **
 **                Set heap size, stack size and stack location according
 **                to application requirements.
@@ -47,6 +47,7 @@ MEMORY
 {
   RAM	(xrw)	: ORIGIN = 0x20000000,	LENGTH = 768K
   ROM	(rx)	: ORIGIN = 0x08000000,	LENGTH = 2048K
+  SRAM4 (xrw)   : ORIGIN = 0x28000000,  LENGTH = 16K
 }
 
 /* Sections */
@@ -86,13 +87,15 @@ SECTIONS
     . = ALIGN(8);
   } >ROM
 
-  .ARM.extab   : { 
+  .ARM.extab (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  {
     . = ALIGN(8);
     *(.ARM.extab* .gnu.linkonce.armextab.*)
     . = ALIGN(8);
   } >ROM
   
-  .ARM : {
+  .ARM (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  {
     . = ALIGN(8);
     __exidx_start = .;
     *(.ARM.exidx*)
@@ -100,7 +103,7 @@ SECTIONS
     . = ALIGN(8);
   } >ROM
 
-  .preinit_array     :
+  .preinit_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
   {
     . = ALIGN(8);
     PROVIDE_HIDDEN (__preinit_array_start = .);
@@ -109,7 +112,7 @@ SECTIONS
     . = ALIGN(8);
   } >ROM
   
-  .init_array :
+  .init_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
   {
     . = ALIGN(8);
     PROVIDE_HIDDEN (__init_array_start = .);
@@ -119,7 +122,7 @@ SECTIONS
     . = ALIGN(8);
   } >ROM
   
-  .fini_array :
+  .fini_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
   {
     . = ALIGN(8);
     PROVIDE_HIDDEN (__fini_array_start = .);

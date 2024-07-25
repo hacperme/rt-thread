@@ -42,9 +42,9 @@
   * @{
   */
 #define UTILS_MAX_FREQUENCY_SCALE0  160000000U         /*!< Maximum frequency for system clock at power scale0, in Hz */
-#define UTILS_MAX_FREQUENCY_SCALE1  100000000U         /*!< Maximum frequency for system clock at power scale1, in Hz */
-#define UTILS_MAX_FREQUENCY_SCALE2   50000000U         /*!< Maximum frequency for system clock at power scale2, in Hz */
-#define UTILS_MAX_FREQUENCY_SCALE3   24000000U         /*!< Maximum frequency for system clock at power scale3, in Hz */
+#define UTILS_MAX_FREQUENCY_SCALE1  110000000U         /*!< Maximum frequency for system clock at power scale1, in Hz */
+#define UTILS_MAX_FREQUENCY_SCALE2   55000000U         /*!< Maximum frequency for system clock at power scale2, in Hz */
+#define UTILS_MAX_FREQUENCY_SCALE3   25000000U         /*!< Maximum frequency for system clock at power scale3, in Hz */
 
 /* Defines used for PLL range */
 #define UTILS_PLLVCO_INPUT_MIN        4000000U         /*!< Frequency min for PLLVCO input, in Hz   */
@@ -66,9 +66,9 @@
 #define UTILS_SCALE2_LATENCY1_FREQ    (50000000U)      /*!< HCLK frequency to set FLASH latency 1 in power scale 2 */
 #define UTILS_SCALE2_LATENCY2_FREQ    (75000000U)      /*!< HCLK frequency to set FLASH latency 2 in power scale 2 */
 #define UTILS_SCALE2_LATENCY3_FREQ    (100000000U)     /*!< HCLK frequency to set FLASH latency 3 in power scale 2 */
-#define UTILS_SCALE3_LATENCY0_FREQ    (12.5000000)    /*!< HCLK frequency to set FLASH latency 0 in power scale 3 */
+#define UTILS_SCALE3_LATENCY0_FREQ    (12500000U)       /*!< HCLK frequency to set FLASH latency 0 in power scale 3 */
 #define UTILS_SCALE3_LATENCY1_FREQ    (25000000U)      /*!< HCLK frequency to set FLASH latency 1 in power scale 3 */
-#define UTILS_SCALE3_LATENCY2_FREQ    (37.5000000)    /*!< HCLK frequency to set FLASH latency 2 in power scale 3 */
+#define UTILS_SCALE3_LATENCY2_FREQ    (37500000U)       /*!< HCLK frequency to set FLASH latency 2 in power scale 3 */
 #define UTILS_SCALE3_LATENCY3_FREQ    (50000000U)      /*!< HCLK frequency to set FLASH latency 3 in power scale 3 */
 #define UTILS_SCALE4_LATENCY0_FREQ    (8000000U)       /*!< HCLK frequency to set FLASH latency 0 in power scale 4 */
 #define UTILS_SCALE4_LATENCY1_FREQ    (16000000U)      /*!< HCLK frequency to set FLASH latency 1 in power scale 4 */
@@ -160,7 +160,8 @@ static ErrorStatus UTILS_PLL_IsBusy(void);
   */
 
 /**
-  * @brief  This function configures the Cortex-M SysTick source to have 1ms time base.
+  * @brief  This function configures the Cortex-M SysTick source to have 1ms time base with HCLK
+  *         as SysTick clock source.
   * @note   When a RTOS is used, it is recommended to avoid changing the Systick
   *         configuration by calling this function, for a delay use rather osDelay RTOS service.
   * @param  HCLKFrequency HCLK frequency in Hz
@@ -174,13 +175,58 @@ void LL_Init1msTick(uint32_t HCLKFrequency)
 }
 
 /**
-  * @brief  This function provides accurate delay (in milliseconds) based
+  * @brief  This function configures the Cortex-M SysTick source to have 1ms time base with HCLK/8
+  *         as SysTick clock source.
+  * @note   When a RTOS is used, it is recommended to avoid changing the Systick
+  *         configuration by calling this function, for a delay use rather osDelay RTOS service.
+  * @param  HCLKFrequency HCLK frequency in Hz
+  * @retval None
+  */
+void LL_Init1msTick_HCLK_Div8(uint32_t HCLKFrequency)
+{
+  /* Configure the SysTick to have 1ms time base with HCLK/8 as SysTick clock source */
+  SysTick->LOAD = (uint32_t)((HCLKFrequency / 8000U) - 1UL);
+  SysTick->VAL = 0UL;
+  SysTick->CTRL = SysTick_CTRL_ENABLE_Msk;
+}
+
+/**
+  * @brief  This function configures the Cortex-M SysTick source to have 1ms time base with LSE as SysTick clock source.
+  * @note   When a RTOS is used, it is recommended to avoid changing the Systick
+  *         configuration by calling this function, for a delay use rather osDelay RTOS service.
+  *         LSESYS needs to be enabled to get LSE working as SysTick clock source.
+  * @retval None
+  */
+void LL_Init1msTick_LSE(void)
+{
+  /* Configure the SysTick to have 1ms time base with LSE as SysTick clock source */
+  SysTick->LOAD = (uint32_t)((LSE_VALUE / 1000U) - 1UL);
+  SysTick->VAL = 0UL;
+  SysTick->CTRL = SysTick_CTRL_ENABLE_Msk;
+}
+
+/**
+  * @brief  This function configures the Cortex-M SysTick source to have 1ms time base with LSI as SysTick clock source.
+  * @note   When a RTOS is used, it is recommended to avoid changing the Systick
+  *         configuration by calling this function, for a delay use rather osDelay RTOS service.
+  * @retval None
+  */
+void LL_Init1msTick_LSI(void)
+{
+  /* Configure the SysTick to have 1ms time base with LSI as SysTick clock source */
+  SysTick->LOAD = (uint32_t)((LSI_VALUE / 1000U) - 1UL);
+  SysTick->VAL = 0UL;
+  SysTick->CTRL = SysTick_CTRL_ENABLE_Msk;
+}
+
+/**
+  * @brief  This function provides minimum delay (in milliseconds) based
   *         on SysTick counter flag
   * @note   When a RTOS is used, it is recommended to avoid using blocking delay
   *         and use rather osDelay service.
   * @note   To respect 1ms timebase, user should call @ref LL_Init1msTick function which
   *         will configure Systick to 1ms
-  * @param  Delay specifies the delay time length, in milliseconds.
+  * @param  Delay specifies the minimum delay time length, in milliseconds.
   * @retval None
   */
 
@@ -345,7 +391,7 @@ ErrorStatus LL_SetFlashLatency(uint32_t HCLK_Frequency)
     }
     else if (LL_PWR_GetRegulVoltageScaling() == LL_PWR_REGU_VOLTAGE_SCALE3)
     {
-      if ((float_t)HCLK_Frequency  <= UTILS_SCALE3_LATENCY0_FREQ)
+      if (HCLK_Frequency  <= UTILS_SCALE3_LATENCY0_FREQ)
       {
         /* 0 < HCLK <= 12.5 => 0WS (1 CPU cycles) : Do nothing, keep latency to default  LL_FLASH_LATENCY_0 */
       }
@@ -354,7 +400,7 @@ ErrorStatus LL_SetFlashLatency(uint32_t HCLK_Frequency)
         /* 12.5 < HCLK <= 25 => 1WS (2 CPU cycles) */
         latency = LL_FLASH_LATENCY_1;
       }
-      else if ((float_t)HCLK_Frequency <= UTILS_SCALE3_LATENCY2_FREQ)
+      else if (HCLK_Frequency <= UTILS_SCALE3_LATENCY2_FREQ)
       {
         /* 25 < HCLK <= 37.5 => 2WS (3 CPU cycles) */
         latency = LL_FLASH_LATENCY_2;
@@ -394,10 +440,10 @@ ErrorStatus LL_SetFlashLatency(uint32_t HCLK_Frequency)
     }
   }
 
-  if(status == SUCCESS)
+  if (status == SUCCESS)
   {
     LL_FLASH_SetLatency(latency);
-  
+
     /* Check that the new number of wait states is taken into account to access the Flash
     memory by reading the FLASH_ACR register */
     timeout = 2;
@@ -407,8 +453,8 @@ ErrorStatus LL_SetFlashLatency(uint32_t HCLK_Frequency)
       getlatency = LL_FLASH_GetLatency();
       timeout--;
     } while ((getlatency != latency) && (timeout > 0U));
-  
-    if(getlatency != latency)
+
+    if (getlatency != latency)
     {
       status = ERROR;
     }
@@ -435,7 +481,7 @@ ErrorStatus LL_SetFlashLatency(uint32_t HCLK_Frequency)
   *          - ERROR: Max frequency configuration not done
   */
 ErrorStatus LL_PLL_ConfigSystemClock_MSI(LL_UTILS_PLLInitTypeDef *UTILS_PLLInitStruct,
-                                          LL_UTILS_ClkInitTypeDef *UTILS_ClkInitStruct)
+                                         LL_UTILS_ClkInitTypeDef *UTILS_ClkInitStruct)
 {
   ErrorStatus status = SUCCESS;
   uint32_t pllfreq;
@@ -546,7 +592,7 @@ ErrorStatus LL_PLL_ConfigSystemClock_MSI(LL_UTILS_PLLInitTypeDef *UTILS_PLLInitS
   *          - ERROR: Max frequency configuration not done
   */
 ErrorStatus LL_PLL_ConfigSystemClock_HSI(LL_UTILS_PLLInitTypeDef *UTILS_PLLInitStruct,
-                                          LL_UTILS_ClkInitTypeDef *UTILS_ClkInitStruct)
+                                         LL_UTILS_ClkInitTypeDef *UTILS_ClkInitStruct)
 {
   ErrorStatus status;
   uint32_t pllfreq;
@@ -605,8 +651,8 @@ ErrorStatus LL_PLL_ConfigSystemClock_HSI(LL_UTILS_PLLInitTypeDef *UTILS_PLLInitS
   *          - ERROR: Max frequency configuration not done
   */
 ErrorStatus LL_PLL_ConfigSystemClock_HSE(uint32_t HSEFrequency, uint32_t HSEBypass,
-                                          LL_UTILS_PLLInitTypeDef *UTILS_PLLInitStruct,
-                                          LL_UTILS_ClkInitTypeDef *UTILS_ClkInitStruct)
+                                         LL_UTILS_PLLInitTypeDef *UTILS_PLLInitStruct,
+                                         LL_UTILS_ClkInitTypeDef *UTILS_ClkInitStruct)
 {
   ErrorStatus status;
   uint32_t pllfreq;

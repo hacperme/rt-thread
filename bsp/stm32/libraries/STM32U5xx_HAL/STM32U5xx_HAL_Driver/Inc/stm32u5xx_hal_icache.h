@@ -27,6 +27,7 @@ extern "C" {
 /* Includes -----------------------------------------------------------------*/
 #include "stm32u5xx_hal_def.h"
 
+#if defined(ICACHE)
 /** @addtogroup STM32U5xx_HAL_Driver
   * @{
   */
@@ -226,6 +227,7 @@ typedef struct
 /* Peripheral Control functions **********************************************/
 HAL_StatusTypeDef HAL_ICACHE_Enable(void);
 HAL_StatusTypeDef HAL_ICACHE_Disable(void);
+uint32_t HAL_ICACHE_IsEnabled(void);
 HAL_StatusTypeDef HAL_ICACHE_ConfigAssociativityMode(uint32_t AssociativityMode);
 HAL_StatusTypeDef HAL_ICACHE_DeInit(void);
 
@@ -283,6 +285,7 @@ HAL_StatusTypeDef HAL_ICACHE_DisableRemapRegion(uint32_t Region);
 /**
   * @}
   */
+#endif /* ICACHE */
 
 #ifdef __cplusplus
 }

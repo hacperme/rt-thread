@@ -55,12 +55,13 @@
   * @{
   */
 
-/** @defgroup DLYB DLYB
+/** @defgroup DLYB_LL DLYB
   * @brief DLYB LL module driver.
   * @{
   */
 
-#if defined(HAL_SD_MODULE_ENABLED) || defined(HAL_QSPI_MODULE_ENABLED)|| defined(HAL_OSPI_MODULE_ENABLED)
+#if defined(HAL_SD_MODULE_ENABLED) || defined(HAL_OSPI_MODULE_ENABLED) || defined(HAL_XSPI_MODULE_ENABLED)
+#if defined (DLYB_SDMMC1) || defined (DLYB_SDMMC2) || defined (DLYB_OCTOSPI1) || defined (DLYB_OCTOSPI2)
 
 /**
   @cond 0
@@ -206,14 +207,14 @@ uint32_t LL_DLYB_GetClockPeriod(DLYB_TypeDef *DLYBx, LL_DLYB_CfgTypeDef *pdlyb_c
       pdlyb_cfg->Units = i ;
 
       /* Disable the length sampling */
-      DLYBx->CR = DLYB_CR_SEN;
+      CLEAR_BIT(DLYBx->CR, DLYB_CR_SEN);
 
       return (uint32_t)SUCCESS;
     }
   }
 
   /* Disable the length sampling */
-  DLYBx->CR = DLYB_CR_SEN;
+  CLEAR_BIT(DLYBx->CR, DLYB_CR_SEN);
 
   return (uint32_t)ERROR;
 
@@ -230,7 +231,8 @@ uint32_t LL_DLYB_GetClockPeriod(DLYB_TypeDef *DLYBx, LL_DLYB_CfgTypeDef *pdlyb_c
 /**
   * @}
   */
-#endif /* HAL_SD_MODULE_ENABLED || HAL_QSPI_MODULE_ENABLED || HAL_OSPI_MODULE_ENABLED */
+#endif /* DLYB_SDMMC1 || DLYB_SDMMC2 || DLYB_OCTOSPI1 || DLYB_OCTOSPI2 */
+#endif /* HAL_SD_MODULE_ENABLED || HAL_OSPI_MODULE_ENABLED || HAL_XSPI_MODULE_ENABLED */
 
 /**
   * @}
