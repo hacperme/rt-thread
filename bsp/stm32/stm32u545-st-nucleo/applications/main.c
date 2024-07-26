@@ -13,23 +13,24 @@
 #include <board.h>
 #include <rtdbg.h>
 
-/* defined the LED0 pin: PC7 */
-#define LED0_PIN    GET_PIN(A, 5)
+/* defined the LED2 pin: PA5 */
+#define LED2_PIN    GET_PIN(A, 5)
+
+void led_toggle(void) {
+    rt_pin_write(LED2_PIN, !rt_pin_read(LED2_PIN));
+}
 
 int main(void)
 {
     int count = 1;
     /* set LED0 pin mode to output */
-    rt_pin_mode(LED0_PIN, PIN_MODE_OUTPUT);
+    rt_pin_mode(LED2_PIN, PIN_MODE_OUTPUT);
 
     while (count++)
     {
-        rt_pin_write(LED0_PIN, PIN_HIGH);
-        LOG_D("hello, world!\r\n");
-        rt_thread_mdelay(1500);
-        rt_pin_write(LED0_PIN, PIN_LOW);
-        LOG_D("hello, world!\r\n");
-        rt_thread_mdelay(1500);
+        led_toggle();
+        LOG_E("hello, world!\r\n");
+        rt_thread_mdelay(500);
     }
 
     return RT_EOK;
