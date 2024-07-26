@@ -144,6 +144,28 @@ extern "C" {
 #endif /* UART3_DMA_TX_CONFIG */
 #endif /* BSP_UART3_TX_USING_DMA */
 
+#if defined(BSP_USING_UART4)
+#ifndef UART4_CONFIG
+#define UART4_CONFIG                                                \
+    {                                                               \
+        .name = "uart4",                                            \
+        .Instance = UART4,                                         \
+        .irq_type = UART4_IRQn,                                    \
+    }
+#endif /* UART4_CONFIG */
+#endif /* BSP_USING_UART4 */
+
+#if defined(BSP_USING_UART5)
+#ifndef UART5_CONFIG
+#define UART5_CONFIG                                                \
+    {                                                               \
+        .name = "uart5",                                            \
+        .Instance = UART5,                                         \
+        .irq_type = UART5_IRQn,                                    \
+    }
+#endif /* UART5_CONFIG */
+#endif /* BSP_USING_UART5 */
+
 #ifdef __cplusplus
 }
 #endif

@@ -71,14 +71,17 @@ menu "On-chip Peripheral Drivers"
                 depends on BSP_USING_UART1 && RT_SERIAL_USING_DMA
                 default n
 
-            config BSP_USING_UART2
-                bool "Enable UART2"
+            config BSP_USING_UART3
+                bool "Enable UART3"
                 default y
 
-            config BSP_UART2_RX_USING_DMA
-                bool "Enable UART2 RX DMA"
-                depends on BSP_USING_UART2 && RT_SERIAL_USING_DMA
-                default n
+            config BSP_USING_UART4
+                bool "Enable UART4"
+                default y
+
+            config BSP_USING_UART5
+                bool "Enable UART5"
+                default y
 
             config BSP_USING_LPUART1
                 bool "Enable LPUART1"
@@ -180,7 +183,7 @@ menu "On-chip Peripheral Drivers"
                 bool "Enable I2C1 BUS (software simulation)"
                 default y
                 if BSP_USING_I2C1
-                    comment "Notice: PB8 --> 24; PB9 --> 25" 
+                    comment "Notice: PB8 --> 24; PB9 --> 25"
                     config BSP_I2C1_SCL_PIN
                         int "i2c1 scl pin number"
                         range 1 176

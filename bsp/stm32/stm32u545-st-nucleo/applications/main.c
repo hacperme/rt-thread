@@ -8,9 +8,14 @@
  * 2018-11-06     SummerGift   first version
  */
 
+
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
+
+#define DBG_TAG     "main"
+#define DBG_LEVEL   DBG_LOG
+#include <rtdbg.h>
 
 /* defined the LED2 pin: PA5 */
 #define LED2_PIN    GET_PIN(A, 5)
@@ -24,8 +29,10 @@ int main(void)
     while (count++)
     {
         rt_pin_write(LED2_PIN, PIN_HIGH);
+        LOG_D("LED2 HIGH LEVEL.");
         rt_thread_mdelay(500);
         rt_pin_write(LED2_PIN, PIN_LOW);
+        LOG_D("LED2 LOW LEVEL.");
         rt_thread_mdelay(500);
     }
 
