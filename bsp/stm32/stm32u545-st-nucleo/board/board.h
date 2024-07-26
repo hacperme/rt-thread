@@ -30,13 +30,13 @@ extern "C" {
 #define STM32_SRAM1_END                (STM32_SRAM1_START + STM32_SRAM1_SIZE * 1024)
 
 #if defined(__ARMCC_VERSION)
-    extern int Image$$RW_IRAM1$$ZI$$Limit;
+extern int Image$$RW_IRAM1$$ZI$$Limit;
 #define HEAP_BEGIN      ((void *)&Image$$RW_IRAM1$$ZI$$Limit)
 #elif __ICCARM__
 #pragma section="CSTACK"
 #define HEAP_BEGIN      (__segment_end("CSTACK"))
 #else
-    extern int __bss_end;
+extern int __bss_end;
 #define HEAP_BEGIN      ((void *)&__bss_end)
 #endif
 
@@ -46,10 +46,11 @@ extern "C" {
 #define NUM_STATIC_REGIONS 1
 #endif
 
-    void SystemClock_Config(void);
+void SystemClock_Config(void);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+

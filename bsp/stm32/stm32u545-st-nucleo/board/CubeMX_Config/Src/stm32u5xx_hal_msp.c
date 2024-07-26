@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2021 STMicroelectronics.
+  * Copyright (c) 2023 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -22,7 +22,6 @@
 #include "main.h"
 /* USER CODE BEGIN Includes */
 #include <drv_common.h>
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

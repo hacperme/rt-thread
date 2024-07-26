@@ -180,7 +180,7 @@ menu "On-chip Peripheral Drivers"
                 bool "Enable I2C1 BUS (software simulation)"
                 default y
                 if BSP_USING_I2C1
-                    comment "Notice: PB8 --> 24; PB9 --> 25"
+                    comment "Notice: PB8 --> 24; PB9 --> 25" 
                     config BSP_I2C1_SCL_PIN
                         int "i2c1 scl pin number"
                         range 1 176
@@ -191,11 +191,6 @@ menu "On-chip Peripheral Drivers"
                         default 25
                 endif
         endif
-
-    config BSP_USING_USBD
-        bool "Enable USBD"
-        select RT_USING_USBD
-        default n
 
     source "$(BSP_DIR)/../libraries/HAL_Drivers/drivers/Kconfig"
 
