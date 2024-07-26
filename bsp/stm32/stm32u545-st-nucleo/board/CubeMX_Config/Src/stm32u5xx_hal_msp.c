@@ -21,6 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 /* USER CODE BEGIN Includes */
+#include "drv_common.h"
 
 /* USER CODE END Includes */
 
@@ -60,7 +61,8 @@
 /**
   * Initializes the Global MSP.
   */
-void HAL_MspInit(void) {
+void HAL_MspInit(void)
+{
 
   /* USER CODE BEGIN MspInit 0 */
 
@@ -81,10 +83,12 @@ void HAL_MspInit(void) {
 * @param huart: UART handle pointer
 * @retval None
 */
-void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
-  GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = { 0 };
-  if (huart->Instance == USART1) {
+void HAL_UART_MspInit(UART_HandleTypeDef* huart)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+  if(huart->Instance==USART1)
+  {
   /* USER CODE BEGIN USART1_MspInit 0 */
 
   /* USER CODE END USART1_MspInit 0 */
@@ -93,7 +97,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
   */
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
     PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
       Error_Handler();
     }
 
@@ -105,7 +110,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
     PA9     ------> USART1_TX
     PA10     ------> USART1_RX
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_10;
+    GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -125,8 +130,10 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 * @param huart: UART handle pointer
 * @retval None
 */
-void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
-  if (huart->Instance == USART1) {
+void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
+{
+  if(huart->Instance==USART1)
+  {
   /* USER CODE BEGIN USART1_MspDeInit 0 */
 
   /* USER CODE END USART1_MspDeInit 0 */
@@ -137,7 +144,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart) {
     PA9     ------> USART1_TX
     PA10     ------> USART1_RX
     */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9 | GPIO_PIN_10);
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9|GPIO_PIN_10);
 
   /* USER CODE BEGIN USART1_MspDeInit 1 */
 

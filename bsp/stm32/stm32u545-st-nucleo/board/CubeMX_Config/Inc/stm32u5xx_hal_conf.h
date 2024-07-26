@@ -75,12 +75,12 @@ extern "C" {
 /*#define HAL_SD_MODULE_ENABLED */
 /*#define HAL_SMARTCARD_MODULE_ENABLED */
 /*#define HAL_SMBUS_MODULE_ENABLED */
-#define HAL_SPI_MODULE_ENABLED
+/*#define HAL_SPI_MODULE_ENABLED */
 /*#define HAL_SRAM_MODULE_ENABLED */
 /*#define HAL_TIM_MODULE_ENABLED */
 /*#define HAL_TSC_MODULE_ENABLED */
 #define HAL_UART_MODULE_ENABLED
-#define HAL_USART_MODULE_ENABLED
+/*#define HAL_USART_MODULE_ENABLED */
 /*#define HAL_WWDG_MODULE_ENABLED */
 /*#define HAL_XSPI_MODULE_ENABLED */
 #define HAL_GPIO_MODULE_ENABLED
@@ -229,12 +229,12 @@ vary depending on the variations in voltage and temperature.*/
 #define  USE_HAL_SDRAM_REGISTER_CALLBACKS      0U /* SDRAM register callback disabled     */
 #define  USE_HAL_SMARTCARD_REGISTER_CALLBACKS  0U /* SMARTCARD register callback disabled */
 #define  USE_HAL_SMBUS_REGISTER_CALLBACKS      0U /* SMBUS register callback disabled     */
-#define  USE_HAL_SPI_REGISTER_CALLBACKS        1U /* SPI register callback disabled       */
+#define  USE_HAL_SPI_REGISTER_CALLBACKS        0U /* SPI register callback disabled       */
 #define  USE_HAL_SRAM_REGISTER_CALLBACKS       0U /* SRAM register callback disabled      */
 #define  USE_HAL_TIM_REGISTER_CALLBACKS        1U /* TIM register callback enabled       */
 #define  USE_HAL_TSC_REGISTER_CALLBACKS        0U /* TSC register callback disabled       */
 #define  USE_HAL_UART_REGISTER_CALLBACKS       1U /* UART register callback enabled      */
-#define  USE_HAL_USART_REGISTER_CALLBACKS      1U /* USART register callback disabled     */
+#define  USE_HAL_USART_REGISTER_CALLBACKS      0U /* USART register callback disabled     */
 #define  USE_HAL_WWDG_REGISTER_CALLBACKS       0U /* WWDG register callback disabled      */
 #define  USE_HAL_OSPI_REGISTER_CALLBACKS       0U /* OSPI register callback disabled      */
 /* ################## SPI peripheral configuration ########################## */
@@ -494,7 +494,7 @@ vary depending on the variations in voltage and temperature.*/
   */
 #define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
 /* Exported functions ------------------------------------------------------- */
-  void assert_failed(uint8_t *file, uint32_t line);
+void assert_failed(uint8_t *file, uint32_t line);
 #else
 #define assert_param(expr) ((void)0U)
 #endif /* USE_FULL_ASSERT */
@@ -504,3 +504,4 @@ vary depending on the variations in voltage and temperature.*/
 #endif
 
 #endif /* STM32U5xx_HAL_CONF_H */
+

@@ -356,7 +356,7 @@
 /* end of RT-Thread online packages */
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32U5
-#define BOARD_SERIES_STM32_NUCLEO_144
+#define BOARD_SERIES_STM32_NUCLEO_64
 
 /* Hardware Drivers Config */
 

@@ -78,7 +78,8 @@ int iar_fputc(int ch);
   * @brief  The application entry point.
   * @retval int
   */
-int main(void) {
+int main(void)
+{
 
   /* USER CODE BEGIN 1 */
 
@@ -114,7 +115,8 @@ int main(void) {
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1) {
+  while (1)
+  {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -126,13 +128,15 @@ int main(void) {
   * @brief System Clock Configuration
   * @retval None
   */
-void SystemClock_Config(void) {
-  RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
   */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK) {
+  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
+  {
     Error_Handler();
   }
 
@@ -152,22 +156,24 @@ void SystemClock_Config(void) {
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLLVCIRANGE_0;
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
     Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-    | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2
-    | RCC_CLOCKTYPE_PCLK3;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
+                              |RCC_CLOCKTYPE_PCLK3;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK) {
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
+  {
     Error_Handler();
   }
 }
@@ -176,12 +182,14 @@ void SystemClock_Config(void) {
   * @brief Power Configuration
   * @retval None
   */
-static void SystemPower_Config(void) {
+static void SystemPower_Config(void)
+{
 
   /*
    * Switch to SMPS regulator instead of LDO
    */
-  if (HAL_PWREx_ConfigSupply(PWR_SMPS_SUPPLY) != HAL_OK) {
+  if (HAL_PWREx_ConfigSupply(PWR_SMPS_SUPPLY) != HAL_OK)
+  {
     Error_Handler();
   }
 /* USER CODE BEGIN PWR */
@@ -193,7 +201,8 @@ static void SystemPower_Config(void) {
   * @param None
   * @retval None
   */
-static void MX_ICACHE_Init(void) {
+static void MX_ICACHE_Init(void)
+{
 
   /* USER CODE BEGIN ICACHE_Init 0 */
 
@@ -205,10 +214,12 @@ static void MX_ICACHE_Init(void) {
 
   /** Enable instruction cache in 1-way (direct mapped cache)
   */
-  if (HAL_ICACHE_ConfigAssociativityMode(ICACHE_1WAY) != HAL_OK) {
+  if (HAL_ICACHE_ConfigAssociativityMode(ICACHE_1WAY) != HAL_OK)
+  {
     Error_Handler();
   }
-  if (HAL_ICACHE_Enable() != HAL_OK) {
+  if (HAL_ICACHE_Enable() != HAL_OK)
+  {
     Error_Handler();
   }
   /* USER CODE BEGIN ICACHE_Init 2 */
@@ -222,7 +233,8 @@ static void MX_ICACHE_Init(void) {
   * @param None
   * @retval None
   */
-static void MX_USART1_UART_Init(void) {
+static void MX_USART1_UART_Init(void)
+{
 
   /* USER CODE BEGIN USART1_Init 0 */
 
@@ -242,16 +254,20 @@ static void MX_USART1_UART_Init(void) {
   huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
   huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart1) != HAL_OK) {
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
     Error_Handler();
   }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK) {
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
     Error_Handler();
   }
-  if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK) {
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
     Error_Handler();
   }
-  if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK) {
+  if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+  {
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
@@ -265,8 +281,9 @@ static void MX_USART1_UART_Init(void) {
   * @param None
   * @retval None
   */
-static void MX_GPIO_Init(void) {
-  GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+static void MX_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE BEGIN MX_GPIO_Init_1 */
 /* USER CODE END MX_GPIO_Init_1 */
 
@@ -296,11 +313,13 @@ static void MX_GPIO_Init(void) {
   * @retval length of the written data in bytes.
   */
 #if defined(__ICCARM__)
-size_t __write(int file, unsigned char const *ptr, size_t len) {
+size_t __write(int file, unsigned char const *ptr, size_t len)
+{
   size_t idx;
   unsigned char const *pdata = ptr;
 
-  for (idx = 0; idx < len; idx++) {
+  for (idx = 0; idx < len; idx++)
+  {
     iar_fputc((int)*pdata);
     pdata++;
   }
@@ -325,11 +344,13 @@ PUTCHAR_PROTOTYPE
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-  void Error_Handler(void) {
-    /* USER CODE BEGIN Error_Handler_Debug */
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
   HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
   printf("** Error occurred ** \n\r");
-  while (1) {
+  while (1)
+  {
   }
   /* USER CODE END Error_Handler_Debug */
 }
@@ -342,7 +363,8 @@ PUTCHAR_PROTOTYPE
   * @param  line: assert_param error line source number
   * @retval None
   */
-void assert_failed(uint8_t *file, uint32_t line) {
+void assert_failed(uint8_t *file, uint32_t line)
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
   ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */

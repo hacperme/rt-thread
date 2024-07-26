@@ -15,7 +15,7 @@ config SOC_STM32U545RE
 
 config BOARD_STM32U545_NUCLEO
     bool
-    select BOARD_SERIES_STM32_NUCLEO_144
+    select BOARD_SERIES_STM32_NUCLEO_64
     default y
 
 source "$(RTT_DIR)/Kconfig"
