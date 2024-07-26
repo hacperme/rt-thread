@@ -30,7 +30,6 @@
 /* end of klibc optimization */
 #define RT_USING_DEBUG
 #define RT_DEBUGING_ASSERT
-#define RT_DEBUGING_COLOR
 #define RT_DEBUGING_CONTEXT
 #define RT_USING_OVERFLOW_CHECK
 

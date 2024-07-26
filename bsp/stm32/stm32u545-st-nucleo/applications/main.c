@@ -12,8 +12,11 @@
 #include <rtdevice.h>
 #include <board.h>
 
-#define DBG_TAG "main"
-#define DBG_LVL DBG_LOG
+#define DBG_SECTION_NAME "main"
+#define DBG_LEVEL DBG_LOG
+// #define DBG_LEVEL DBG_INFO
+// #define DBG_LEVEL DBG_WARNING
+// #define DBG_LEVEL DBG_ERROR
 #include <rtdbg.h>
 
 /* defined the LED2 pin: PA5 */
@@ -41,23 +44,23 @@ extern char __heap_end[];
 int main(void)
 {
     int count = 1;
-    /* set LED0 pin mode to output */
+    /* set LED2 pin mode to output */
     rt_pin_mode(LED2_PIN, PIN_MODE_OUTPUT);
 
-    LOG_E("__bootloader_rom_start: %p\r\n", __bootloader_rom_start);
-    LOG_E("__bootloader_rom_end: %p\r\n", __bootloader_rom_end);
-    LOG_E("__bootloader_rom_occupied_end: %p\r\n", __bootloader_rom_occupied_end);
-    LOG_E("__app_rom_start: %p\r\n", __app_rom_start);
-    LOG_E("__app_rom_end: %p\r\n", __app_rom_end);
+    LOG_I("__bootloader_rom_start: %p\r\n", __bootloader_rom_start);
+    LOG_I("__bootloader_rom_end: %p\r\n", __bootloader_rom_end);
+    LOG_I("__bootloader_rom_occupied_end: %p\r\n", __bootloader_rom_occupied_end);
+    LOG_I("__app_rom_start: %p\r\n", __app_rom_start);
+    LOG_I("__app_rom_end: %p\r\n", __app_rom_end);
 
-    LOG_E("__bootloader_ram_start: %p\r\n", __bootloader_ram_start);
-    LOG_E("__bootloader_ram_end: %p\r\n", __bootloader_ram_end);
-    LOG_E("__bootloader_ram_occupied_end: %p\r\n", __bootloader_ram_occupied_end);
-    LOG_E("__app_ram_start: %p\r\n", __app_ram_start);
-    LOG_E("__app_ram_end: %p\r\n", __app_ram_end);
+    LOG_I("__bootloader_ram_start: %p\r\n", __bootloader_ram_start);
+    LOG_I("__bootloader_ram_end: %p\r\n", __bootloader_ram_end);
+    LOG_I("__bootloader_ram_occupied_end: %p\r\n", __bootloader_ram_occupied_end);
+    LOG_I("__app_ram_start: %p\r\n", __app_ram_start);
+    LOG_I("__app_ram_end: %p\r\n", __app_ram_end);
 
-    LOG_E("__heap_start: %p\r\n", __heap_start);
-    LOG_E("__heap_end: %p\r\n", __heap_end);
+    LOG_I("__heap_start: %p\r\n", __heap_start);
+    LOG_I("__heap_end: %p\r\n", __heap_end);
 
     while (count++)
     {
