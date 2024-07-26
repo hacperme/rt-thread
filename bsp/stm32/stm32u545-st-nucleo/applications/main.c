@@ -11,6 +11,9 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
+
+#define DBG_TAG "main"
+#define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
 /* defined the LED2 pin: PA5 */
@@ -59,7 +62,7 @@ int main(void)
     while (count++)
     {
         led_toggle();
-        LOG_E("hello, world!\r\n");
+        LOG_D("hello, world!\r\n");
         rt_thread_mdelay(500);
     }
 
