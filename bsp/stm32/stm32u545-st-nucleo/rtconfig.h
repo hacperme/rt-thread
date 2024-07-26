@@ -369,7 +369,6 @@
 #define BSP_USING_GPIO
 #define BSP_USING_UART
 #define BSP_USING_UART1
-#define BSP_USING_LPUART1
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */
