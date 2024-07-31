@@ -33,7 +33,7 @@ extern "C" {
   */
 #define HAL_MODULE_ENABLED
 
-/*#define HAL_ADC_MODULE_ENABLED */
+#define HAL_ADC_MODULE_ENABLED
 /*#define HAL_COMP_MODULE_ENABLED */
 /*#define HAL_CORDIC_MODULE_ENABLED */
 /*#define HAL_CRC_MODULE_ENABLED */
@@ -51,7 +51,7 @@ extern "C" {
 /*#define HAL_GTZC_MODULE_ENABLED */
 /*#define HAL_HASH_MODULE_ENABLED */
 /*#define HAL_HCD_MODULE_ENABLED */
-/*#define HAL_I2C_MODULE_ENABLED */
+#define HAL_I2C_MODULE_ENABLED
 #define HAL_ICACHE_MODULE_ENABLED
 /*#define HAL_IRDA_MODULE_ENABLED */
 /*#define HAL_IWDG_MODULE_ENABLED */
@@ -192,7 +192,7 @@ vary depending on the variations in voltage and temperature.*/
   *        for possible callback identifiers defined in HAL_PPP_CallbackIDTypeDef
   *        for each PPP peripheral).
   */
-#define  USE_HAL_ADC_REGISTER_CALLBACKS        0U /* ADC register callback disabled       */
+#define  USE_HAL_ADC_REGISTER_CALLBACKS        1U /* ADC register callback disabled       */
 #define  USE_HAL_COMP_REGISTER_CALLBACKS       0U /* COMP register callback disabled      */
 #define  USE_HAL_CORDIC_REGISTER_CALLBACKS     0U /* CORDIC register callback disabled    */
 #define  USE_HAL_CRYP_REGISTER_CALLBACKS       0U /* CRYP register callback disabled      */

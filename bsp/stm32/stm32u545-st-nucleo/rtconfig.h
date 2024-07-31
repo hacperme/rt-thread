@@ -96,12 +96,18 @@
 #define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
-#define RT_SERIAL_RB_BUFSZ 64
+#define RT_SERIAL_RB_BUFSZ 1024
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_ADC
 #define RT_USING_PWM
+#define RT_USING_PM
+#define PM_TICKLESS_THRESHOLD_TIME 2
+#define PM_ENABLE_DEBUG
 #define RT_USING_SPI
+#define RT_USING_SENSOR
+#define RT_USING_SENSOR_V2
+#define RT_USING_SENSOR_CMD
 #define RT_USING_PIN
 /* end of Device Drivers */
 
@@ -224,6 +230,18 @@
 
 /* enhanced kernel services */
 
+#define PKG_USING_RT_VSNPRINTF_FULL
+#define PKG_VSNPRINTF_SUPPORT_DECIMAL_SPECIFIERS
+#define PKG_VSNPRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS
+#define PKG_VSNPRINTF_SUPPORT_WRITEBACK_SPECIFIER
+#define PKG_VSNPRINTF_SUPPORT_LONG_LONG
+#define PKG_VSNPRINTF_CHECK_FOR_NUL_IN_FORMAT_SPECIFIER
+#define PKG_VSNPRINTF_INTEGER_BUFFER_SIZE 32
+#define PKG_VSNPRINTF_DECIMAL_BUFFER_SIZE 32
+#define PKG_VSNPRINTF_DEFAULT_FLOAT_PRECISION 6
+#define PKG_VSNPRINTF_MAX_INTEGRAL_DIGITS_FOR_DECIMAL 9
+#define PKG_VSNPRINTF_LOG10_TAYLOR_TERMS 4
+#define PKG_USING_RT_VSNPRINTF_FULL_LATEST_VERSION
 /* end of enhanced kernel services */
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
@@ -286,6 +304,18 @@
 /* entertainment: terminal games and other interesting software packages */
 
 /* end of entertainment: terminal games and other interesting software packages */
+#define PKG_USING_LWGPS
+#define GPS_MODULE_BAUD_RATE 115200
+#define LWGPS_CFG_DOUBLE 0
+#define LWGPS_CFG_STATUS 0
+#define LWGPS_CFG_STATEMENT_GPGGA 1
+#define LWGPS_CFG_STATEMENT_GPGSA 1
+#define LWGPS_CFG_STATEMENT_GPRMC 1
+#define LWGPS_CFG_STATEMENT_GPGSV 1
+#define LWGPS_CFG_STATEMENT_GPGSV_SAT_DET 0
+#define LWGPS_CFG_STATEMENT_PUBX 0
+#define LWGPS_CFG_STATEMENT_PUBX_TIME 0
+#define PKG_USING_LWGPS_LATEST_VERSION
 /* end of miscellaneous packages */
 
 /* Arduino libraries */
@@ -352,6 +382,15 @@
 #define BSP_USING_UART4
 #define BSP_USING_UART5
 #define BSP_USING_LPUART1
+#define BSP_USING_ADC
+#define BSP_USING_ADC1
+#define BSP_USING_I2C
+#define BSP_USING_I2C1
+
+/* Notice: PB8 --> 24; PB9 --> 25 */
+
+#define BSP_I2C1_SCL_PIN 24
+#define BSP_I2C1_SDA_PIN 19
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */

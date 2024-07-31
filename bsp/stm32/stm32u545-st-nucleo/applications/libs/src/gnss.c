@@ -1,0 +1,101 @@
+/*
+ * @FilePath: gnss.c
+ * @Author: Jack Sun (jack.sun@quectel.com)
+ * @brief     : <Description>
+ * @version   : v1.0.0
+ * @Date: 2024-07-30 09:24:58
+ * @copyright : Copyright (c) 2024
+ */
+#include "gnss.h"
+
+#define DBG_SECTION_NAME "GNSS"
+#define DBG_LEVEL DBG_LOG
+#include <rtdbg.h>
+
+#define GNSS_PWRON_PIN GET_PIN(E, 0)
+#define GNSS_RST_PIN GET_PIN(E, 1)
+
+static rt_device_t gnss_serial;
+lwgps_t hgps;
+char nmea[GNSS_BUFF_SIZE];
+
+static void gnss_thread_entry(void *parameter)
+{
+    while (1)
+    {
+        if (rt_device_read(gnss_serial, -1, &nmea, GNSS_BUFF_SIZE) > 0)
+        {
+            // LOG_D(nmea);
+            lwgps_process(&hgps, nmea, rt_strlen(nmea));
+            // rt_memset(nmea, 0, sizeof(nmea));
+        }
+        rt_thread_delay(rt_tick_from_millisecond(250)); //at least 250 ms
+    }
+}
+
+int gnss_open(void)
+{
+    rt_err_t ret = RT_EOK;
+
+    rt_pin_mode(GNSS_PWRON_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(GNSS_PWRON_PIN, PIN_HIGH);
+    rt_pin_mode(GNSS_RST_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(GNSS_RST_PIN, PIN_HIGH);
+
+    /* 查找系统中的串口设备 */
+    gnss_serial = rt_device_find(GNSS_UART_NAME);
+    if (!gnss_serial)
+    {
+        LOG_D("find %s failed!\n", GNSS_UART_NAME);
+        return RT_ERROR;
+    }
+
+    /* 以中断接收及轮询发送模式打开串口设备 */
+    rt_device_open(gnss_serial, RT_DEVICE_FLAG_INT_RX);
+
+    /* 创建 GNSS 线程 */
+    rt_thread_t thread = rt_thread_create("GNSS", gnss_thread_entry, RT_NULL, 0x1000, 25, 10);
+    /* 创建成功则启动线程 */
+    if (thread != RT_NULL)
+    {
+        lwgps_init(&hgps);
+        rt_thread_startup(thread);
+    }
+    else
+    {
+        ret = RT_ERROR;
+    }
+
+    return ret;
+}
+
+int gnss_close(void)
+{
+    rt_pin_write(GNSS_PWRON_PIN, PIN_LOW);
+    if (rt_pin_read(GNSS_PWRON_PIN) == PIN_LOW)
+    {
+        return RT_EOK;
+    }
+    return RT_ERROR;
+}
+
+int gnss_reset(void)
+{
+    rt_pin_write(GNSS_RST_PIN, PIN_LOW);
+    rt_thread_delay(rt_tick_from_millisecond(300)); //at least 300 ms
+    rt_pin_write(GNSS_RST_PIN, PIN_HIGH);
+    if (rt_pin_read(GNSS_RST_PIN) == PIN_HIGH)
+    {
+        return RT_EOK;
+    }
+    return RT_ERROR;
+}
+
+void gnss_data_show(void)
+{
+    LOG_D("GNSS Date: %d-%d-%d %d:%d:%d\r\n", hgps.year, hgps.month, hgps.date, hgps.hours, hgps.minutes, hgps.seconds);
+    LOG_D("Valid status: %d\r\n", hgps.is_valid);
+    LOG_D("Latitude: %f degrees\r\n", hgps.latitude);
+    LOG_D("Longitude: %f degrees\r\n", hgps.longitude);
+    LOG_D("Altitude: %f meters\r\n", hgps.altitude);
+}

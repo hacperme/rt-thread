@@ -11,6 +11,9 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
+#include "gnss.h"
+#include "voltage.h"
+#include "hdc3021.h"
 
 #define DBG_SECTION_NAME "main"
 #define DBG_LEVEL DBG_LOG
@@ -62,10 +65,10 @@ int main(void)
     LOG_I("__heap_start: %p\r\n", __heap_start);
     LOG_I("__heap_end: %p\r\n", __heap_end);
 
+    LOG_D("Start LED Show.\r\n");
     while (count++)
     {
         led_toggle();
-        LOG_D("hello, world!\r\n");
         rt_thread_mdelay(500);
     }
 
