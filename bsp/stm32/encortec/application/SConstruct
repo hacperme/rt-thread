@@ -26,14 +26,15 @@ CPPPATH = [
     os.path.join(SDK_ROOT, 'common'),
     SDK_ROOT,
     os.path.join(RTT_ROOT, 'include'),
-    os.path.join(RTT_ROOT, 'components', 'finsh')]
+    os.path.join(RTT_ROOT, 'components', 'finsh'),
+    os.path.join(SDK_ROOT, 'application', 'rt_api')]
 env.Append(CPPPATH=CPPPATH)
 
 # Get all .c files in the application directory
 # app_c_files = glob.glob(os.path.join('main', '*.c'))
 app_c_files = Split('''
 main/main.c
-main/rt_api.c
+rt_api/rt_api.c
 '''
 )
 
