@@ -2,6 +2,7 @@ BOOTLOADER_SIZE = 128 * 1024  # 128KB
 APP_SIZE = 384 * 1024  # 384KB
 
 def merge_bin_files(bootloader_file, app_file, output_file):
+    print("------ Merging Bootloader and App...")
     with open(bootloader_file, 'rb') as bootloader_f:
         bootloader_data = bootloader_f.read()
 
@@ -17,6 +18,8 @@ def merge_bin_files(bootloader_file, app_file, output_file):
 
     with open(output_file, 'wb') as output_f:
         output_f.write(merged_data)
+
+    print("------ Done!")
 
 if __name__ == '__main__':
     # Example usage

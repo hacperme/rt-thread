@@ -13,9 +13,6 @@ BUILD = 'debug'
 RTT_ROOT = os.path.abspath('../../../../')
 SDK_ROOT = os.path.abspath('../')
 
-print(RTT_ROOT)
-print(SDK_ROOT)
-
 # Ensure build directory exists
 BUILD_DIR = os.path.join(SDK_ROOT, 'application', 'build')
 BUILD_OBJS_DIR = os.path.join(SDK_ROOT, 'application', 'build', 'objects')
