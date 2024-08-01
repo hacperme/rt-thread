@@ -1,0 +1,6 @@
+rt_thread_mdelay
+rt_kprintf
+rt_malloc
+rt_free
+rt_realloc
+rt_calloc
