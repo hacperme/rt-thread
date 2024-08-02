@@ -11,9 +11,9 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
-#include "gnss.h"
-#include "voltage.h"
-#include "hdc3021.h"
+// #include "gnss.h"
+// #include "voltage.h"
+// #include "hdc3021.h"
 
 #define DBG_SECTION_NAME "main"
 #define DBG_LEVEL DBG_LOG

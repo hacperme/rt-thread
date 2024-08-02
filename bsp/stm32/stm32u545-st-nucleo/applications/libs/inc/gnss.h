@@ -18,9 +18,12 @@
 #define GNSS_BUFF_SIZE 0x400
 
 static void gnss_thread_entry(void *parameter);
-int gnss_open(void);
-int gnss_close(void);
-int gnss_reset(void);
-void gnss_data_show(void);
+static void gnss_power_on(void);
+static rt_err_t gnss_power_off(void);
+static void gnss_reset_init(void);
+rt_err_t gnss_open(void);
+void gnss_close(void);
+rt_err_t gnss_reset(void);
+static void gnss_data_show(int argc, char **argv);
 
 #endif  // __GNSS_H__
