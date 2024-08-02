@@ -13,7 +13,9 @@
 #include <board.h>
 #include "common.h"
 #include <string.h>
-#include "api_map.h"
+
+/* Don't use api mapping method to let App call bootloader apis */
+// #include "api_map.h"
 
 #define DBG_SECTION_NAME "main"
 #define DBG_LEVEL DBG_LOG
@@ -66,14 +68,16 @@ int main(void)
     /* set LED2 pin mode to output */
     rt_pin_mode(LED2_PIN, PIN_MODE_OUTPUT);
 
-    rt_api_map_init();
+    /* Don't use api mapping method to let App call bootloader apis */
+    // rt_api_map_init();
 
     if(memcmp(mbr->app_magic_number, MBR_APP_MAGIC_NUMBER, sizeof(mbr->app_magic_number)) == 0) {
         LOG_I("app_magic_number: %s", mbr->app_magic_number);
         LOG_I("app_startup_entry: %p", mbr->app_startup_entry);
         LOG_I("app_main_entry: %p", mbr->app_main_entry);
 
-        app_startup_params_t params = {get_per_api_ptr, NULL, NULL};
+        /* Don't use api mapping method to let App call bootloader apis */
+        app_startup_params_t params = {NULL, NULL, NULL};
         mbr->app_startup_entry(&params);
         mbr->app_main_entry(0, NULL);
     } else {

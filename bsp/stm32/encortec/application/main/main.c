@@ -10,7 +10,7 @@
 
 #include "common.h"
 #include <string.h>
-#include "rt_api.h"
+#include "rtthread.h"
 
 int main(int argc, char *argv[]);
 static void startup(app_startup_params_t *app_startup_params);
