@@ -273,12 +273,12 @@ rt_hw_interrupt_thread_switch:
 
 .global HardFault_Handler
 .type HardFault_Handler, %function
-/*HardFault_Handler:*/
+HardFault_Handler:
     /* get current context */
-/*    MRS     r0, msp  */                               /* get fault context from handler. */
-/*    TST     lr, #0x04   */                            /* if(!EXC_RETURN[2]) */
-/*    BEQ     get_sp_done*/
-/*    MRS     r0, psp    */                             /* get fault context from thread. */
+    MRS     r0, msp                                 /* get fault context from handler. */
+    TST     lr, #0x04                               /* if(!EXC_RETURN[2]) */
+    BEQ     get_sp_done
+    MRS     r0, psp                                 /* get fault context from thread. */
 get_sp_done:
 
     STMFD   r0!, {r4 - r11}                         /* push r4 - r11 register */
