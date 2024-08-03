@@ -453,13 +453,6 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
     rt_alarm_update(&rtc_device.rtc_dev.parent, 1);
 }
 
-void RTC_IRQHandler(void)
-{
-    rt_interrupt_enter();
-    HAL_RTC_AlarmIRQHandler(&RTC_Handler);
-    rt_interrupt_leave();
-    LOG_D("RTC_Alarm_IRQHandler.");
-}
 #endif
 
 static int rt_hw_rtc_init(void)
