@@ -164,12 +164,20 @@ rt_err_t gnss_read_data(lwgps_t *gnss_data)
 
 static void gnss_data_show(int argc, char **argv)
 {
-    LOG_D("GNSS Date: %d-%d-%d %d:%d:%d\r\n", hgps.year, hgps.month, hgps.date, 
-          hgps.hours, hgps.minutes, hgps.seconds);
-    LOG_D("Valid status: %d\r\n", hgps.is_valid);
-    LOG_D("Latitude: %f degrees\r\n", hgps.latitude);
-    LOG_D("Longitude: %f degrees\r\n", hgps.longitude);
-    LOG_D("Altitude: %f meters\r\n", hgps.altitude);
+    gnss_open();
+    rt_uint8_t cnt = 0;
+    while (cnt < 20)
+    {
+        LOG_D("GNSS Date: %d-%d-%d %d:%d:%d\r\n", hgps.year, hgps.month, hgps.date, 
+            hgps.hours, hgps.minutes, hgps.seconds);
+        LOG_D("Valid status: %d\r\n", hgps.is_valid);
+        LOG_D("Latitude: %f degrees\r\n", hgps.latitude);
+        LOG_D("Longitude: %f degrees\r\n", hgps.longitude);
+        LOG_D("Altitude: %f meters\r\n", hgps.altitude);
+        cnt++;
+        rt_thread_delay(rt_tick_from_millisecond(1000)); //at least 300 ms
+    }
+    gnss_close();
 }
 
 MSH_CMD_EXPORT(gnss_data_show, gnss data show);

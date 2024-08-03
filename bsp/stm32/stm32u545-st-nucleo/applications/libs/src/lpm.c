@@ -26,6 +26,9 @@ void shut_down(void)
     rt_pin_irq_enable(SEN_PWR_WKUP7, PIN_IRQ_ENABLE);
     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN7_HIGH_2);
 
+    /* RTC wakeup pin irq enable. */
+    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN7_HIGH_3);
+
     // // /* Enable WakeUp Pin PWR_WAKEUP_PIN2 connected to PC.13 */
     // rt_pin_mode(BUTTON_PIN, PIN_MODE_INPUT);
     // rt_pin_irq_enable(BUTTON_PIN, PIN_IRQ_ENABLE);
@@ -107,7 +110,6 @@ rt_err_t set_rtc_wakeup(time_t sleep_time)
 static void test_rtc_wakeup(int argc, char **argv)
 {
     set_rtc_wakeup(10);
-    // shut_down();
-    // MX_RTC_Init();
+    shut_down();
 }
 MSH_CMD_EXPORT(test_rtc_wakeup, test rtc wakeup);

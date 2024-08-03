@@ -395,7 +395,7 @@
 #define BSP_I2C1_SCL_PIN 24
 #define BSP_I2C1_SDA_PIN 19
 #define BSP_USING_ONCHIP_RTC
-#define BSP_RTC_USING_LSI
+#define BSP_RTC_USING_LSE
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */

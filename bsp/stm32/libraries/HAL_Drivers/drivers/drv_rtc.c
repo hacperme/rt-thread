@@ -22,7 +22,7 @@
 #define RTC_BKP_DR1 RT_NULL
 #endif
 
-//#define DRV_DEBUG
+#define DRV_DEBUG
 #define LOG_TAG             "drv.rtc"
 #include <drv_log.h>
 
@@ -174,8 +174,6 @@ static void rt_rtc_f1_bkp_update(void)
 static rt_err_t rt_rtc_config(void)
 {
     HAL_PWR_EnableBkUpAccess();
-    __HAL_RCC_BACKUPRESET_FORCE();
-    __HAL_RCC_BACKUPRESET_RELEASE();
 
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
@@ -240,7 +238,7 @@ static rt_err_t rt_rtc_config(void)
 #ifdef BSP_RTC_USING_LSI
         RTC_Handler.Init.SynchPrediv = 0x0F9;
 #else
-        RTC_Handler.Init.SynchPrediv = 0x00FF;
+        RTC_Handler.Init.SynchPrediv = 0xFF;
 #endif
         RTC_Handler.Init.OutPut = RTC_OUTPUT_DISABLE;
         RTC_Handler.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
@@ -266,6 +264,12 @@ static rt_err_t rt_rtc_config(void)
         {
             LOG_E("HAL_RTCEx_PrivilegeModeSet failed.");
             return -RT_ERROR;
+        }
+        /** Enable the WakeUp
+         */
+        if (HAL_RTCEx_SetWakeUpTimer(&RTC_Handler, 0, RTC_WAKEUPCLOCK_CK_SPRE_17BITS) != HAL_OK)
+        {
+            Error_Handler();
         }
 #endif
     }
