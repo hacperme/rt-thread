@@ -44,6 +44,8 @@ static RTC_AlarmTypeDef Alarm_InitStruct = { 0 };
 
 static struct rtc_device_object rtc_device;
 static RTC_HandleTypeDef RTC_Handler;
+static RTC_PrivilegeStateTypeDef privilegeState = {0};
+
 
 rt_weak uint32_t HAL_RTCEx_BKUPRead(RTC_HandleTypeDef *hrtc, uint32_t BackupRegister)
 {
@@ -154,9 +156,11 @@ static void rt_rtc_f1_bkp_update(void)
 
 static rt_err_t rt_rtc_config(void)
 {
-    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
-
     HAL_PWR_EnableBkUpAccess();
+    __HAL_RCC_BACKUPRESET_FORCE();
+    __HAL_RCC_BACKUPRESET_RELEASE();
+
+    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
 #if defined(BSP_RTC_USING_LSI)
     PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
@@ -213,14 +217,40 @@ static rt_err_t rt_rtc_config(void)
         RTC_Handler.Init.OutPut = RTC_OUTPUT_DISABLE;
         RTC_Handler.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
         RTC_Handler.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+#elif defined(SOC_SERIES_STM32U5)
+        RTC_Handler.Init.HourFormat = RTC_HOURFORMAT_24;
+        RTC_Handler.Init.AsynchPrediv = 0x7F;
+#ifdef BSP_RTC_USING_LSI
+        RTC_Handler.Init.SynchPrediv = 0x0F9;
+#else
+        RTC_Handler.Init.SynchPrediv = 0x00FF;
+#endif
+        RTC_Handler.Init.OutPut = RTC_OUTPUT_DISABLE;
+        RTC_Handler.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
+        RTC_Handler.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+        RTC_Handler.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+        RTC_Handler.Init.OutPutPullUp = RTC_OUTPUT_PULLUP_NONE;
+        RTC_Handler.Init.BinMode = RTC_BINARY_NONE;
 #else
 #warning "This series doesn't support yet!"
 #endif
-
-        if (HAL_RTC_Init(&RTC_Handler) != HAL_OK)
+        int res = HAL_RTC_Init(&RTC_Handler);
+        if (res != HAL_OK)
         {
+            LOG_E("HAL_RTC_Init failed. res=%d", res);
             return -RT_ERROR;
         }
+#if defined(SOC_SERIES_STM32U5)
+        privilegeState.rtcPrivilegeFull = RTC_PRIVILEGE_FULL_NO;
+        privilegeState.backupRegisterPrivZone = RTC_PRIVILEGE_BKUP_ZONE_NONE;
+        privilegeState.backupRegisterStartZone2 = RTC_BKP_DR0;
+        privilegeState.backupRegisterStartZone3 = RTC_BKP_DR0;
+        if (HAL_RTCEx_PrivilegeModeSet(&RTC_Handler, &privilegeState) != HAL_OK)
+        {
+            LOG_E("HAL_RTCEx_PrivilegeModeSet failed.");
+            return -RT_ERROR;
+        }
+#endif
     }
 #ifdef SOC_SERIES_STM32F1
     else
@@ -352,14 +382,19 @@ void rt_rtc_alarm_enable(void)
     LOG_D("alarm read:%d:%d:%d", Alarm_InitStruct.AlarmTime.Hours,
         Alarm_InitStruct.AlarmTime.Minutes,
         Alarm_InitStruct.AlarmTime.Seconds);
-    HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0x02, 0);
-    HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+    /* RTC interrupt Init */
+    HAL_NVIC_SetPriority(RTC_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(RTC_IRQn);
+    // HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 0x02, 0);
+    // HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 }
 
 void rt_rtc_alarm_disable(void)
 {
     HAL_RTC_DeactivateAlarm(&RTC_Handler, RTC_ALARM_A);
-    HAL_NVIC_DisableIRQ(RTC_Alarm_IRQn);
+    /* RTC interrupt DeInit */
+    HAL_NVIC_DisableIRQ(RTC_IRQn);
+    // HAL_NVIC_DisableIRQ(RTC_Alarm_IRQn);
 }
 
 static int rt_rtc_alarm_init(void)
@@ -393,7 +428,7 @@ static rt_err_t rtc_alarm_time_set(struct rtc_device_object* p_dev)
 
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
-    //LOG_D("rtc alarm isr.\n");
+    LOG_D("rtc alarm isr.\n");
     rt_alarm_update(&rtc_device.rtc_dev.parent, 1);
 }
 

@@ -89,25 +89,27 @@ void HardFault_Handler(void)
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
+    extern int rt_kprintf(const char *fmt, ...);
+    rt_kprintf("xxxxxxxxxxxxxxxxxxxxxxxxxxxx\r\n");
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
 }
 
-/**
-  * @brief This function handles Memory management fault.
-  */
-void MemManage_Handler(void)
-{
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
+// /**
+//   * @brief This function handles Memory management fault.
+//   */
+// void MemManage_Handler(void)
+// {
+//   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
 
-  /* USER CODE END MemoryManagement_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
-    /* USER CODE END W1_MemoryManagement_IRQn 0 */
-  }
-}
+//   /* USER CODE END MemoryManagement_IRQn 0 */
+//   while (1)
+//   {
+//     /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+//     /* USER CODE END W1_MemoryManagement_IRQn 0 */
+//   }
+// }
 
 /**
   * @brief This function handles Prefetch fault, memory access fault.
@@ -167,7 +169,7 @@ void TIM6_IRQHandler(void)
   /* USER CODE BEGIN TIM6_IRQn 0 */
 
   /* USER CODE END TIM6_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim6);
+  // HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_IRQn 1 */
 
   /* USER CODE END TIM6_IRQn 1 */

@@ -105,6 +105,8 @@
 #define RT_USING_PM
 #define PM_TICKLESS_THRESHOLD_TIME 2
 #define PM_ENABLE_DEBUG
+#define RT_USING_RTC
+#define RT_USING_ALARM
 #define RT_USING_SPI
 #define RT_USING_SENSOR
 #define RT_USING_SENSOR_V2
@@ -392,6 +394,8 @@
 
 #define BSP_I2C1_SCL_PIN 24
 #define BSP_I2C1_SDA_PIN 19
+#define BSP_USING_ONCHIP_RTC
+#define BSP_RTC_USING_LSI
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */

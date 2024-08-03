@@ -10,6 +10,7 @@ cwd = GetCurrentDir()
 src = Split('''
 board.c
 CubeMX_Config/Src/stm32u5xx_hal_msp.c
+CubeMX_Config/Src/stm32u5xx_it.c
 ''')
 
 # if GetDepend(['BSP_USING_KEY']):
