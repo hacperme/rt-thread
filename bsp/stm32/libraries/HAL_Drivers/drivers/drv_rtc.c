@@ -22,7 +22,7 @@
 #define RTC_BKP_DR1 RT_NULL
 #endif
 
-//#define DRV_DEBUG
+#define DRV_DEBUG
 #define LOG_TAG             "drv.rtc"
 #include <drv_log.h>
 
@@ -55,6 +55,23 @@ rt_weak uint32_t HAL_RTCEx_BKUPRead(RTC_HandleTypeDef *hrtc, uint32_t BackupRegi
 rt_weak void HAL_RTCEx_BKUPWrite(RTC_HandleTypeDef *hrtc, uint32_t BackupRegister, uint32_t Data)
 {
     return;
+}
+
+/**
+  * @brief This function handles RTC non-secure interrupt.
+  */
+void RTC_IRQHandler(void)
+{
+  /* USER CODE BEGIN RTC_IRQn 0 */
+
+  /* USER CODE END RTC_IRQn 0 */
+    rt_interrupt_enter();
+    HAL_RTC_AlarmIRQHandler(&RTC_Handler);
+    rt_interrupt_leave();
+    LOG_D("RTC_IRQHandler.");
+  /* USER CODE BEGIN RTC_IRQn 1 */
+
+  /* USER CODE END RTC_IRQn 1 */
 }
 
 static rt_err_t stm32_rtc_get_timeval(struct timeval *tv)
@@ -157,8 +174,6 @@ static void rt_rtc_f1_bkp_update(void)
 static rt_err_t rt_rtc_config(void)
 {
     HAL_PWR_EnableBkUpAccess();
-    __HAL_RCC_BACKUPRESET_FORCE();
-    __HAL_RCC_BACKUPRESET_RELEASE();
 
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
@@ -223,7 +238,7 @@ static rt_err_t rt_rtc_config(void)
 #ifdef BSP_RTC_USING_LSI
         RTC_Handler.Init.SynchPrediv = 0x0F9;
 #else
-        RTC_Handler.Init.SynchPrediv = 0x00FF;
+        RTC_Handler.Init.SynchPrediv = 0xFF;
 #endif
         RTC_Handler.Init.OutPut = RTC_OUTPUT_DISABLE;
         RTC_Handler.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
@@ -249,6 +264,12 @@ static rt_err_t rt_rtc_config(void)
         {
             LOG_E("HAL_RTCEx_PrivilegeModeSet failed.");
             return -RT_ERROR;
+        }
+        /** Enable the WakeUp
+         */
+        if (HAL_RTCEx_SetWakeUpTimer(&RTC_Handler, 0, RTC_WAKEUPCLOCK_CK_SPRE_17BITS) != HAL_OK)
+        {
+            Error_Handler();
         }
 #endif
     }
@@ -437,6 +458,7 @@ void RTC_IRQHandler(void)
     rt_interrupt_enter();
     HAL_RTC_AlarmIRQHandler(&RTC_Handler);
     rt_interrupt_leave();
+    LOG_D("RTC_Alarm_IRQHandler.");
 }
 #endif
 
