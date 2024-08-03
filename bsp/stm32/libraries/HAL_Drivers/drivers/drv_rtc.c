@@ -57,6 +57,23 @@ rt_weak void HAL_RTCEx_BKUPWrite(RTC_HandleTypeDef *hrtc, uint32_t BackupRegiste
     return;
 }
 
+/**
+  * @brief This function handles RTC non-secure interrupt.
+  */
+void RTC_IRQHandler(void)
+{
+  /* USER CODE BEGIN RTC_IRQn 0 */
+
+  /* USER CODE END RTC_IRQn 0 */
+    rt_interrupt_enter();
+    HAL_RTC_AlarmIRQHandler(&RTC_Handler);
+    rt_interrupt_leave();
+    LOG_D("RTC_IRQHandler.");
+  /* USER CODE BEGIN RTC_IRQn 1 */
+
+  /* USER CODE END RTC_IRQn 1 */
+}
+
 static rt_err_t stm32_rtc_get_timeval(struct timeval *tv)
 {
     RTC_TimeTypeDef RTC_TimeStruct = {0};
@@ -437,6 +454,7 @@ void RTC_Alarm_IRQHandler(void)
     rt_interrupt_enter();
     HAL_RTC_AlarmIRQHandler(&RTC_Handler);
     rt_interrupt_leave();
+    LOG_D("RTC_Alarm_IRQHandler.");
 }
 #endif
 
