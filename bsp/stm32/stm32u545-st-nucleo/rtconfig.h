@@ -4,9 +4,6 @@
 #define SOC_STM32U545RE
 #define BOARD_STM32U545_NUCLEO
 
-// #define SOC_STM32U535RE
-// #define BOARD_STM32U535_NUCLEO
-
 /* RT-Thread Kernel */
 
 #define RT_NAME_MAX 8
@@ -369,9 +366,13 @@
 
 /* end of Arduino libraries */
 /* end of RT-Thread online packages */
+
+/* STM32 Version Config */
+
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32U5
 #define BOARD_SERIES_STM32_NUCLEO_64
+/* end of STM32 Version Config */
 
 /* Hardware Drivers Config */
 
