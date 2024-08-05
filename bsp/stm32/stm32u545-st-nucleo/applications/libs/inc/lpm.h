@@ -13,6 +13,9 @@
 #include "rtdevice.h"
 #include "board.h"
 
+void g_sensor_wakeup_irq_enable(void);
+void power_wakeup_irq_enable(void);
+void rtc_wakeup_irq_enable(void);
 void shut_down(void);
 static void alarm_callback(rt_alarm_t alarm, time_t timestamp);
 rt_err_t set_rtc_wakeup(time_t sleep_time);

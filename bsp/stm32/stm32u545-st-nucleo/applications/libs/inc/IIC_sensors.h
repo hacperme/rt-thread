@@ -17,11 +17,6 @@
 #define IIC_SAMPLE_SIZE 10
 #define IIC_SAMPLE_PERIOD 1000
 
-// #define IIC_HDC3021_EN
-// #define IIC_TMP116_1_EN
-// #define IIC_TMP116_2_EN
-#define IIC_FDC1004_EN
-
 typedef struct filter_data
 {
     float buf[IIC_SAMPLE_SIZE];
@@ -46,6 +41,7 @@ struct iic_sensor
     rt_uint32_t period; //sample period
 
     rt_mutex_t lock;
+    rt_mutex_t filter_lock;
 };
 typedef struct iic_sensor *iic_sensor_t;
 
@@ -55,8 +51,8 @@ typedef struct hdc3021_iic
     float humidity;
 } hdc3021_iic_t;
 
-rt_err_t iic_sensors_on(void);
-rt_err_t iic_sensors_off(void);
+rt_err_t all_sensors_on(void);
+rt_err_t all_sensors_off(void);
 iic_sensor_t iic_sensors_init(const char *i2c_bus_name);
 void iic_sensors_deinit(iic_sensor_t dev);
 static void iic_sensors_filter_entry(void *device);
@@ -72,6 +68,6 @@ rt_err_t check_fdc1004_clevel0(iic_sensor_t dev);
 rt_uint16_t read_fdc1004_clevel0(void);
 static void average_measurement(iic_sensor_t dev, filter_data_t *filter);
 static void filter_check_full(filter_data_t *filter);
-static void iic_sensors_start(int argc, char **argv);
+static void test_iic_sensors(int argc, char **argv);
 
 #endif /* __IIC_SENSORS_H__ */

@@ -18,46 +18,53 @@
 #define CUR_ADC_CHANNEL 1
 #define VCAT_ADC_CHANNEL 2
 
-static rt_err_t cur_vol_read(int argc, char *argv[])
+static rt_err_t adc_vol_read(rt_uint8_t channel, rt_uint32_t *value)
 {
     rt_adc_device_t adc_dev;
-    rt_uint32_t value, vol;
     rt_err_t ret = RT_EOK;
 
     adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
+    LOG_E("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
     if (adc_dev == RT_NULL)
     {
-        LOG_E("Can not find %s device!\r\n", ADC_NAME);
         return RT_ERROR;
     }
 
-    ret = rt_adc_enable(adc_dev, CUR_ADC_CHANNEL);
-    value = rt_adc_read(adc_dev, CUR_ADC_CHANNEL);
-    LOG_D("CUR_ADC value %d\r\n", value);
-    ret = rt_adc_disable(adc_dev, CUR_ADC_CHANNEL);
+    ret = rt_adc_enable(adc_dev, channel);
+    LOG_D("rt_adc_enable channel %d res %s. ret %d", channel, (ret == RT_EOK ? "success" : "failed"), ret);
+    if (ret != RT_EOK)
+    {
+        return ret;
+    }
+    *value = rt_adc_read(adc_dev, channel);
+    LOG_D("CUR_ADC value %d", *value);
+    ret = rt_adc_disable(adc_dev, channel);
+    LOG_D("rt_adc_disable channel %d res %s. ret %d", channel, (ret == RT_EOK ? "success" : "failed"), ret);
     return ret;
 }
 
-MSH_CMD_EXPORT(cur_vol_read, CUR VOL Read);
-
-static rt_err_t vcat_vol_read(int argc, char *argv[])
+rt_err_t cur_vol_read(rt_uint32_t *value)
 {
-    rt_adc_device_t adc_dev;
-    rt_uint32_t value, vol;
-    rt_err_t ret = RT_EOK;
-
-    adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
-    if (adc_dev == RT_NULL)
-    {
-        LOG_E("Can not find %s device!\r\n", ADC_NAME);
-        return RT_ERROR;
-    }
-
-    ret = rt_adc_enable(adc_dev, VCAT_ADC_CHANNEL);
-    value = rt_adc_read(adc_dev, VCAT_ADC_CHANNEL);
-    LOG_D("VCAT_ADC value %d\r\n", value);
-    ret = rt_adc_disable(adc_dev, VCAT_ADC_CHANNEL);
-    return ret;
+    rt_err_t res = RT_EOK;
+    res = adc_vol_read((rt_uint8_t)CUR_ADC_CHANNEL, value);
+    return res;
 }
 
-MSH_CMD_EXPORT(vcat_vol_read, VCAT VOL Read);
+rt_err_t vcat_vol_read(rt_uint32_t *value)
+{
+    rt_err_t res = RT_EOK;
+    res = adc_vol_read((rt_uint8_t)VCAT_ADC_CHANNEL, value);
+    return res;
+}
+
+static void test_read_voltage(int argc, char *argv[])
+{
+    rt_err_t res;
+    rt_uint32_t cur_vol = 0, vcat_vol = 0;
+    res = cur_vol_read(&cur_vol);
+    LOG_D("cur_vol_read %s, cur_vol %d", res == RT_EOK ? "success" : "failed", cur_vol);
+    res = vcat_vol_read(&vcat_vol);
+    LOG_D("vcat_vol_read %s, vcat_vol %d", res == RT_EOK ? "success" : "failed", vcat_vol);
+}
+
+MSH_CMD_EXPORT(test_read_voltage, TEST READ voltage);

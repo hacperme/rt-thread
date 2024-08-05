@@ -12,27 +12,63 @@
 #define DBG_LEVEL DBG_LOG
 #include <rtdbg.h>
 
-#define SEN_PWR_WKUP7  GET_PIN(E, 8)
-// #define BUTTON_PIN  GET_PIN(C, 13)
+#define GSEN_PWR_WKUP7  GET_PIN(E, 8)
+#define PHTM_PWR_WKUP3  GET_PIN(E, 6)
+
+/* This wakeup pin is in STM32U545 Board, just for test.*/
+#define TEST_BTN_WKUP_EN
+#ifdef TEST_BTN_WKUP_EN
+#define TEST_BTN_WKUP2  GET_PIN(C, 13)
+#endif
+
 RTC_HandleTypeDef hrtc;
 #define RTC_ASYNCH_PREDIV    0x7F
 #define RTC_SYNCH_PREDIV     0x0F9
-static void MX_RTC_Init(void);
 
-void shut_down(void)
+void g_sensor_wakeup_irq_enable(void)
 {
-    /* Sensor wakeup pin irq enable. */
-    rt_pin_mode(SEN_PWR_WKUP7, PIN_MODE_INPUT);
-    rt_pin_irq_enable(SEN_PWR_WKUP7, PIN_IRQ_ENABLE);
+    /* G-Sensor wakeup pin irq enable. */
+    rt_pin_mode(GSEN_PWR_WKUP7, PIN_MODE_INPUT);
+    rt_pin_irq_enable(GSEN_PWR_WKUP7, PIN_IRQ_ENABLE);
     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN7_HIGH_2);
+}
+
+void power_wakeup_irq_enable(void)
+{
+    /* Power harvster/tracker monitor wakeup pin irq enable. */
+    rt_pin_mode(PHTM_PWR_WKUP3, PIN_MODE_INPUT);
+    rt_pin_irq_enable(PHTM_PWR_WKUP3, PIN_IRQ_ENABLE);
+    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN3_HIGH_0);
+}
+
+void rtc_wakeup_irq_enable(void)
+{
 
     /* RTC wakeup pin irq enable. */
     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN7_HIGH_3);
+}
 
-    // // /* Enable WakeUp Pin PWR_WAKEUP_PIN2 connected to PC.13 */
-    // rt_pin_mode(BUTTON_PIN, PIN_MODE_INPUT);
-    // rt_pin_irq_enable(BUTTON_PIN, PIN_IRQ_ENABLE);
-    // HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH_1);
+#ifdef TEST_BTN_WKUP_EN
+static void test_button_wakeup_irq_enable(void);
+static void test_button_wakeup_irq_enable(void)
+{
+    /* Enable WakeUp Pin PWR_WAKEUP_PIN2 connected to PC.13 */
+    rt_pin_mode(TEST_BTN_WKUP2, PIN_MODE_INPUT);
+    rt_pin_irq_enable(TEST_BTN_WKUP2, PIN_IRQ_ENABLE);
+    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH_1);
+}
+#endif
+
+void shut_down(void)
+{
+    /* Wakup irq enable. */
+    g_sensor_wakeup_irq_enable();
+    power_wakeup_iqr_enable();
+    rtc_wakeup_irq_enable();
+
+#ifdef TEST_BTN_WKUP_EN
+    test_button_wakeup_irq_enable();
+#endif
 
     LOG_D("Start Shut Down.");
 
@@ -45,7 +81,7 @@ void shut_down(void)
 
 static void alarm_callback(rt_alarm_t alarm, time_t timestamp)
 {
-    LOG_D("user alarm callback function.\n");
+    LOG_D("user alarm callback function.");
 }
 
 rt_err_t set_rtc_wakeup(time_t sleep_time)

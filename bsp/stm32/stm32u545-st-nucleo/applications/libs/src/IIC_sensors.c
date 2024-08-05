@@ -47,33 +47,30 @@ static rt_uint8_t FDC1004_MEAS_MSB_LSB_ADDR[4][2] = {
 };
 
 static rt_uint8_t TPH_THD_EXIT = 0;
+static float ERROR_SENSOR_VALUE = -999.0;
 
-rt_err_t iic_sensors_on(void)
+rt_err_t all_sensors_on(void)
 {
     rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
     rt_pin_write(SENSOR_PWRON_PIN, PIN_HIGH);
-    if (rt_pin_read(SENSOR_PWRON_PIN) == PIN_HIGH)
-    {
-        return RT_EOK;
-    }
-    LOG_E("SENSOR_PWRON_PIN set high failed.");
-    return RT_ERROR;
+    rt_thread_delay(rt_tick_from_millisecond(10));
+    LOG_D("rt_pin_read(SENSOR_PWRON_PIN) %d", rt_pin_read(SENSOR_PWRON_PIN));
+    LOG_D("All Sensors enabled %s", rt_pin_read(SENSOR_PWRON_PIN) == PIN_HIGH ? "success" : "failed");
+    return (rt_pin_read(SENSOR_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR);
 }
 
-rt_err_t iic_sensors_off(void)
+rt_err_t all_sensors_off(void)
 {
     rt_pin_write(SENSOR_PWRON_PIN, PIN_LOW);
-    if (rt_pin_read(SENSOR_PWRON_PIN) == PIN_LOW)
-    {
-        return RT_EOK;
-    }
-    LOG_E("SENSOR_PWRON_PIN set low failed.");
-    return RT_ERROR;
+    rt_thread_delay(rt_tick_from_millisecond(10));
+    LOG_D("rt_pin_read(SENSOR_PWRON_PIN) %d", rt_pin_read(SENSOR_PWRON_PIN));
+    LOG_D("All Sensors disabled %s", rt_pin_read(SENSOR_PWRON_PIN) == PIN_LOW ? "success" : "failed");
+    return (rt_pin_read(SENSOR_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR);
 }
 
 iic_sensor_t iic_sensors_init(const char *i2c_bus_name)
 {
-    iic_sensors_on();
+    all_sensors_on();
     iic_sensor_t dev;
 
     RT_ASSERT(i2c_bus_name);
@@ -100,18 +97,28 @@ iic_sensor_t iic_sensors_init(const char *i2c_bus_name)
         rt_free(dev);
         return RT_NULL;
     }
+    dev->filter_lock = rt_mutex_create("THSFLK", RT_IPC_FLAG_FIFO);
+    if (dev->filter_lock == RT_NULL)
+    {
+        LOG_E("Can't create mutex for temp humi sensor device on '%s' ", i2c_bus_name);
+        rt_free(dev);
+        return RT_NULL;
+    }
     dev->period = IIC_SAMPLE_PERIOD;
 
     dev->thread = rt_thread_create("tmp_humi_sensor", iic_sensors_filter_entry, (void *)dev, 1024, 15, 10);
     if (dev->thread != RT_NULL)
     {
         TPH_THD_EXIT = 0;
+        rt_err_t result = rt_mutex_take(dev->filter_lock, RT_WAITING_FOREVER);
+        LOG_D("iic_sensors_filter_entry filer lock take %s", result == RT_EOK ? "success" : "failed");
         rt_thread_startup(dev->thread);
     }
     else
     {
         LOG_E("Can't start filtering function for tmp_humi_sensor device on '%s' ", i2c_bus_name);
         rt_mutex_delete(dev->lock);
+        rt_mutex_delete(dev->filter_lock);
         rt_free(dev);
     }
     return dev;
@@ -133,7 +140,7 @@ void iic_sensors_deinit(iic_sensor_t dev)
 
     rt_free(dev);
 
-    iic_sensors_off();
+    all_sensors_off();
 }
 
 static void iic_sensors_filter_entry(void *device)
@@ -146,53 +153,69 @@ static void iic_sensors_filter_entry(void *device)
     float tmp116_2_temp = 0;
     float water_level = 0;
     rt_err_t result;
+    rt_uint8_t first_cycle = 0;
 
     while (TPH_THD_EXIT == 0)
     {
         result = rt_mutex_take(dev->lock, RT_WAITING_FOREVER);
         if (result == RT_EOK)
         {
-#ifdef IIC_HDC3021_EN
             filter_check_full(&dev->hdc3021_temp_filter);
             filter_check_full(&dev->hdc3021_humi_filter);
             if (read_hw_hdc3021_temperature_humidity(dev, &hdc3021_th) == RT_EOK)
             {
                 dev->hdc3021_temp_filter.buf[dev->hdc3021_temp_filter.index] = hdc3021_th.temperature;
                 dev->hdc3021_humi_filter.buf[dev->hdc3021_humi_filter.index] = hdc3021_th.humidity;
-                dev->hdc3021_temp_filter.index++;
-                dev->hdc3021_humi_filter.index++;
             }
-#endif
-#ifdef IIC_TMP116_1_EN
+            else
+            {
+                dev->hdc3021_temp_filter.buf[dev->hdc3021_temp_filter.index] = ERROR_SENSOR_VALUE;
+                dev->hdc3021_humi_filter.buf[dev->hdc3021_humi_filter.index] = ERROR_SENSOR_VALUE;
+            }
+            dev->hdc3021_temp_filter.index++;
+            dev->hdc3021_humi_filter.index++;
             filter_check_full(&dev->tmp116_1_temp_filter);
             if (read_hw_tmp116_temperature(dev, (rt_uint8_t)TMP116_1_ADDR, &tmp116_1_temp) == RT_EOK)
             {
                 dev->tmp116_1_temp_filter.buf[dev->tmp116_1_temp_filter.index] = tmp116_1_temp;
-                dev->tmp116_1_temp_filter.index++;
             }
-#endif
-#ifdef IIC_TMP116_2_EN
+            else
+            {
+                dev->tmp116_1_temp_filter.buf[dev->tmp116_1_temp_filter.index] = ERROR_SENSOR_VALUE;
+            }
+            dev->tmp116_1_temp_filter.index++;
             filter_check_full(&dev->tmp116_2_temp_filter);
             if (read_hw_tmp116_temperature(dev, (rt_uint8_t)TMP116_2_ADDR, &tmp116_2_temp) == RT_EOK)
             {
                 dev->tmp116_2_temp_filter.buf[dev->tmp116_2_temp_filter.index] = tmp116_2_temp;
-                dev->tmp116_2_temp_filter.index++;
             }
-#endif
-#ifdef IIC_FDC1004_EN
+            else
+            {
+                dev->tmp116_2_temp_filter.buf[dev->tmp116_2_temp_filter.index] = ERROR_SENSOR_VALUE;
+            }
+            dev->tmp116_2_temp_filter.index++;
             filter_check_full(&dev->fdc1004_level_filter);
             if (read_hw_fdc1004_water_level(dev, (rt_uint8_t)FDC1004_ADDR, &water_level) == RT_EOK)
             {
                 dev->fdc1004_level_filter.buf[dev->fdc1004_level_filter.index] = water_level;
-                dev->fdc1004_level_filter.index++;
             }
-#endif
+            else
+            {
+                dev->fdc1004_level_filter.buf[dev->fdc1004_level_filter.index] = ERROR_SENSOR_VALUE;
+            }
+            dev->fdc1004_level_filter.index++;
         }
         else
         {
             LOG_E("The software failed to take temperature and humidity at this time. Please try again");
         }
         rt_mutex_release(dev->lock);
+
+        if (first_cycle == 0)
+        {
+            first_cycle = 1;
+            rt_mutex_release(dev->filter_lock);
+        }
 
         rt_thread_delay(rt_tick_from_millisecond(dev->period));
     }
@@ -203,6 +226,7 @@ static rt_err_t read_hw_hdc3021_temperature_humidity(iic_sensor_t dev, hdc3021_i
     rt_uint8_t data[6] = {0};
     if (rt_i2c_master_send(dev->i2c, HDC3021_ADDR, RT_I2C_WR, HDC3021_TRIGGER_ON_DEMAND, 2) == 2)
     {
+        rt_thread_delay(rt_tick_from_millisecond(20));
         if (rt_i2c_master_recv(dev->i2c, HDC3021_ADDR, RT_I2C_RD, data, 6) == 6)
         {
             // LOG_D("DATA: %02X, %02X, %02X, %02X, %02X, %02X", data[0], data[1], data[2], data[3], data[4], data[5]);
@@ -282,6 +306,7 @@ static rt_err_t read_hw_fdc1004_water_level(iic_sensor_t dev, const rt_uint8_t a
         i2c_res = rt_i2c_master_send(dev->i2c, addr, RT_I2C_WR, FDC1004_FDC_CFG_DATA[cin_no], 3);
         if (i2c_res == 3)
         {
+            rt_thread_delay(rt_tick_from_millisecond(20));
             i2c_res = rt_i2c_master_send(dev->i2c, addr, RT_I2C_WR, FDC1004_MEAS_CFG[cin_no], 3);
             if (i2c_res == 3)
             {
@@ -412,11 +437,19 @@ static void average_measurement(iic_sensor_t dev, filter_data_t *filter)
     rt_uint32_t i;
     float sum = 0;
     rt_uint32_t temp;
+    rt_uint32_t cnt = 0;
     rt_err_t result;
 
     RT_ASSERT(dev);
 
+    if (filter->is_full != RT_TRUE && filter->index == 0)
+    {
+        rt_mutex_take(dev->filter_lock, 1000);
+        rt_mutex_release(dev->filter_lock);
+    }
+
     result = rt_mutex_take(dev->lock, RT_WAITING_FOREVER);
+
     if (result == RT_EOK)
     {
         if (filter->is_full)
@@ -430,15 +463,19 @@ static void average_measurement(iic_sensor_t dev, filter_data_t *filter)
 
         for (i = 0; i < temp; i++)
         {
-            sum += filter->buf[i];
+            if (filter->buf[i] != ERROR_SENSOR_VALUE)
+            {
+                sum += filter->buf[i];
+                cnt += 1;
+            }
         }
-        if (temp > 0)
+        if (cnt > 0)
         {
-            filter->average = sum / temp;
+            filter->average = sum / cnt;
         }
         else
         {
-            filter->average = -999.0;
+            filter->average = ERROR_SENSOR_VALUE;
         }
     }
     else
@@ -460,34 +497,31 @@ static void filter_check_full(filter_data_t *filter)
     }
 }
 
-static void iic_sensors_start(int argc, char **argv)
+static void test_iic_sensors(int argc, char **argv)
 {
     iic_sensor_t dev = iic_sensors_init("i2c1");
     rt_uint8_t cnt = 0;
     while (cnt < 10)
     {
         float temp, humi, level;
-#ifdef IIC_HDC3021_EN
+
         temp = hdc3021_read_temperature(dev);
         humi = hdc3021_read_humidity(dev);
         LOG_D("HDC3021 temp %lf, humi %lf\r\n", temp, humi);
-#endif
-#ifdef IIC_TMP116_1_EN
+
         temp = tmp116_1_read_humidity(dev);
         LOG_D("TMP116_1 temp %lf\r\n", temp);
-#endif
-#ifdef IIC_TMP116_2_EN
+
         temp = tmp116_2_read_humidity(dev);
         LOG_D("TMP116_2 temp %lf\r\n", temp);
-#endif
-#ifdef IIC_FDC1004_EN
+
         level = fdc1004_read_water_level(dev);
         LOG_D("FDC1004 water level %lf\r\n", level);
-#endif
+
         rt_thread_delay(rt_tick_from_millisecond(1000));
         cnt++;
     }
     iic_sensors_deinit(dev);
 }
 
-MSH_CMD_EXPORT(iic_sensors_start, iic start);
+MSH_CMD_EXPORT(test_iic_sensors, iic start);
