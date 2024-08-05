@@ -32,9 +32,13 @@ static void gnss_thread_entry(void *parameter)
         {
             if (rt_device_read(gnss_serial, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
-                // LOG_D(nmea);
+                LOG_D(nmea);
                 lwgps_process(&hgps, nmea, rt_strlen(nmea));
                 // rt_memset(nmea, 0, sizeof(nmea));
+            }
+            else
+            {
+                LOG_I("No gnss nmea data output.");
             }
         }
         else
@@ -55,11 +59,7 @@ static void gnss_power_on(void)
 static rt_err_t gnss_power_off(void)
 {
     rt_pin_write(GNSS_PWRON_PIN, PIN_LOW);
-    if (rt_pin_read(GNSS_PWRON_PIN) == PIN_LOW)
-    {
-        return RT_EOK;
-    }
-    return RT_ERROR;
+    return rt_pin_read(GNSS_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
 }
 
 static void gnss_reset_init(void)
@@ -165,8 +165,9 @@ rt_err_t gnss_read_data(lwgps_t *gnss_data)
 static void gnss_data_show(int argc, char **argv)
 {
     gnss_open();
+    rt_thread_delay(rt_tick_from_millisecond(100)); //at least 300 ms
     rt_uint8_t cnt = 0;
-    while (cnt < 20)
+    while (cnt < 10)
     {
         LOG_D("GNSS Date: %d-%d-%d %d:%d:%d\r\n", hgps.year, hgps.month, hgps.date, 
             hgps.hours, hgps.minutes, hgps.seconds);

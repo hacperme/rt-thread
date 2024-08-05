@@ -8,27 +8,22 @@
  */
 #include "lpm.h"
 
-#define DBG_SECTION_NAME "LPM"
-#define DBG_LEVEL DBG_LOG
-#include <rtdbg.h>
+void all_pin_init(void)
+{
+    // Wake up pin init.
+    rt_pin_mode(GSEN_PWR_WKUP7, PIN_MODE_INPUT);
+    rt_pin_mode(PHTM_PWR_WKUP3, PIN_MODE_INPUT);
+    rt_pin_mode(NBIOT_PWRON_PIN, PIN_MODE_OUTPUT);
 
-#define GSEN_PWR_WKUP7  GET_PIN(E, 8)
-#define PHTM_PWR_WKUP3  GET_PIN(E, 6)
-
-/* This wakeup pin is in STM32U545 Board, just for test.*/
-#define TEST_BTN_WKUP_EN
-#ifdef TEST_BTN_WKUP_EN
-#define TEST_BTN_WKUP2  GET_PIN(C, 13)
-#endif
-
-RTC_HandleTypeDef hrtc;
-#define RTC_ASYNCH_PREDIV    0x7F
-#define RTC_SYNCH_PREDIV     0x0F9
+    // Module power control pin init.
+    rt_pin_mode(ESP32_EN_PIN, PIN_MODE_OUTPUT);
+    rt_pin_mode(ESP32_PWRON_PIN, PIN_MODE_OUTPUT);
+    rt_pin_mode(CAT1_PWRON_PIN, PIN_MODE_OUTPUT);
+}
 
 void g_sensor_wakeup_irq_enable(void)
 {
     /* G-Sensor wakeup pin irq enable. */
-    rt_pin_mode(GSEN_PWR_WKUP7, PIN_MODE_INPUT);
     rt_pin_irq_enable(GSEN_PWR_WKUP7, PIN_IRQ_ENABLE);
     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN7_HIGH_2);
 }
@@ -36,7 +31,6 @@ void g_sensor_wakeup_irq_enable(void)
 void power_wakeup_irq_enable(void)
 {
     /* Power harvster/tracker monitor wakeup pin irq enable. */
-    rt_pin_mode(PHTM_PWR_WKUP3, PIN_MODE_INPUT);
     rt_pin_irq_enable(PHTM_PWR_WKUP3, PIN_IRQ_ENABLE);
     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN3_HIGH_0);
 }
@@ -48,27 +42,67 @@ void rtc_wakeup_irq_enable(void)
     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN7_HIGH_3);
 }
 
-#ifdef TEST_BTN_WKUP_EN
-static void test_button_wakeup_irq_enable(void);
-static void test_button_wakeup_irq_enable(void)
+// static void test_button_wakeup_irq_enable(void);
+// static void test_button_wakeup_irq_enable(void)
+// {
+//     /* Enable WakeUp Pin PWR_WAKEUP_PIN2 connected to PC.13 */
+//     rt_pin_mode(TEST_BTN_WKUP2, PIN_MODE_INPUT);
+//     rt_pin_irq_enable(TEST_BTN_WKUP2, PIN_IRQ_ENABLE);
+//     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH_1);
+// }
+
+rt_err_t nbiot_power_on(void)
 {
-    /* Enable WakeUp Pin PWR_WAKEUP_PIN2 connected to PC.13 */
-    rt_pin_mode(TEST_BTN_WKUP2, PIN_MODE_INPUT);
-    rt_pin_irq_enable(TEST_BTN_WKUP2, PIN_IRQ_ENABLE);
-    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH_1);
+    rt_pin_write(NBIOT_PWRON_PIN, PIN_HIGH);
+    return rt_pin_read(NBIOT_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
 }
-#endif
+
+rt_err_t nbiot_power_off(void)
+{
+    rt_pin_write(NBIOT_PWRON_PIN, PIN_LOW);
+    return rt_pin_read(NBIOT_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
+}
+
+rt_err_t esp32_power_on(void)
+{
+    rt_pin_write(ESP32_PWRON_PIN, PIN_HIGH);
+    return rt_pin_read(ESP32_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+}
+
+rt_err_t esp32_power_off(void)
+{
+    rt_pin_write(ESP32_PWRON_PIN, PIN_LOW);
+    return rt_pin_read(ESP32_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
+}
+
+rt_err_t cat1_power_on(void)
+{
+    rt_pin_write(CAT1_PWRON_PIN, PIN_HIGH);
+    return rt_pin_read(CAT1_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+}
+
+rt_err_t cat1_power_off(void)
+{
+    rt_pin_write(CAT1_PWRON_PIN, PIN_LOW);
+    return rt_pin_read(CAT1_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
+}
 
 void shut_down(void)
 {
+    rt_err_t res;
     /* Wakup irq enable. */
     g_sensor_wakeup_irq_enable();
-    power_wakeup_iqr_enable();
+    power_wakeup_irq_enable();
     rtc_wakeup_irq_enable();
+    // test_button_wakeup_irq_enable();
 
-#ifdef TEST_BTN_WKUP_EN
-    test_button_wakeup_irq_enable();
-#endif
+    // Device power off.
+    res = nbiot_power_off();
+    LOG_D("nbiot_power_off %s", res == RT_EOK ? "success" : "failed");
+    res = esp32_power_off();
+    LOG_D("esp32_power_off %s", res == RT_EOK ? "success" : "failed");
+    res = cat1_power_off();
+    LOG_D("cat1_power_off %s", res == RT_EOK ? "success" : "failed");
 
     LOG_D("Start Shut Down.");
 
@@ -99,12 +133,12 @@ rt_err_t set_rtc_wakeup(time_t sleep_time)
         return RT_ERROR;
     }
     LOG_D("open device rtc success.");
-    if (set_date(2024, 8, 3) != RT_EOK)
+    if (set_date(2024, 8, 5) != RT_EOK)
     {
-        LOG_E("set_date(2024, 8, 3) failed.");
+        LOG_E("set_date(2024, 8, 5) failed.");
         return RT_ERROR;
     }
-    LOG_D("set_date(2024, 8, 3) success.");
+    LOG_D("set_date(2024, 8, 5) success.");
     if (set_time(0, 0, 0) != RT_EOK)
     {
         LOG_E("set_time(0, 0, 0) failed.");
@@ -145,6 +179,7 @@ rt_err_t set_rtc_wakeup(time_t sleep_time)
 
 static void test_rtc_wakeup(int argc, char **argv)
 {
+    all_pin_init();
     set_rtc_wakeup(10);
     shut_down();
 }
