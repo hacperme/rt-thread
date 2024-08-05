@@ -1,11 +1,11 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-// #define SOC_STM32U545RE
-// #define BOARD_STM32U545_NUCLEO
+#define SOC_STM32U545RE
+#define BOARD_STM32U545_NUCLEO
 
-#define SOC_STM32U535RE
-#define BOARD_STM32U535_NUCLEO
+// #define SOC_STM32U535RE
+// #define BOARD_STM32U535_NUCLEO
 
 /* RT-Thread Kernel */
 
