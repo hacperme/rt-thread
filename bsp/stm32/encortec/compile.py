@@ -3,6 +3,7 @@ import os
 import subprocess
 from tools.fw_merge import merge_bin_files
 from tools.export_api_addr import export_api_addr
+from tools.gen_rt_api_c import gen_rt_api_c
 
 ENCORTEC_BL_MAP_NAME = "./bootloader/encortec-bootloader.map"
 ENCORTEC_BL_BIN_NAME = "./bootloader/encortec-bootloader.bin"
@@ -10,6 +11,8 @@ ENCORTEC_APP_BIN_NAME = "./application/build/encortec-application.bin"
 ENCORTEC_FW_NAME = "./encortec-fw-all.bin"
 ENCORTEC_BL_API_LIST_NAME = "./tools/api_list.txt"
 ENCORTEC_BL_API_ADDR_EXPORT_NAME = "./application/rt_api/rt_api_addr.h"
+ENCORTEC_APP_API_TYPEDEF_H_NAME = "./application/rt_api/rt_api_typedef.h"
+ENCORTEC_APP_API_C_NAME = "./application/rt_api/rt_api.c"
 
 def build_bootloader():
     print("------ Building Bootloader...")
@@ -53,9 +56,21 @@ def clean_api_addr_list():
         os.remove(ENCORTEC_BL_API_ADDR_EXPORT_NAME)
     print("------ Done!")
 
+def gen_rt_api_c_file():
+    print("------ Generating RT API C file...")
+    gen_rt_api_c(ENCORTEC_APP_API_TYPEDEF_H_NAME, ENCORTEC_APP_API_C_NAME)
+    print("------ Done!")
+
+def clean_rt_api_c_file():
+    print(f"------ Cleaning {ENCORTEC_APP_API_C_NAME}...")
+    if os.path.exists(ENCORTEC_APP_API_C_NAME):
+        os.remove(ENCORTEC_APP_API_C_NAME)
+    print("------ Done!")
+
 def build_all():
     build_bootloader()
     export_api_addr_list()
+    gen_rt_api_c_file()
     build_app()
     merge_fw()
 
@@ -64,6 +79,7 @@ def clean_all():
     clean_app()
     clean_merged_fw()
     clean_api_addr_list()
+    clean_rt_api_c_file()
 
 def print_usage(with_error=False):
     print(("Invalid command. " if with_error else "") + "Please use one of the following commands:")
@@ -72,7 +88,8 @@ def print_usage(with_error=False):
     print("3. python ./compile.py [-A|--all] [-c|--clean] # Compile Bootloader and then App")
     print("4. python ./compile.py -m|--merge [-c|--clean] # Merge Bootloader and App firmware")
     print("4. python ./compile.py -e|--export-api-addr [-c|--clean] # Export Bootloader API addresses")
-    print("5. python ./compile.py -h|--help # Print this message")
+    print("5. python ./compile.py -g|--gen-api [-c|--clean] # Export Bootloader API addresses")
+    print("6. python ./compile.py -h|--help # Print this message")
 
 
 """
@@ -83,6 +100,7 @@ python .\compile.py -A|--all
 python .\compile.py -a|--app
 python .\compile.py -b|--bootloader
 python .\compile.py -e|--export-api-addr
+python .\compile.py -g|--gen-api
 python .\compile.py -m|--merge
 python .\compile.py -h|--help
 
@@ -90,6 +108,7 @@ python .\compile.py -A|--all -c|--clean
 python .\compile.py -a|--app -c|--clean
 python .\compile.py -b|--bootloader -c|--clean
 python .\compile.py -e|--export-api-addr -c|--clean
+python .\compile.py -g|--gen-api -c|--clean
 python .\compile.py -m|--merge -c|--clean
 """
 if __name__ == "__main__":
@@ -106,6 +125,8 @@ if __name__ == "__main__":
             build_bootloader()
         elif sys.argv[1] in ['-e', '--export-api-addr']:
             export_api_addr_list()
+        elif sys.argv[1] in ['-g', '--gen-api']:
+            gen_rt_api_c_file()
         elif sys.argv[1] in ['-m', '--merge']:
             merge_fw()
         elif sys.argv[1] in ['-h', '--help']:
@@ -124,6 +145,8 @@ if __name__ == "__main__":
                 clean_bootloader()
             elif sys.argv[1] in ['-e', '--export-api-addr']:
                 clean_api_addr_list()
+            elif sys.argv[1] in ['-g', '--gen-api']:
+                clean_rt_api_c_file()
             elif sys.argv[1] in ['-m', '--merge']:
                 clean_merged_fw()
             else:
