@@ -34,7 +34,7 @@ OBJDUMP = PREFIX + 'objdump'
 OBJCPY = PREFIX + 'objcopy'
 
 DEVICE = ' -mcpu=cortex-m33 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections'
-CFLAGS = DEVICE + ' -Dgcc'
+CFLAGS = DEVICE + ' -MMD -std=gnu11 -Dgcc'
 AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp -Wa,-mimplicit-it=thumb '
 LFLAGS = DEVICE + f' -Wl,--gc-sections,-Map={TARGET_NAME}.map,-cref,-u,main -T board/linker_scripts/link.lds'
 

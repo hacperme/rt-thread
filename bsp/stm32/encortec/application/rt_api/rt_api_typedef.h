@@ -1,5 +1,5 @@
-#ifndef __RT_API_H__
-#define __RT_API_H__
+#ifndef __ENCORTEC_API_TYPEDEF_H
+#define __ENCORTEC_API_TYPEDEF_H
 
 #include "rttypes.h"
 #include "rtthread.h"

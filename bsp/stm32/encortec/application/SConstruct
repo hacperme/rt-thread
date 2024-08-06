@@ -27,7 +27,8 @@ CPPPATH = [
     SDK_ROOT,
     os.path.join(RTT_ROOT, 'include'),
     os.path.join(RTT_ROOT, 'components', 'finsh'),
-    os.path.join(SDK_ROOT, 'application', 'rt_api')]
+    os.path.join(SDK_ROOT, 'application', 'rt_api'),
+    os.path.join(SDK_ROOT, 'application', 'logging')]
 env.Append(CPPPATH=CPPPATH)
 
 # Get all .c files in the application directory
@@ -35,6 +36,7 @@ env.Append(CPPPATH=CPPPATH)
 app_c_files = Split('''
 main/main.c
 rt_api/rt_api.c
+logging/logging.c
 '''
 )
 

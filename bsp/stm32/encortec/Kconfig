@@ -24,4 +24,5 @@ rsource "../libraries/Kconfig"
 
 if !RT_USING_NANO
 rsource "bootloader/board/Kconfig"
+rsource "application/board/Kconfig"
 endif

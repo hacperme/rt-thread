@@ -352,10 +352,28 @@
 #define BSP_USING_UART4
 #define BSP_USING_UART5
 #define BSP_USING_LPUART1
+#define BSP_USING_ADC
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */
 
 /* end of Hardware Drivers Config */
+
+/* Encorteec Application Config */
+
+/* Logging configuration */
+
+#define APP_USING_LOG
+#define APP_LOG_PRINT_CHANNEL
+#define APP_LOG_PRINT_TO_UART
+#define APP_LOG_PRINT_TO_FILE
+#define APP_LOG_LEVEL
+#define APP_LOG_LEVEL_DBG
+#define APP_LOG_LEVEL_INF
+#define APP_LOG_LEVEL_WAR
+#define APP_LOG_LEVEL_ERR
+#define APP_LOG_USING_TS
+/* end of Logging configuration */
+/* end of Encorteec Application Config */
 
 #endif
