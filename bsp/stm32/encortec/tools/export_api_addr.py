@@ -18,8 +18,8 @@ def parse_map_file(map_file_path, api_list, output_h_file_path):
     # 准备输出文件
     with open(output_h_file_path, 'w') as output_file:
         # 输出头文件的预处理器指令
-        output_file.write("#ifndef __FUNCTION_ADDRESSES_H\n")
-        output_file.write("#define __FUNCTION_ADDRESSES_H\n\n")
+        output_file.write("#ifndef __ENCORTEC_FUNCTION_ADDRESSES_H\n")
+        output_file.write("#define __ENCORTEC_FUNCTION_ADDRESSES_H\n\n")
 
         # 逐行读取map文件
         with open(map_file_path, 'r') as map_file:
@@ -33,7 +33,7 @@ def parse_map_file(map_file_path, api_list, output_h_file_path):
                         found_apis.add(func_name)
 
         # 结束头文件的预处理器指令
-        output_file.write("\n#endif /* __FUNCTION_ADDRESSES_H */")
+        output_file.write("\n#endif /* __ENCORTEC_FUNCTION_ADDRESSES_H */")
 
     # 检查是否有API未在.map文件中找到
     missing_apis = set(api_list) - found_apis

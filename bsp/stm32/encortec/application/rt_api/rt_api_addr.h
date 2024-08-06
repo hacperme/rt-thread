@@ -1,5 +1,5 @@
-#ifndef __FUNCTION_ADDRESSES_H
-#define __FUNCTION_ADDRESSES_H
+#ifndef __ENCORTEC_FUNCTION_ADDRESSES_H
+#define __ENCORTEC_FUNCTION_ADDRESSES_H
 
 #define rt_sem_init_addr 0x0801BAFB
 #define rt_sem_detach_addr 0x0801BB7D
@@ -80,4 +80,4 @@
 #define rt_thread_find_addr 0x08022E01
 #define rt_thread_get_name_addr 0x08022E1B
 
-#endif /* __FUNCTION_ADDRESSES_H */
+#endif /* __ENCORTEC_FUNCTION_ADDRESSES_H */
