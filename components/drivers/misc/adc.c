@@ -174,8 +174,10 @@ rt_int16_t rt_adc_voltage(rt_adc_device_t dev, rt_int8_t channel)
 
     /*get the resolution in bits*/
     resolution = dev->ops->get_resolution(dev);
+    LOG_I("rt_adc_voltage resolution %d", resolution);
     /*get the reference voltage*/
     vref = dev->ops->get_vref(dev);
+    LOG_I("rt_adc_voltage vref %d", vref);
     if (vref == 0)
         goto _voltage_exit;
 
