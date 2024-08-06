@@ -50,6 +50,7 @@
 #define rt_mq_control_addr 0x0801ED25
 #define rt_interrupt_enter_addr 0x0801EE31
 #define rt_interrupt_leave_addr 0x0801EE59
+#define rt_vsnprintf_addr 0x0801F27B
 #define rt_kputs_addr 0x0802019D
 #define rt_kprintf_addr 0x080201C5
 #define rt_malloc_addr 0x080206A3

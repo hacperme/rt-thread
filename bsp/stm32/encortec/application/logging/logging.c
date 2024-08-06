@@ -52,24 +52,29 @@ char *get_ts(void) {
 
 void app_log_print(const char *fmt, ...)
 {
+#if APP_LOG_BUF_SIZE
     if(app_log_initilized) {
         va_list args;
         va_start(args, fmt);
+        static char app_log_buf[APP_LOG_BUF_SIZE];
 
         rt_mutex_take(&app_log_mutex, RT_WAITING_FOREVER);
 
+        rt_vsnprintf(app_log_buf, sizeof(app_log_buf) - 1, fmt, args);
+
         #ifdef APP_LOG_PRINT_TO_UART
-        rt_kprintf(fmt, args);
+        rt_kprintf("%s", app_log_buf);
         #endif
 
         #ifdef APP_LOG_PRINT_TO_FILE
-        app_log_print_to_file(fmt, args);
+        app_log_print_to_file("%s", app_log_buf);
         #endif
 
         rt_mutex_release(&app_log_mutex);
 
         va_end(args);
     }
+#endif
 }
 
 #endif

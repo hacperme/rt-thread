@@ -373,6 +373,7 @@
 #define APP_LOG_LEVEL_WAR
 #define APP_LOG_LEVEL_ERR
 #define APP_LOG_USING_TS
+#define APP_LOG_BUF_SIZE 512
 /* end of Logging configuration */
 /* end of Encorteec Application Config */
 

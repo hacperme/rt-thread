@@ -38,6 +38,10 @@ menu "Logging configuration"
             config APP_LOG_USING_TS
                 bool "Enable time stamp in log text"
                 default n
+
+            config APP_LOG_BUF_SIZE
+                int "Set log buffer size"
+                default 512
         endif
 
 endmenu

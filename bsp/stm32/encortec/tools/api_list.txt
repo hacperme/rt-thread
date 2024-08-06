@@ -81,3 +81,4 @@ rt_free
 rt_realloc
 rt_calloc
 rt_memory_info
+rt_vsnprintf

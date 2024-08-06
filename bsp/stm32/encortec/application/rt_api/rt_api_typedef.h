@@ -3,6 +3,7 @@
 
 #include "rttypes.h"
 #include "rtthread.h"
+#include <stdarg.h>
 
 typedef rt_err_t (*rt_thread_init_api_ptr_t)(struct rt_thread *thread,
                         const char       *name,
@@ -137,5 +138,5 @@ typedef void *(*rt_calloc_api_ptr_t)(rt_size_t count, rt_size_t size);
 typedef void (*rt_memory_info_api_ptr_t)(rt_size_t *total,
                             rt_size_t *used,
                             rt_size_t *max_used);
-
+typedef int (*rt_vsnprintf_api_ptr_t)(char *buf, rt_size_t size, const char *fmt, va_list args);
 #endif

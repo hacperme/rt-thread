@@ -43,14 +43,18 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
             
             func_def = f'{return_type} {func_name}({params}) {{\n'
             if func_name == 'rt_kprintf':
-                func_impl = """    va_list args;
+                func_impl = """#if APP_LOG_BUF_SIZE
+    va_list args;
     int len;
+    static char rt_kprintf_app_buf[APP_LOG_BUF_SIZE];
 
     va_start(args, fmt);
-    len = ((rt_kprintf_api_ptr_t)(rt_kprintf_addr))(fmt, args);
+    rt_vsnprintf(rt_kprintf_app_buf, sizeof(rt_kprintf_app_buf) - 1, fmt, args);
+    len = ((rt_kprintf_api_ptr_t)(rt_kprintf_addr))("%s", rt_kprintf_app_buf);
     va_end(args);
 
     return len;
+#endif
 }\n
 """
             else:

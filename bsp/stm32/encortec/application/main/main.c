@@ -11,6 +11,7 @@
 #include "common.h"
 #include <string.h>
 #include "rtthread.h"
+#include "logging.h"
 
 int main(int argc, char *argv[]);
 static void startup(app_startup_params_t *app_startup_params);
@@ -80,8 +81,9 @@ bootloader_startup_params_t *get_bootloader_startup_params(void) {
 }
 
 __attribute__((weak)) int application_start(int argc, char *argv[]) {
+    app_log_init();
     while(1) {
-        rt_kprintf("Hello RT-Thread Application!");
+        log_debug("Hello RT-Thread Application!");
         rt_thread_mdelay(500);
     }
 

@@ -347,14 +347,18 @@ void  rt_kputs(const char *str) {
 }
 
 int rt_kprintf(const char *fmt, ...) {
+#if APP_LOG_BUF_SIZE
     va_list args;
     int len;
+    static char rt_kprintf_app_buf[APP_LOG_BUF_SIZE];
 
     va_start(args, fmt);
-    len = ((rt_kprintf_api_ptr_t)(rt_kprintf_addr))(fmt, args);
+    rt_vsnprintf(rt_kprintf_app_buf, sizeof(rt_kprintf_app_buf) - 1, fmt, args);
+    len = ((rt_kprintf_api_ptr_t)(rt_kprintf_addr))("%s", rt_kprintf_app_buf);
     va_end(args);
 
     return len;
+#endif
 }
 
 void * rt_malloc(rt_size_t size) {
@@ -377,5 +381,9 @@ void  rt_memory_info(rt_size_t *total,
                             rt_size_t *used,
                             rt_size_t *max_used) {
     return ((rt_memory_info_api_ptr_t)(rt_memory_info_addr))(total, used, max_used);
+}
+
+int  rt_vsnprintf(char *buf, rt_size_t size, const char *fmt, va_list args) {
+    return ((rt_vsnprintf_api_ptr_t)(rt_vsnprintf_addr))(buf, size, fmt, args);
 }
 
