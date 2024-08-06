@@ -31,22 +31,23 @@ static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint32_t *value)
         return RT_ERROR;
     }
 
-    // *value = rt_adc_voltage(adc_dev, channel);
+    *value = rt_adc_voltage(adc_dev, channel);
+    LOG_D("rt_adc_voltage channel %d value %d", channel, *value);
 
-    ret = rt_adc_enable(adc_dev, channel);
-    LOG_D("rt_adc_enable channel %d res %s. value %d", channel, (ret == RT_EOK ? "success" : "failed"), *value);
-    if (ret != RT_EOK)
-    {
-        return ret;
-    }
-    *value = rt_adc_read(adc_dev, channel);
-    LOG_D("CUR_ADC value %d", *value);
-    ret = rt_adc_disable(adc_dev, channel);
-    LOG_D("rt_adc_disable channel %d res %s. ret %d", channel, (ret == RT_EOK ? "success" : "failed"), ret);
-    if (*value > 0)
-    {
-        ret = RT_EOK;
-    }
+    // ret = rt_adc_enable(adc_dev, channel);
+    // LOG_D("rt_adc_enable channel %d res %s. value %d", channel, (ret == RT_EOK ? "success" : "failed"), *value);
+    // if (ret != RT_EOK)
+    // {
+    //     return ret;
+    // }
+    // *value = rt_adc_read(adc_dev, channel);
+    // LOG_D("CUR_ADC value %d", *value);
+    // ret = rt_adc_disable(adc_dev, channel);
+    // LOG_D("rt_adc_disable channel %d res %s. ret %d", channel, (ret == RT_EOK ? "success" : "failed"), ret);
+    // if (*value > 0)
+    // {
+    //     ret = RT_EOK;
+    // }
 
     return ret;
 }

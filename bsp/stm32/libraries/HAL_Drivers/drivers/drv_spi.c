@@ -233,6 +233,28 @@ static rt_err_t stm32_spi_init(struct stm32_spi *spi_drv, struct rt_spi_configur
     spi_handle->Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_ENABLE;
     spi_handle->Init.IOSwap                     = SPI_IO_SWAP_DISABLE;
     spi_handle->Init.FifoThreshold              = SPI_FIFO_THRESHOLD_01DATA;
+// #elif defined(SOC_SERIES_STM32U5)
+//     // spi_handle->Init.Mode = SPI_MODE_MASTER;
+//     // spi_handle->Init.Direction = SPI_DIRECTION_2LINES;
+//     // spi_handle->Init.DataSize = SPI_DATASIZE_8BIT;
+//     // spi_handle->Init.CLKPolarity = SPI_POLARITY_LOW;
+//     // spi_handle->Init.CLKPhase = SPI_PHASE_1EDGE;
+//     // spi_handle->Init.NSS = SPI_NSS_SOFT;
+//     // spi_handle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+//     // spi_handle->Init.FirstBit = SPI_FIRSTBIT_MSB;
+//     // spi_handle->Init.TIMode = SPI_TIMODE_DISABLE;
+//     // spi_handle->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+//     spi_handle->Init.CRCPolynomial = 0x7;
+//     spi_handle->Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+//     spi_handle->Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
+//     spi_handle->Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
+//     spi_handle->Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
+//     spi_handle->Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+//     spi_handle->Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
+//     spi_handle->Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+//     spi_handle->Init.IOSwap = SPI_IO_SWAP_DISABLE;
+//     spi_handle->Init.ReadyMasterManagement = SPI_RDY_MASTER_MANAGEMENT_INTERNALLY;
+//     spi_handle->Init.ReadyPolarity = SPI_RDY_POLARITY_HIGH;
 #endif
 
     if (HAL_SPI_Init(spi_handle) != HAL_OK)
@@ -648,7 +670,7 @@ static int rt_hw_spi_bus_init(void)
         result = rt_spi_bus_register(&spi_bus_obj[i].spi_bus, spi_config[i].bus_name, &stm_spi_ops);
         RT_ASSERT(result == RT_EOK);
 
-        LOG_D("%s bus init done", spi_config[i].bus_name);
+        LOG_D("%s bus init done result %d", spi_config[i].bus_name, result);
     }
 
     return result;

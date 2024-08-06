@@ -1,8 +1,8 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-#define SOC_STM32U545RE
-#define BOARD_STM32U545_NUCLEO
+#define SOC_STM32U535RE
+#define BOARD_STM32U535_NUCLEO
 
 /* RT-Thread Kernel */
 
@@ -137,6 +137,7 @@
 
 /* end of Interprocess Communication (IPC) */
 /* end of POSIX (Portable Operating System Interface) layer */
+#define RT_USING_CPLUSPLUS
 /* end of C/C++ and POSIX layer */
 
 /* Network */
@@ -258,6 +259,8 @@
 /* Micrium: Micrium software products porting for RT-Thread */
 
 /* end of Micrium: Micrium software products porting for RT-Thread */
+#define PKG_USING_PERF_COUNTER
+#define PKG_USING_PERF_COUNTER_V2241
 /* end of system packages */
 
 /* peripheral libraries and drivers */
@@ -323,6 +326,14 @@
 
 /* Arduino libraries */
 
+#define PKG_USING_RTDUINO
+#define RTDUINO_THREAD_SIZE 2048
+#define RTDUINO_THREAD_PRIO 30
+#define RTDUINO_SUPPORT_HIGH_PRECISION_MICROS
+#define RTDUINO_USING_WIRE
+#define RTDUINO_WIRE_BUFFER_LENGTH 32
+#define RTDUINO_USING_SPI
+#define PKG_USING_RTDUINO_LATEST_VERSION
 
 /* Projects and Demos */
 
@@ -330,6 +341,8 @@
 
 /* Sensors */
 
+#define PKG_USING_ARDUINO_ADAFRUIT_SENSOR
+#define PKG_USING_ARDUINO_ADAFRUIT_SENSOR_LATEST_VERSION
 /* end of Sensors */
 
 /* Display */
@@ -360,19 +373,17 @@
 
 /* Signal IO */
 
+#define PKG_USING_ARDUINO_ADAFRUIT_BUSIO
+#define PKG_USING_ARDUINO_ADAFRUIT_BUSIO_LATEST_VERSION
 /* end of Signal IO */
 
 /* Uncategorized */
 
 /* end of Arduino libraries */
 /* end of RT-Thread online packages */
-
-/* STM32 Version Config */
-
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32U5
 #define BOARD_SERIES_STM32_NUCLEO_64
-/* end of STM32 Version Config */
 
 /* Hardware Drivers Config */
 
@@ -391,6 +402,8 @@
 #define BSP_USING_LPUART1
 #define BSP_USING_ADC
 #define BSP_USING_ADC1
+#define BSP_USING_SPI
+#define BSP_USING_SPI1
 #define BSP_USING_I2C
 #define BSP_USING_I2C1
 

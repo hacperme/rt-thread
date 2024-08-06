@@ -18,6 +18,10 @@
 #define DBG_TAG               LOG_TAG
 #endif /* LOG_TAG */
 
+#ifndef DRV_DEBUG
+#define DRV_DEBUG
+#endif /* DRV_DEBUG */
+
 #ifdef DRV_DEBUG
 #define DBG_LVL               DBG_LOG
 #else

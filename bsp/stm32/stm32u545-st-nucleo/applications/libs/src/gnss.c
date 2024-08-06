@@ -12,8 +12,9 @@
 #define DBG_LEVEL DBG_LOG
 #include <rtdbg.h>
 
-#define GNSS_PWRON_PIN GET_PIN(E, 0)
-#define GNSS_RST_PIN GET_PIN(E, 1)
+#define GNSS_PWRON_PIN      GET_PIN(E, 0)
+#define GNSS_RST_PIN        GET_PIN(E, 1)
+#define EG915_GNSSEN_PIN    GET_PIN(B, 5)
 
 static rt_device_t gnss_serial;
 static rt_uint8_t GNSS_THD_EXIT=0;
@@ -21,6 +22,48 @@ rt_mutex_t GNSS_LOCK=NULL;
 static lwgps_t hgps;
 static char nmea[GNSS_BUFF_SIZE];
 
+static void gnss_pin_init(void)
+{
+    rt_pin_mode(GNSS_PWRON_PIN, PIN_MODE_OUTPUT);
+    rt_pin_mode(EG915_GNSSEN_PIN, PIN_MODE_OUTPUT);
+    gnss_reset_init();
+}
+
+static rt_err_t gnss_power_on(void)
+{
+    rt_pin_write(GNSS_PWRON_PIN, PIN_HIGH);
+    return rt_pin_read(GNSS_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+}
+
+static rt_err_t gnss_power_off(void)
+{
+    rt_pin_write(GNSS_PWRON_PIN, PIN_LOW);
+    return rt_pin_read(GNSS_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
+}
+
+static rt_err_t swith_gnss_source(rt_uint8_t mode)
+{
+    // mode -- 0 GNSS LC76G Enable
+    // mode -- 1 GNSS EG915 Enable
+    RT_ASSERT(mode == 0 || mode == 1);
+    rt_pin_write(EG915_GNSSEN_PIN, mode);
+    return rt_pin_read(EG915_GNSSEN_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+static rt_err_t gnss_reset_init(void)
+{
+    rt_pin_mode(GNSS_RST_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(GNSS_RST_PIN, PIN_HIGH);
+    return rt_pin_read(GNSS_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+}
+
+rt_err_t gnss_reset(void)
+{
+    rt_pin_write(GNSS_RST_PIN, PIN_LOW);
+    rt_thread_delay(rt_tick_from_millisecond(300)); //at least 300 ms
+    rt_pin_write(GNSS_RST_PIN, PIN_HIGH);
+    return rt_pin_read(GNSS_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+}
 
 static void gnss_thread_entry(void *parameter)
 {
@@ -32,14 +75,13 @@ static void gnss_thread_entry(void *parameter)
         {
             if (rt_device_read(gnss_serial, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
-                LOG_D(nmea);
+                // LOG_D(nmea);
                 lwgps_process(&hgps, nmea, rt_strlen(nmea));
-                // rt_memset(nmea, 0, sizeof(nmea));
             }
-            else
-            {
-                LOG_I("No gnss nmea data output.");
-            }
+            // else
+            // {
+            //     LOG_I("No gnss nmea data output.");
+            // }
         }
         else
         {
@@ -50,31 +92,14 @@ static void gnss_thread_entry(void *parameter)
     }
 }
 
-static void gnss_power_on(void)
-{
-    rt_pin_mode(GNSS_PWRON_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(GNSS_PWRON_PIN, PIN_HIGH);
-}
-
-static rt_err_t gnss_power_off(void)
-{
-    rt_pin_write(GNSS_PWRON_PIN, PIN_LOW);
-    return rt_pin_read(GNSS_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
-}
-
-static void gnss_reset_init(void)
-{
-    rt_pin_mode(GNSS_RST_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(GNSS_RST_PIN, PIN_HIGH);
-}
-
 rt_err_t gnss_open(void)
 {
     rt_err_t ret = RT_EOK;
 
     GNSS_LOCK = rt_mutex_create("GNSSLK", RT_IPC_FLAG_FIFO);
+    gnss_pin_init();
     gnss_power_on();
-    gnss_reset_init();
+    swith_gnss_source(0);
 
     /* 查找系统中的串口设备 */
     gnss_serial = rt_device_find(GNSS_UART_NAME);
@@ -104,23 +129,12 @@ rt_err_t gnss_open(void)
     return ret;
 }
 
-void gnss_close(void)
+rt_err_t gnss_close(void)
 {
     GNSS_THD_EXIT = 1;
-    gnss_power_off();
+    rt_thread_delay(rt_tick_from_millisecond(300)); //at least 250 ms
     rt_mutex_delete(GNSS_LOCK);
-}
-
-rt_err_t gnss_reset(void)
-{
-    rt_pin_write(GNSS_RST_PIN, PIN_LOW);
-    rt_thread_delay(rt_tick_from_millisecond(300)); //at least 300 ms
-    rt_pin_write(GNSS_RST_PIN, PIN_HIGH);
-    if (rt_pin_read(GNSS_RST_PIN) == PIN_HIGH)
-    {
-        return RT_EOK;
-    }
-    return RT_ERROR;
+    return gnss_power_off();
 }
 
 rt_err_t gnss_read_nmea(char *data, rt_uint32_t size) {
@@ -167,7 +181,7 @@ static void gnss_data_show(int argc, char **argv)
     gnss_open();
     rt_thread_delay(rt_tick_from_millisecond(100)); //at least 300 ms
     rt_uint8_t cnt = 0;
-    while (cnt < 10)
+    while (cnt < 120)
     {
         LOG_D("GNSS Date: %d-%d-%d %d:%d:%d\r\n", hgps.year, hgps.month, hgps.date, 
             hgps.hours, hgps.minutes, hgps.seconds);

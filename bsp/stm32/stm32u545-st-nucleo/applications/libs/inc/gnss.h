@@ -17,13 +17,18 @@
 #define GNSS_UART_NAME "uart4"
 #define GNSS_BUFF_SIZE 0x400
 
+static void gnss_pin_init(void);
 static void gnss_thread_entry(void *parameter);
-static void gnss_power_on(void);
+static rt_err_t gnss_power_on(void);
 static rt_err_t gnss_power_off(void);
-static void gnss_reset_init(void);
-rt_err_t gnss_open(void);
-void gnss_close(void);
+static rt_err_t swith_gnss_source(rt_uint8_t mode);
+static rt_err_t gnss_reset_init(void);
 rt_err_t gnss_reset(void);
+rt_err_t gnss_open(void);
+rt_err_t gnss_close(void);
+rt_err_t gnss_read_nmea(char *data, rt_uint32_t size);
+rt_err_t gnss_read_data(lwgps_t *gnss_data);
+
 static void gnss_data_show(int argc, char **argv);
 
 #endif  // __GNSS_H__
