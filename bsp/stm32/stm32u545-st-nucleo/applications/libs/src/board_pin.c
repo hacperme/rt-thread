@@ -18,7 +18,7 @@
 #define ESP32_EN_PIN            GET_PIN(E, 5)
 #define CAT1_PWRON_PIN          GET_PIN(A, 8)
 #define SIM_SELECT_PIN          GET_PIN(C, 9)
-#define NB_CAT1_RF_PIN          GET_PIN(E, 4)
+#define NB_CAT1_RF_PIN          GET_PIN(E, 3)
 #define INTN_EXT_ANT_PIN        GET_PIN(D, 7)
 
 

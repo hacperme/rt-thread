@@ -27,7 +27,7 @@ static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint16_t *value)
     rt_err_t ret = RT_EOK;
 
     adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
-    LOG_E("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
+    // LOG_E("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
     if (adc_dev == RT_NULL)
     {
         return RT_ERROR;
@@ -44,7 +44,8 @@ static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint16_t *value)
     {
         return ret;
     }
-    *value = rt_adc_read(adc_dev, channel) * ADC_VREF / ((1 << 12) - 1);
+    // *value = rt_adc_read(adc_dev, channel) * ADC_VREF / ((1 << 12) - 1);
+    *value = rt_adc_read(adc_dev, channel);
     // LOG_D("CUR_ADC value %d", *value);
     ret = rt_adc_disable(adc_dev, channel);
     // LOG_D("rt_adc_disable channel %d res %s. ret %d", channel, (ret == RT_EOK ? "success" : "failed"), ret);
@@ -94,8 +95,8 @@ static void test_read_voltage(int argc, char *argv[])
     LOG_D("vcat_vol_read %s, vcat_vol %dmv", res == RT_EOK ? "success" : "failed", vcat_vol);
     res = vbat_vol_read(&vbat_vol);
     LOG_D("vbat_vol_read %s, vbat_vol %dmv", res == RT_EOK ? "success" : "failed", vbat_vol);
-    // res = vrefint_vol_read(&vrefint_vol);
-    // LOG_D("vrefint_vol_read %s, vrefint_vol %d", res == RT_EOK ? "success" : "failed", vrefint_vol);
+    res = vrefint_vol_read(&vrefint_vol);
+    LOG_D("vrefint_vol_read %s, vrefint_vol %d", res == RT_EOK ? "success" : "failed", vrefint_vol);
 }
 
 MSH_CMD_EXPORT(test_read_voltage, TEST READ voltage);
