@@ -12,8 +12,6 @@
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
-#define SENSOR_PWRON_PIN GET_PIN(D, 8)
-
 #define HDC3021_ADDR 0x44
 static rt_uint8_t HDC3021_TRIGGER_ON_DEMAND[2] = {0x24, 0x00};
 static rt_uint8_t HDC3021_SOFT_RESET[2] = {0x30, 0xA2};
@@ -49,28 +47,8 @@ static rt_uint8_t FDC1004_MEAS_MSB_LSB_ADDR[4][2] = {
 static rt_uint8_t TPH_THD_EXIT = 0;
 static float ERROR_SENSOR_VALUE = -999.0;
 
-rt_err_t all_sensors_on(void)
-{
-    rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(SENSOR_PWRON_PIN, PIN_HIGH);
-    rt_thread_delay(rt_tick_from_millisecond(10));
-    LOG_D("rt_pin_read(SENSOR_PWRON_PIN) %d", rt_pin_read(SENSOR_PWRON_PIN));
-    LOG_D("All Sensors enabled %s", rt_pin_read(SENSOR_PWRON_PIN) == PIN_HIGH ? "success" : "failed");
-    return (rt_pin_read(SENSOR_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR);
-}
-
-rt_err_t all_sensors_off(void)
-{
-    rt_pin_write(SENSOR_PWRON_PIN, PIN_LOW);
-    rt_thread_delay(rt_tick_from_millisecond(10));
-    LOG_D("rt_pin_read(SENSOR_PWRON_PIN) %d", rt_pin_read(SENSOR_PWRON_PIN));
-    LOG_D("All Sensors disabled %s", rt_pin_read(SENSOR_PWRON_PIN) == PIN_LOW ? "success" : "failed");
-    return (rt_pin_read(SENSOR_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR);
-}
-
 iic_sensor_t iic_sensors_init(const char *i2c_bus_name)
 {
-    all_sensors_on();
     iic_sensor_t dev;
 
     RT_ASSERT(i2c_bus_name);
@@ -139,8 +117,6 @@ void iic_sensors_deinit(iic_sensor_t dev)
     rt_mutex_delete(dev->lock);
 
     rt_free(dev);
-
-    all_sensors_off();
 }
 
 static void iic_sensors_filter_entry(void *device)
@@ -499,6 +475,7 @@ static void filter_check_full(filter_data_t *filter)
 
 static void test_iic_sensors(int argc, char **argv)
 {
+    sensor_pwron_pin_enable(1);
     iic_sensor_t dev = iic_sensors_init("i2c1");
     rt_uint8_t cnt = 0;
     while (cnt < 10)
@@ -522,6 +499,7 @@ static void test_iic_sensors(int argc, char **argv)
         cnt++;
     }
     iic_sensors_deinit(dev);
+    sensor_pwron_pin_enable(0);
 }
 
 MSH_CMD_EXPORT(test_iic_sensors, iic start);

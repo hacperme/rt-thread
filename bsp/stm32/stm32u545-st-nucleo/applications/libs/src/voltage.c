@@ -19,7 +19,7 @@
 #define VCAT_ADC_CHANNEL 2
 #define VBAT_ADC_CHANNEL RT_ADC_INTERN_CH_VBAT
 
-static const rt_uint16_t ADC_VREF = 3300;
+static const rt_uint16_t ADC_VREF = 1215;
 
 static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint16_t *value)
 {

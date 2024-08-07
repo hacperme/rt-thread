@@ -7,97 +7,58 @@
  * @copyright : Copyright (c) 2024
  */
 #include "lpm.h"
-#include "gnss.h"
-#include "IIC_sensors.h"
-
-void all_pin_init(void)
-{
-    // Wake up pin init.
-    rt_pin_mode(PHTM_PWR_WKUP3, PIN_MODE_INPUT);
-
-    // Module power control pin init.
-    rt_pin_mode(NBIOT_PWRON_PIN, PIN_MODE_OUTPUT);
-    rt_pin_mode(ESP32_EN_PIN, PIN_MODE_OUTPUT);
-    rt_pin_mode(ESP32_PWRON_PIN, PIN_MODE_OUTPUT);
-    rt_pin_mode(CAT1_PWRON_PIN, PIN_MODE_OUTPUT);
-}
-
-void power_wakeup_irq_enable(void)
-{
-    /* Power harvster/tracker monitor wakeup pin irq enable. */
-    rt_pin_irq_enable(PHTM_PWR_WKUP3, PIN_IRQ_ENABLE);
-    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN3_HIGH_0);
-}
 
 void rtc_wakeup_irq_enable(void)
 {
-
     /* RTC wakeup pin irq enable. */
     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN7_HIGH_3);
 }
 
-// static void test_button_wakeup_irq_enable(void);
-// static void test_button_wakeup_irq_enable(void)
-// {
-//     /* Enable WakeUp Pin PWR_WAKEUP_PIN2 connected to PC.13 */
-//     rt_pin_mode(TEST_BTN_WKUP2, PIN_MODE_INPUT);
-//     rt_pin_irq_enable(TEST_BTN_WKUP2, PIN_IRQ_ENABLE);
-//     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH_1);
-// }
-
 rt_err_t nbiot_power_on(void)
 {
-    rt_pin_write(NBIOT_PWRON_PIN, PIN_HIGH);
-    return rt_pin_read(NBIOT_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+    return nbiot_pwron_pin_enable(1);
 }
 
 rt_err_t nbiot_power_off(void)
 {
-    rt_pin_write(NBIOT_PWRON_PIN, PIN_LOW);
-    return rt_pin_read(NBIOT_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
+    return nbiot_pwron_pin_enable(0);
 }
 
 rt_err_t esp32_power_on(void)
 {
-    rt_pin_write(ESP32_PWRON_PIN, PIN_HIGH);
-    return rt_pin_read(ESP32_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+    return esp32_pwron_pin_enable(1);
 }
 
 rt_err_t esp32_power_off(void)
 {
-    rt_pin_write(ESP32_PWRON_PIN, PIN_LOW);
-    return rt_pin_read(ESP32_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
+    return esp32_pwron_pin_enable(0);
 }
 
 rt_err_t esp32_en_on(void)
 {
-    rt_pin_write(ESP32_EN_PIN, PIN_HIGH);
-    return rt_pin_read(ESP32_EN_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+    return esp32_en_pin_enable(1);
 }
 
 rt_err_t esp32_en_off(void)
 {
-    rt_pin_write(ESP32_EN_PIN, PIN_LOW);
-    return rt_pin_read(ESP32_EN_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
+    return esp32_en_pin_enable(0);
 }
 
 rt_err_t cat1_power_on(void)
 {
-    rt_pin_write(CAT1_PWRON_PIN, PIN_HIGH);
-    return rt_pin_read(CAT1_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+    return cat1_pwron_pin_enable(1);
 }
 
 rt_err_t cat1_power_off(void)
 {
-    rt_pin_write(CAT1_PWRON_PIN, PIN_LOW);
-    return rt_pin_read(CAT1_PWRON_PIN) == PIN_LOW ? RT_EOK : RT_ERROR;
+    return cat1_pwron_pin_enable(0);
 }
 
 void shut_down(void)
 {
     rt_err_t res;
     /* Wakup irq enable. */
-    power_wakeup_irq_enable();
+    pwrctrl_pwr_wkup3_irq_enable();
     rtc_wakeup_irq_enable();
     // test_button_wakeup_irq_enable();
 
@@ -201,8 +162,6 @@ static void test_all_pin_enable(int argc, char **argv)
 {
     rt_err_t res;
 
-    all_pin_init();
-
     res = nbiot_power_on();
     LOG_D("nbiot_power_on %s", res == RT_EOK ? "success" : "failed");
     res = nbiot_power_off();
@@ -215,10 +174,10 @@ static void test_all_pin_enable(int argc, char **argv)
     LOG_D("gnss_open %s", res == RT_EOK ? "success" : "failed");
     res = gnss_close();
     LOG_D("gnss_close %s", res == RT_EOK ? "success" : "failed");
-    res = all_sensors_on();
-    LOG_D("all_sensors_on %s", res == RT_EOK ? "success" : "failed");
-    res = all_sensors_off();
-    LOG_D("all_sensors_off %s", res == RT_EOK ? "success" : "failed");
+    res = sensor_pwron_pin_enable(1);
+    LOG_D("sensor_pwron_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
+    res = sensor_pwron_pin_enable(0);
+    LOG_D("sensor_pwron_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
 
     res = esp32_power_on();
     LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");

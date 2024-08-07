@@ -12,7 +12,8 @@
 
 #include "rtthread.h"
 #include "rtdevice.h"
-#include <board.h>
+#include "board.h"
+#include "board_pin.h"
 
 #define IIC_SAMPLE_SIZE 10
 #define IIC_SAMPLE_PERIOD 1000
@@ -51,8 +52,6 @@ typedef struct hdc3021_iic
     float humidity;
 } hdc3021_iic_t;
 
-rt_err_t all_sensors_on(void);
-rt_err_t all_sensors_off(void);
 iic_sensor_t iic_sensors_init(const char *i2c_bus_name);
 void iic_sensors_deinit(iic_sensor_t dev);
 static void iic_sensors_filter_entry(void *device);

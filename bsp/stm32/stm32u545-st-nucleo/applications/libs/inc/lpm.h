@@ -12,22 +12,13 @@
 #include "rtthread.h"
 #include "rtdevice.h"
 #include "board.h"
+#include "board_pin.h"
+#include "gnss.h"
 
 #define DBG_SECTION_NAME "LPM"
 #define DBG_LEVEL DBG_LOG
 #include <rtdbg.h>
 
-#define PHTM_PWR_WKUP3    GET_PIN(E, 6)
-#define NBIOT_PWRON_PIN   GET_PIN(E, 2)
-#define ESP32_EN_PIN      GET_PIN(E, 5)
-#define ESP32_PWRON_PIN   GET_PIN(H, 1)
-#define CAT1_PWRON_PIN    GET_PIN(A, 8)
-
-/* This wakeup pin is in STM32U545 Board, just for test.*/
-// #define TEST_BTN_WKUP2  GET_PIN(C, 13)
-
-void all_pin_init(void);
-void power_wakeup_irq_enable(void);
 void rtc_wakeup_irq_enable(void);
 void shut_down(void);
 rt_err_t nbiot_power_on(void);

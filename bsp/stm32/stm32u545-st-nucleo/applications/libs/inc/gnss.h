@@ -11,13 +11,13 @@
 
 #include "rtthread.h"
 #include "rtdevice.h"
-#include <board.h>
+#include "board.h"
 #include "lwgps/lwgps.h"
+#include "board_pin.h"
 
 #define GNSS_UART_NAME "uart4"
 #define GNSS_BUFF_SIZE 0x400
 
-static void gnss_pin_init(void);
 static void gnss_thread_entry(void *parameter);
 static rt_err_t gnss_power_on(void);
 static rt_err_t gnss_power_off(void);
