@@ -20,6 +20,8 @@
 #define SIM_SELECT_PIN          GET_PIN(C, 9)
 #define NB_CAT1_RF_PIN          GET_PIN(E, 3)
 #define INTN_EXT_ANT_PIN        GET_PIN(D, 7)
+#define ANTENNA_ACTIVE_PIN      GET_PIN(E, 4)
+#define FLASH_PWRON_PIN         GET_PIN(D, 14)
 
 
 void gnss_pwron_pin_init(void)
@@ -159,6 +161,28 @@ rt_err_t intn_ext_ant_pin_enable(rt_uint8_t mode)
     return rt_pin_read(INTN_EXT_ANT_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
+void antenna_active_pin_init(void)
+{
+    rt_pin_mode(ANTENNA_ACTIVE_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t antenna_active_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(ANTENNA_ACTIVE_PIN, mode);
+    return rt_pin_read(ANTENNA_ACTIVE_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void flash_pwron_pin_init(void)
+{
+    rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t flash_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(FLASH_PWRON_PIN, mode);
+    return rt_pin_read(FLASH_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
 int board_pins_init(void)
 {
     rt_err_t res = RT_EOK;
@@ -175,6 +199,8 @@ int board_pins_init(void)
     sim_select_pin_init();
     nb_cat1_rf_pin_init();
     intn_ext_ant_pin_init();
+    antenna_active_pin_init();
+    flash_pwron_pin_init();
 
     return res;
 }
