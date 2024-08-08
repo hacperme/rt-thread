@@ -147,7 +147,6 @@ rt_err_t gnss_read_data(lwgps_t *gnss_data)
     result = rt_mutex_take(GNSS_LOCK, RT_WAITING_FOREVER);
     if (result == RT_EOK)
     {
-        gnss_data = &hgps;
         rt_memcpy(gnss_data, &hgps, sizeof(lwgps_t));
         res = RT_EOK;
     }
