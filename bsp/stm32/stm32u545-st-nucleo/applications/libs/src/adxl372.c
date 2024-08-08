@@ -179,8 +179,8 @@ rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz)
         res = adxl732_read(ADI_ADXL372_STATUS_1, &recv_buf, 1);
         LOG_I("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
         cnt++;
-        rt_thread_mdelay(100);
-    } while ((recv_buf & 0x01) == 0 && cnt < 60);
+        rt_thread_mdelay(50);
+    } while ((recv_buf & 0x01) == 0 && cnt < 20);
 
     if ((recv_buf & 0x01) == 0)
     {
