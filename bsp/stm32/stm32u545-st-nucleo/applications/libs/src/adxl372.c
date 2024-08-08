@@ -11,10 +11,13 @@
 #define ADXL372_SPI_NAME "spi1"
 #define ADXL372_DEV_NAME "adxl372"
 
-// #define ADXL372_CS_PIN         GET_PIN(E, 9)
+#ifdef SOC_STM32U545RE
 #define ADXL372_CS_PIN            GET_PIN(C, 9)   // U545
-// #define ADXL372_INT1_Pin       GET_PIN(E, 8)
 #define ADXL372_INT1_Pin          GET_PIN(B, 7)   // U545
+#else
+#define ADXL372_CS_PIN            GET_PIN(E, 9)
+#define ADXL372_INT1_Pin          GET_PIN(E, 8)
+#endif
 
 struct rt_spi_device *adxl372_dev;
 
