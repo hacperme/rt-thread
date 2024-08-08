@@ -140,8 +140,8 @@ rt_err_t adxl732_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
 rt_err_t adxl372_query_dev_info(void);
 rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz);
 rt_err_t adxl372_set_measure(rt_uint8_t *val);
-rt_err_t adxl372_set_power_ctl(rt_uint8_t *val);
-rt_err_t adxl372_set_odr(void);
+rt_err_t adxl372_set_op_mode(rt_uint8_t *val);
+rt_err_t adxl372_set_odr(rt_uint8_t *val);
 
 static void test_adxl372(int argc, char **argv);
 

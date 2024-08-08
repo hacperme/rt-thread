@@ -47,7 +47,7 @@ rt_err_t rt_hw_spi_adxl372_init(void)
 rt_err_t adxl372_init(void)
 {
     rt_err_t res = RT_ERROR;
-    rt_uint8_t measure_val, power_ctl_val;
+    rt_uint8_t measure_val, power_ctl_val, odr_val;
 
     adxl372_dev = (struct rt_spi_device *)rt_device_find(ADXL372_DEV_NAME);
     if (adxl372_dev == RT_NULL)
@@ -67,13 +67,21 @@ rt_err_t adxl372_init(void)
         return res;
     }
 
-    measure_val = 0x02;
+    power_ctl_val = 0x00;
+    adxl372_set_op_mode(&power_ctl_val);
+    LOG_D("adxl372_set_op_mode %s", res == RT_EOK ? "success" : "failed");
+
+    measure_val = 0x04;
     res = adxl372_set_measure(&measure_val);
     LOG_D("adxl372_set_measure %s", res == RT_EOK ? "success" : "failed");
 
+    odr_val = 0x80;
+    res = adxl372_set_odr(&odr_val);
+    LOG_D("adxl372_set_odr %s", res == RT_EOK ? "success" : "failed");
+
     power_ctl_val = 0x03;
-    adxl372_set_power_ctl(&power_ctl_val);
-    LOG_D("adxl372_set_power_ctl %s", res == RT_EOK ? "success" : "failed");
+    adxl372_set_op_mode(&power_ctl_val);
+    LOG_D("adxl372_set_op_mode %s", res == RT_EOK ? "success" : "failed");
 
     return res;
 }
@@ -89,10 +97,10 @@ rt_err_t adxl732_read(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size)
     send_buf[0] = (reg << 1) | 0x01;
     rt_memcpy((recv_buf + 1), data, size);
     res = rt_spi_transfer(adxl372_dev, send_buf, recv_buf, buf_size);
-    // for (rt_uint16_t i = 0; i < buf_size; i++)
-    // {
-    //     LOG_D("adxl732_read send_buf[%d] 0x%02X recv_buf[%d] 0x%02X", i, send_buf[i], i, recv_buf[i]);
-    // }
+    for (rt_uint16_t i = 0; i < buf_size; i++)
+    {
+        LOG_D("adxl732_read send_buf[%d] 0x%02X recv_buf[%d] 0x%02X", i, send_buf[i], i, recv_buf[i]);
+    }
     rt_memcpy(data, (recv_buf + 1), size);
     return res == buf_size ? RT_EOK : RT_ERROR;
 }
@@ -108,11 +116,26 @@ rt_err_t adxl732_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size)
     send_buf[0] = (reg << 1);
     rt_memcpy((send_buf + 1), data, size);
     res = rt_spi_transfer(adxl372_dev, send_buf, recv_buf, buf_size);
-    // for (rt_uint16_t i = 0; i < buf_size; i++)
-    // {
-    //     LOG_D("adxl732_read send_buf[%d] 0x%02X recv_buf[%d] 0x%02X", i, send_buf[i], i, recv_buf[i]);
-    // }
+    for (rt_uint16_t i = 0; i < buf_size; i++)
+    {
+        LOG_D("adxl732_read send_buf[%d] 0x%02X recv_buf[%d] 0x%02X", i, send_buf[i], i, recv_buf[i]);
+    }
     return res == buf_size ? RT_EOK : RT_ERROR;
+}
+
+rt_err_t adxl372_update(rt_uint8_t reg, rt_uint8_t mask, rt_uint8_t shift, rt_uint8_t val)
+{
+    rt_err_t res;
+    rt_uint8_t old_data = 0x00;
+    rt_uint8_t new_data = 0x00;
+    res = adxl732_read(reg, &old_data, 1);
+    if (res == RT_EOK)
+    {
+        new_data = old_data & mask;
+        new_data |= ((val << shift) & (mask & 0xFF));
+        res = adxl732_write(reg, &new_data, 1);
+    }
+    return res;
 }
 
 rt_err_t adxl372_query_dev_info(void)
@@ -131,6 +154,7 @@ rt_err_t adxl372_query_dev_info(void)
     for (rt_uint8_t i = 0; i < 5; i++)
     {
 
+        rt_thread_mdelay(100);
         recv_buf = 0xFF;
         res = adxl732_read(regs[i], &recv_buf, 1);
         LOG_D(
@@ -221,61 +245,32 @@ rt_err_t adxl372_set_measure(rt_uint8_t *val)
 {
     rt_err_t res;
     res = adxl732_write(ADI_ADXL372_MEASURE, val, 1);
-    LOG_D("adxl732_write reg 0x%02X send_buf 0x%02X res %d", ADI_ADXL372_MEASURE, val, res);
+    // LOG_D("adxl732_write reg 0x%02X send_buf 0x%02X res %d", ADI_ADXL372_MEASURE, val, res);
+    rt_thread_mdelay(100);
+    rt_uint8_t recv_buf = 0xFF;
+    res = adxl732_read(ADI_ADXL372_MEASURE, &recv_buf, 1);
     return res;
 }
 
-rt_err_t adxl372_set_power_ctl(rt_uint8_t *val)
+rt_err_t adxl372_set_op_mode(rt_uint8_t *val)
 {
     rt_err_t res;
+    // res = adxl372_update(ADI_ADXL372_POWER_CTL, 0xFC, 0, *val);
     res = adxl732_write(ADI_ADXL372_POWER_CTL, val, 1);
-    LOG_D("adxl732_write reg 0x%02X send_buf 0x%02X res %d", ADI_ADXL372_POWER_CTL, val, res);
+    // LOG_D("adxl732_write reg 0x%02X send_buf 0x%02X res %d", ADI_ADXL372_POWER_CTL, val, res);
+    rt_thread_mdelay(100);
+    rt_uint8_t recv_buf = 0xFF;
+    res = adxl732_read(ADI_ADXL372_POWER_CTL, &recv_buf, 1);
     return res;
 }
 
-rt_err_t adxl372_set_odr(void)
+rt_err_t adxl372_set_odr(rt_uint8_t *val)
 {
     rt_err_t res;
-    struct rt_spi_message message = {0};
-
-    rt_spi_take(adxl372_dev);
-
-    rt_uint8_t send_buf1[] = {ADI_ADXL372_TIMING << 1, 0x40};
-    rt_uint8_t recv_buf1[] = {0xFF, 0xFF};
-
-    message.send_buf = send_buf1;
-    message.recv_buf = recv_buf1;
-    message.length = 2;
-    message.cs_take = message.cs_release = 0;
-    rt_spi_transfer_message(adxl372_dev, &message);
-    LOG_D(
-        "rt_spi_transfer_message send 0x%02X, recv 0x%02X, send 0x%02X, recv 0x%02X",
-        send_buf1[0], recv_buf1[0], send_buf1[1], recv_buf1[1]
-    );
-
-    // res = rt_spi_transfer(adxl372_dev, send_buf1, RT_NULL, 2);
-    // LOG_D("rt_spi_transfer reg 0x%02X send value 0x%02X res %d", ADI_ADXL372_TIMING, send_buf1[1], res);
-    // rt_spi_release(adxl372_dev);
-    // rt_thread_mdelay(1000);
-    // rt_spi_take(adxl372_dev);
-    // rt_uint8_t send_buf2[] = {ADI_ADXL372_TIMING << 1 | 0x01, 0xFF};
-
-    rt_uint8_t send_buf2[] = {ADI_ADXL372_TIMING << 1 | 0x01, 0xFF};
-    rt_uint8_t recv_buf2[] = {0xFF, 0xFF};
-
-    message.send_buf = send_buf2;
-    message.recv_buf = recv_buf2;
-    message.length = 2;
-    message.cs_take = message.cs_release = 0;
-    rt_spi_transfer_message(adxl372_dev, &message);
-    LOG_D(
-        "rt_spi_transfer_message send 0x%02X, recv 0x%02X, send 0x%02X, recv 0x%02X",
-        send_buf2[0], recv_buf2[0], send_buf2[1], recv_buf2[1]
-    );
-
-    // res = rt_spi_transfer(adxl372_dev, send_buf2, recv_buf2, 2);
-    // LOG_D("rt_spi_transfer reg 0x%02X recv value 0x%02X res %d", ADI_ADXL372_TIMING, recv_buf, res);
-    rt_spi_release(adxl372_dev);
+    res = adxl732_write(ADI_ADXL372_TIMING, val, 1);
+    rt_thread_mdelay(100);
+    rt_uint8_t recv_buf = 0xFF;
+    res = adxl732_read(ADI_ADXL372_TIMING, &recv_buf, 1);
     return res;
 }
 
@@ -287,7 +282,7 @@ static void test_adxl372(int argc, char **argv)
     rt_hw_spi_adxl372_init();
     adxl372_init();
 
-    // res = adxl372_query_dev_info();
+    res = adxl372_query_dev_info();
 
     rt_uint16_t cnt = 10;
     while (cnt > 0)
@@ -300,8 +295,6 @@ static void test_adxl372(int argc, char **argv)
         cnt--;
         rt_thread_mdelay(1000);
     }
-
-    // set_odr();
 }
 
 MSH_CMD_EXPORT(test_adxl372, test adxl372);
