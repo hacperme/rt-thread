@@ -12,6 +12,7 @@
 #include "rtthread.h"
 #include "rtdevice.h"
 #include "board.h"
+#include "board_pin.h"
 
 #define DBG_SECTION_NAME "ADXL372"
 #define DBG_LEVEL DBG_LOG
@@ -114,13 +115,7 @@ static const rt_uint8_t ADXL_INT1_PIN   = 7;
 static const rt_uint8_t ADXL_INT2_PIN   = 5;
 static const rt_uint8_t ADXL_SPI_RNW    = 1;
 
-// + or - 200g with 12-bit resolution
-// (200 + 200) * 9.81 / (2^12 - 1) = 0.958241 m/s^2 per lsb
-static const double ADXL372_SCALE = 0.958241;
-static const double ADXL372_SCALEG = 0.09768; // g per lsb
-
-static const float SCALE_FACTOR = 100.0;   // mg per LSB
-static const float MG_TO_G = 0.001;      // g per mg
+static const float ADXL372_SCALEG = 0.1; // g per lsb
 
 struct adxl372_xyz
 {
@@ -131,17 +126,24 @@ struct adxl372_xyz
 typedef struct adxl372_xyz *adxl372_xyz_t;
 
 
-// void g_sensor_callback(void);
-void g_sensor_wakeup_irq_enable(void);
+void adxl372_inactive_irq_callback(void *args);
+rt_err_t adxl372_int1_pin_irq_enable(void);
 rt_err_t rt_hw_spi_adxl372_init(void);
 rt_err_t adxl372_init(void);
 rt_err_t adxl732_read(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
 rt_err_t adxl732_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
+
 rt_err_t adxl372_query_dev_info(void);
 rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz);
 rt_err_t adxl372_set_measure(rt_uint8_t *val);
-rt_err_t adxl372_set_op_mode(rt_uint8_t *val);
+rt_err_t adxl372_set_power_ctl(rt_uint8_t *val);
 rt_err_t adxl372_set_odr(rt_uint8_t *val);
+rt_err_t adxl372_set_time_inact(rt_uint16_t milliseconds);
+rt_err_t adxl372_set_thresh_inact(rt_uint16_t threshold);
+rt_err_t adxl372_set_int1_map(rt_uint8_t *val);
+rt_err_t adxl372_set_hpf(rt_uint8_t *val);
+rt_err_t adxl372_enable_inactive_irq(rt_uint16_t milliseconds, rt_uint16_t threshold);
+rt_err_t adxl372_reset(void);
 
 static void test_adxl372(int argc, char **argv);
 
