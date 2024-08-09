@@ -109,7 +109,7 @@ rt_err_t adxl372_init(void)
     LOG_D("adxl372_set_odr %s", res == RT_EOK ? "success" : "failed");
 
     rt_uint16_t milliscond = 2600;
-    rt_uint16_t threshold = 40;
+    rt_uint16_t threshold = 40;  // 0.1 g
     res = adxl372_enable_inactive_irq(milliscond, threshold);
     LOG_D("adxl372_enable_inactive_irq %s", res == RT_EOK ? "success" : "failed");
 
@@ -503,8 +503,11 @@ static void test_adxl372(int argc, char **argv)
         //     LOG_D("zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
         // }
         recv_buf = 0xFF;
-        res = adxl732_read(ADI_ADXL372_STATUS_2, &recv_buf, 1)
-        LOG_D("ADI_ADXL372_STATUS_2 reg=")
+        res = adxl732_read(ADI_ADXL372_STATUS_2, &recv_buf, 1);
+        LOG_D(
+            "ADI_ADXL372_STATUS_2 reg=0x%02X recv_buf=0x%02X",
+            ADI_ADXL372_STATUS_2, recv_buf
+        );
         cnt--;
         rt_thread_mdelay(100);
     }
