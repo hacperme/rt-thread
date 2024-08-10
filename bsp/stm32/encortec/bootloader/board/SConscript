@@ -21,6 +21,10 @@ CubeMX_Config/Src/stm32u5xx_hal_msp.c
 path =  [cwd]
 path += [cwd + '/CubeMX_Config/Inc']
 
+if GetDepend(['RT_USING_MTD_NAND']):
+    src += Split('drivers/nandflash/nandflash_as5f38.c')
+    path += [cwd + '/drivers/nandflash']
+
 startup_path_prefix = SDK_LIB
 
 if rtconfig.PLATFORM in ['gcc']:
@@ -31,7 +35,7 @@ elif rtconfig.PLATFORM in ['iccarm']:
     src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/iar/startup_stm32u545xx.s']
 
 # You can select chips from the list above
-CPPDEFINES = ['STM32U545xx']
+CPPDEFINES = ['STM32U535xx']
 group = DefineGroup('Drivers', src, depend = [''], CPPPATH = path, CPPDEFINES = CPPDEFINES)
 
 Return('group')

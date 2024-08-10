@@ -111,6 +111,9 @@ if GetDepend(['BSP_USING_DSI']):
 if GetDepend(['BSP_USING_SRAM']):
     src += ['STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_sram.c']
 
+if GetDepend(['RT_USING_MTD_NAND']):
+    src += ['STM32U5xx_HAL_Driver/Src/stm32u5xx_ll_dlyb.c']
+
 path = [cwd + '/STM32U5xx_HAL_Driver/Inc',
     cwd + '/CMSIS/Device/ST/STM32U5xx/Include']
 

@@ -101,6 +101,8 @@
 #define RT_USING_I2C_BITOPS
 #define RT_USING_ADC
 #define RT_USING_PWM
+#define RT_USING_MTD_NAND
+#define RT_MTD_NAND_DEBUG
 #define RT_USING_SPI
 #define RT_USING_PIN
 /* end of Device Drivers */
