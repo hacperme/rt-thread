@@ -8,6 +8,8 @@
  */
 #include "lpm.h"
 
+rt_device_t rtc_dev;
+
 void rtc_wakeup_irq_enable(void)
 {
     /* RTC wakeup pin irq enable. */
@@ -56,7 +58,6 @@ rt_err_t cat1_power_off(void)
 
 void shut_down(void)
 {
-    rt_err_t res;
     /* Wakup irq enable. */
     pwrctrl_pwr_wkup3_irq_enable();
     rtc_wakeup_irq_enable();
@@ -76,33 +77,41 @@ static void alarm_callback(rt_alarm_t alarm, time_t timestamp)
     LOG_D("user alarm callback function.");
 }
 
-rt_err_t set_rtc_wakeup(time_t sleep_time)
+rt_err_t rtc_init(void)
 {
-    rt_device_t dev = rt_device_find("rtc");
-    if (!dev)
+    rt_err_t res = RT_ERROR;
+    rtc_dev = rt_device_find("rtc");
+    LOG_D("find rtc device %s.", !rtc_dev ? "failed" : "success");
+    if (!rtc_dev)
     {
-        LOG_E("find device rtc failed.");
-        return RT_ERROR;
+        return res;
     }
-    LOG_D("find device rtc success.");
-    if (rt_device_open(dev, 0) != RT_EOK)
+    res = rt_device_open(rtc_dev, 0);
+    LOG_D("open rtc device %s.", res != RT_EOK ? "failed" : "success");
+    return res;
+}
+
+rt_err_t rtc_set_datetime(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day,
+                          rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
+{
+    rt_err_t res = RT_ERROR;
+
+    res = set_date(year, month, day);
+    LOG_D("set_date(%d, %d, %d) %s.", year, month, day, res != RT_EOK ? "failed" : "success");
+    if (res != RT_EOK)
     {
-        LOG_E("open device rtc failed.");
-        return RT_ERROR;
+        return res;
     }
-    LOG_D("open device rtc success.");
-    if (set_date(2024, 8, 5) != RT_EOK)
-    {
-        LOG_E("set_date(2024, 8, 5) failed.");
-        return RT_ERROR;
-    }
-    LOG_D("set_date(2024, 8, 5) success.");
-    if (set_time(0, 0, 0) != RT_EOK)
-    {
-        LOG_E("set_time(0, 0, 0) failed.");
-        return RT_ERROR;
-    }
-    LOG_D("set_time(0, 0, 0) success.");
+
+    res = set_time(hour, minute, second);
+    if (res != RT_EOK)
+    LOG_D("set_time(%d, %d, %d) %s.", hour, minute, second, res != RT_EOK ? "failed" : "success");
+    return res;
+}
+
+rt_err_t rtc_set_wakeup(time_t sleep_time)
+{
+    rt_err_t res = RT_ERROR;
     struct rt_alarm_setup setup;
     struct rt_alarm *alarm = RT_NULL;
     static time_t now;
@@ -123,37 +132,48 @@ rt_err_t set_rtc_wakeup(time_t sleep_time)
     setup.wktime.tm_min = p_tm.tm_min;
     setup.wktime.tm_sec = p_tm.tm_sec;   
 
-    alarm = rt_alarm_create(alarm_callback, &setup);    
-    if(alarm != RT_NULL)
+    alarm = rt_alarm_create(alarm_callback, &setup);
+    res = alarm != RT_NULL ? ER_EOK : ER_ERROR;
+    LOG_D("rt_alarm_create %s.", res != RT_EOK ? "failed" : "success");
+    if(res == RT_EOK)
     {
-        LOG_D("rt_alarm_create success.");
-        if (rt_alarm_start(alarm) != RT_EOK)
-        {
-            LOG_E("rt_alarm_start failed.");
-        }
-        LOG_D("rt_alarm_start success.");
+        res = rt_alarm_start(alarm);
+        LOG_D("rt_alarm_start %s.", res != RT_EOK ? "failed" : "success");
     }
+    return res
 }
 
 static void test_rtc_wakeup(int argc, char **argv)
 {
     rt_err_t res;
-    // Device power off.
-    // res = nbiot_power_off();
-    // LOG_D("nbiot_power_off %s", res == RT_EOK ? "success" : "failed");
-    // res = cat1_power_off();
-    // LOG_D("cat1_power_off %s", res == RT_EOK ? "success" : "failed");
-    // res = gnss_close();
-    // LOG_D("gnss_close %s", res == RT_EOK ? "success" : "failed");
-    // res = all_sensors_off();
-    // LOG_D("all_sensors_off %s", res == RT_EOK ? "success" : "failed");
+
+    res = nbiot_power_off();
+    LOG_D("nbiot_power_off %s", res == RT_EOK ? "success" : "failed");
+
+    res = cat1_power_off();
+    LOG_D("cat1_power_off %s", res == RT_EOK ? "success" : "failed");
+
+    res = gnss_close();
+    LOG_D("gnss_close %s", res == RT_EOK ? "success" : "failed");
+
+    res = sensor_pwron_pin_enable(0);
+    LOG_D("sensor_pwron_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
 
     res = esp32_power_off();
     LOG_D("esp32_power_off %s", res == RT_EOK ? "success" : "failed");
+
     res = esp32_en_off();
     LOG_D("esp32_en_off %s", res == RT_EOK ? "success" : "failed");
 
-    // set_rtc_wakeup(60);
+    res = rtc_init();
+    LOG_D("rtc_init %s", res == RT_EOK ? "success" : "failed");
+
+    res = rtc_set_datetime(2024, 8, 10, 0, 0, 0);
+    LOG_D("rtc_set_datetime %s", res == RT_EOK ? "success" : "failed");
+
+    res = rtc_set_wakeup(60);
+    LOG_D("rtc_set_wakeup(60) %s", res == RT_EOK ? "success" : "failed");
+
     shut_down();
 }
 MSH_CMD_EXPORT(test_rtc_wakeup, test rtc wakeup);
@@ -164,23 +184,19 @@ static void test_all_pin_enable(int argc, char **argv)
 
     res = nbiot_power_on();
     LOG_D("nbiot_power_on %s", res == RT_EOK ? "success" : "failed");
-    res = nbiot_power_off();
-    LOG_D("nbiot_power_off %s", res == RT_EOK ? "success" : "failed");
+
     res = cat1_power_on();
     LOG_D("cat1_power_on %s", res == RT_EOK ? "success" : "failed");
-    res = cat1_power_off();
-    LOG_D("cat1_power_off %s", res == RT_EOK ? "success" : "failed");
+
     res = gnss_open();
     LOG_D("gnss_open %s", res == RT_EOK ? "success" : "failed");
-    res = gnss_close();
-    LOG_D("gnss_close %s", res == RT_EOK ? "success" : "failed");
+
     res = sensor_pwron_pin_enable(1);
     LOG_D("sensor_pwron_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
-    res = sensor_pwron_pin_enable(0);
-    LOG_D("sensor_pwron_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
 
     res = esp32_power_on();
     LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
+
     res = esp32_en_on();
     LOG_D("esp32_en_on %s", res == RT_EOK ? "success" : "failed");
 

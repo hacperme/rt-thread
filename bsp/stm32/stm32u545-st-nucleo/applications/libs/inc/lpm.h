@@ -20,7 +20,6 @@
 #include <rtdbg.h>
 
 void rtc_wakeup_irq_enable(void);
-void shut_down(void);
 rt_err_t nbiot_power_on(void);
 rt_err_t nbiot_power_off(void);
 rt_err_t esp32_power_on(void);
@@ -29,8 +28,13 @@ rt_err_t esp32_en_on(void);
 rt_err_t esp32_en_off(void);
 rt_err_t cat1_power_on(void);
 rt_err_t cat1_power_off(void);
+void shut_down(void);
 static void alarm_callback(rt_alarm_t alarm, time_t timestamp);
-rt_err_t set_rtc_wakeup(time_t sleep_time);
+rt_err_t rtc_init(void);
+rt_err_t rtc_set_datetime(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day,
+                          rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second);
+rt_err_t rtc_set_wakeup(time_t sleep_time);
+
 static void test_rtc_wakeup(int argc, char **argv);
 static void test_all_pin_enable(int argc, char **argv);
 
