@@ -125,11 +125,19 @@ struct adxl372_xyz
 };
 typedef struct adxl372_xyz *adxl372_xyz_t;
 
+extern rt_err_t rt_hw_spi_device_attach(const char *bus_name, const char *device_name, rt_base_t cs_pin);
+
+__weak void adxl372_inact_event_handler(void);
+
+void adxl372_recv_inact_event(void *parameter);
+rt_err_t adxl372_recv_inact_event_thd_start(void);
+rt_err_t adxl372_recv_inact_event_thd_stop(void);
 
 void adxl372_inactive_irq_callback(void *args);
 rt_err_t adxl372_int1_pin_irq_enable(void);
+rt_err_t adxl372_int1_pin_irq_disable(void);
 rt_err_t rt_hw_spi_adxl372_init(void);
-rt_err_t adxl372_init(void);
+rt_err_t adxl372_init(rt_uint16_t inact_ms, rt_uint16_t inact_threshold);
 rt_err_t adxl732_read(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
 rt_err_t adxl732_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
 
@@ -144,6 +152,7 @@ rt_err_t adxl372_set_int1_map(rt_uint8_t *val);
 rt_err_t adxl372_set_hpf(rt_uint8_t *val);
 rt_err_t adxl372_enable_inactive_irq(rt_uint16_t milliseconds, rt_uint16_t threshold);
 rt_err_t adxl372_reset(void);
+rt_err_t adxl372_set_standby(void);
 
 static void test_adxl372(int argc, char **argv);
 
