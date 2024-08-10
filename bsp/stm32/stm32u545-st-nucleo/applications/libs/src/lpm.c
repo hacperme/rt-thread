@@ -133,14 +133,14 @@ rt_err_t rtc_set_wakeup(time_t sleep_time)
     setup.wktime.tm_sec = p_tm.tm_sec;   
 
     alarm = rt_alarm_create(alarm_callback, &setup);
-    res = alarm != RT_NULL ? ER_EOK : ER_ERROR;
+    res = alarm != RT_NULL ? RT_EOK : RT_ERROR;
     LOG_D("rt_alarm_create %s.", res != RT_EOK ? "failed" : "success");
     if(res == RT_EOK)
     {
         res = rt_alarm_start(alarm);
         LOG_D("rt_alarm_start %s.", res != RT_EOK ? "failed" : "success");
     }
-    return res
+    return res;
 }
 
 static void test_rtc_wakeup(int argc, char **argv)
