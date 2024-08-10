@@ -21,29 +21,6 @@ static rt_uint8_t HDC3021_SOFT_RESET[2] = {0x30, 0xA2};
 static rt_uint8_t TMP116_CFG_OS_DATA[3] = {0x01, 0x0E, 0x20};
 static rt_uint8_t TMP116_TEMP_REG_ADDR = 0x00;
 
-#define FDC1004_ADDR 0x50
-static rt_uint8_t FDC1004_FDC_READ_DATA = 0;
-static rt_uint16_t FDC1004_CLEVEL_0 = 0;
-static rt_uint16_t FDC1004_CIN_LVLS[4] = {0};
-static rt_uint8_t FDC1004_FDC_CFG_DATA[4][3] = {
-    {0x0C, 0x0D, 0x80},  // CIN1
-    {0x0C, 0x0D, 0x40},  // CIN2
-    {0x0C, 0x0D, 0x20},  // CIN3
-    {0x0C, 0x0D, 0x10},  // CIN4
-};
-static rt_uint8_t FDC1004_MEAS_CFG[4][3] = {
-	{0x08, 0x1C, 0x00},  // CIN1
-	{0x09, 0x3C, 0x00},  // CIN2
-	{0x0A, 0x5C, 0x00},  // CIN3
-	{0x0B, 0x7C, 0x00},  // CIN4
-};
-static rt_uint8_t FDC1004_MEAS_MSB_LSB_ADDR[4][2] = {
-    {0x00, 0x01},  // CIN1 MSB, LSB
-    {0x02, 0x03},  // CIN2 MSB, LSB
-    {0x04, 0x05},  // CIN3 MSB, LSB
-    {0x06, 0x07},  // CIN4 MSB, LSB
-};
-
 static rt_uint8_t TPH_THD_EXIT = 0;
 static float ERROR_SENSOR_VALUE = -999.0;
 
@@ -136,6 +113,7 @@ static void iic_sensors_filter_entry(void *device)
         result = rt_mutex_take(dev->lock, RT_WAITING_FOREVER);
         if (result == RT_EOK)
         {
+
             filter_check_full(&dev->hdc3021_temp_filter);
             filter_check_full(&dev->hdc3021_humi_filter);
             if (read_hw_hdc3021_temperature_humidity(dev, &hdc3021_th) == RT_EOK)
@@ -150,6 +128,7 @@ static void iic_sensors_filter_entry(void *device)
             }
             dev->hdc3021_temp_filter.index++;
             dev->hdc3021_humi_filter.index++;
+
             filter_check_full(&dev->tmp116_1_temp_filter);
             if (read_hw_tmp116_temperature(dev, (rt_uint8_t)TMP116_1_ADDR, &tmp116_1_temp) == RT_EOK)
             {
@@ -160,6 +139,7 @@ static void iic_sensors_filter_entry(void *device)
                 dev->tmp116_1_temp_filter.buf[dev->tmp116_1_temp_filter.index] = ERROR_SENSOR_VALUE;
             }
             dev->tmp116_1_temp_filter.index++;
+
             filter_check_full(&dev->tmp116_2_temp_filter);
             if (read_hw_tmp116_temperature(dev, (rt_uint8_t)TMP116_2_ADDR, &tmp116_2_temp) == RT_EOK)
             {
@@ -170,6 +150,7 @@ static void iic_sensors_filter_entry(void *device)
                 dev->tmp116_2_temp_filter.buf[dev->tmp116_2_temp_filter.index] = ERROR_SENSOR_VALUE;
             }
             dev->tmp116_2_temp_filter.index++;
+
             filter_check_full(&dev->fdc1004_level_filter);
             if (read_hw_fdc1004_water_level(dev, (rt_uint8_t)FDC1004_ADDR, &water_level) == RT_EOK)
             {
@@ -259,123 +240,9 @@ static rt_err_t read_hw_tmp116_temperature(iic_sensor_t dev, const rt_uint8_t ad
 
 static rt_err_t read_hw_fdc1004_water_level(iic_sensor_t dev, const rt_uint8_t addr, float *level)
 {
-    rt_err_t res = RT_EOK;
-    rt_uint8_t CIN_DATAS[4][2] = {0};
-    rt_uint8_t cin_no = 0, lbm = 0;
-    rt_ssize_t i2c_res;
-    rt_uint8_t cnt = 0;
-
-    rt_uint8_t FDC1004_ID_ADDR = 0xFF;
-    rt_uint8_t FDC1004_DEV_ID[2] = {0};
-    i2c_res = rt_i2c_master_send(dev->i2c, addr, RT_I2C_WR, &FDC1004_ID_ADDR, 1);
-    if (i2c_res == 1)
-    {
-        rt_i2c_master_recv(dev->i2c, addr, RT_I2C_RD, FDC1004_DEV_ID, 2);
-        LOG_D("FDC1004 Device ID 0x%02x 0x%02x", FDC1004_DEV_ID[0], FDC1004_DEV_ID[1]);
-    }
-    else
-    {
-        LOG_E("FDC1004 send FDC1004_ID_ADDR failed. i2c_res %d", i2c_res);
-    }
-    for (cin_no = 0; cin_no < 4; cin_no++)
-    {
-        i2c_res = rt_i2c_master_send(dev->i2c, addr, RT_I2C_WR, FDC1004_FDC_CFG_DATA[cin_no], 3);
-        if (i2c_res == 3)
-        {
-            rt_thread_delay(rt_tick_from_millisecond(20));
-            i2c_res = rt_i2c_master_send(dev->i2c, addr, RT_I2C_WR, FDC1004_MEAS_CFG[cin_no], 3);
-            if (i2c_res == 3)
-            {
-                cnt = 0;
-                FDC1004_FDC_READ_DATA = 0;
-                do {
-                    rt_i2c_master_recv(dev->i2c, addr, RT_I2C_RD, &FDC1004_FDC_READ_DATA, 1);
-                    cnt++;
-                    rt_thread_delay(rt_tick_from_millisecond(5));
-                } while (FDC1004_FDC_READ_DATA & 0x08 == 0 && cnt < 20);
-            }
-            else
-            {
-                res = RT_ERROR;
-                LOG_E("CIN%d Send FDC1004_MEAS_CFG failed. i2c_res %s", cin_no, i2c_res);
-                break;
-            }
-            if (FDC1004_FDC_READ_DATA & 0x08 == 1)
-            {
-                for (lbm = 0; lbm < 2; lbm++)
-                {
-                    i2c_res = rt_i2c_master_send(dev->i2c, addr, RT_I2C_WR, &FDC1004_MEAS_MSB_LSB_ADDR[cin_no][lbm], 1);
-                    if (i2c_res == 1)
-                    {
-                        rt_i2c_master_recv(dev->i2c, addr, RT_I2C_RD, &CIN_DATAS[cin_no][lbm], 1);
-                    }
-                    else
-                    {
-                        res = RT_ERROR;
-                        LOG_E("CIN%d %s read failed. i2c_res %d", cin_no, ((lbm == 0) ? "MSB" : "LSB"), i2c_res);
-                        break;
-                    }
-                }
-                FDC1004_CIN_LVLS[cin_no] = (CIN_DATAS[cin_no][0] << 8) | CIN_DATAS[cin_no][1];
-            }
-            else
-            {
-                res = RT_ERROR;
-                LOG_E("CIN%d measurement not ready.", cin_no);
-                break;
-            }
-        }
-        else
-        {
-            res = RT_ERROR;
-            LOG_E("CIN%d Send FDC1004_FDC_CFG_DATA failed. i2c_res %d", cin_no, i2c_res);
-            break;
-        }
-        rt_thread_delay(rt_tick_from_millisecond(50));
-    }
-    if (res == RT_EOK)
-    {
-        *level = 1.0 * (float)(((FDC1004_CIN_LVLS[0] - FDC1004_CIN_LVLS[3]) - FDC1004_CLEVEL_0) / (FDC1004_CIN_LVLS[1] - FDC1004_CIN_LVLS[2]));
-    }
+    rt_err_t res;
+    res = fdc1004_meas_data(dev->i2c, level);
     return res;
-}
-
-rt_err_t check_fdc1004_clevel0(iic_sensor_t dev)
-{
-    float level;
-    rt_err_t result, res;
-    rt_uint8_t cnt = 0;
-    res = RT_ERROR;
-    result = rt_mutex_take(dev->lock, RT_WAITING_FOREVER);
-    if (result == RT_EOK)
-    {
-        while (cnt < 5)
-        {
-            if (read_hw_fdc1004_water_level(dev, (rt_uint8_t)FDC1004_ADDR, &level) == RT_EOK)
-            {
-                FDC1004_CLEVEL_0 = FDC1004_CIN_LVLS[0] - FDC1004_CIN_LVLS[3];
-                res = RT_EOK;
-                break;
-            }
-            else
-            {
-                LOG_E("read_hw_fdc1004_water_level failed.");
-            }
-            cnt++;
-            rt_thread_delay(rt_tick_from_millisecond(100));
-        }
-    }
-    else
-    {
-        LOG_E("check_fdc1004_clevel0 take lock failed.");
-    }
-    rt_mutex_release(dev->lock);
-    return FDC1004_CLEVEL_0;
-}
-
-rt_uint16_t read_fdc1004_clevel0(void)
-{
-    return FDC1004_CLEVEL_0;
 }
 
 float hdc3021_read_temperature(iic_sensor_t dev)
@@ -475,13 +342,15 @@ static void filter_check_full(filter_data_t *filter)
 
 static void test_iic_sensors(int argc, char **argv)
 {
+    rt_err_t res;
+
     sensor_pwron_pin_enable(1);
     iic_sensor_t dev = iic_sensors_init("i2c1");
+
     rt_uint8_t cnt = 0;
     while (cnt < 10)
     {
         float temp, humi, level;
-
         temp = hdc3021_read_temperature(dev);
         humi = hdc3021_read_humidity(dev);
         LOG_D("HDC3021 temp %lf, humi %lf\r\n", temp, humi);
@@ -498,6 +367,7 @@ static void test_iic_sensors(int argc, char **argv)
         rt_thread_delay(rt_tick_from_millisecond(1000));
         cnt++;
     }
+
     iic_sensors_deinit(dev);
     sensor_pwron_pin_enable(0);
 }

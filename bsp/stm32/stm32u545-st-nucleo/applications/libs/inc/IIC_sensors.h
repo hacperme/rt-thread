@@ -14,6 +14,7 @@
 #include "rtdevice.h"
 #include "board.h"
 #include "board_pin.h"
+#include "fdc1004.h"
 
 #define IIC_SAMPLE_SIZE 10
 #define IIC_SAMPLE_PERIOD 1000
@@ -63,8 +64,6 @@ float hdc3021_read_humidity(iic_sensor_t dev);
 float tmp116_1_read_temperature(iic_sensor_t dev);
 float tmp116_2_read_temperature(iic_sensor_t dev);
 float fdc1004_read_water_level(iic_sensor_t dev);
-rt_err_t check_fdc1004_clevel0(iic_sensor_t dev);
-rt_uint16_t read_fdc1004_clevel0(void);
 static void average_measurement(iic_sensor_t dev, filter_data_t *filter);
 static void filter_check_full(filter_data_t *filter);
 static void test_iic_sensors(int argc, char **argv);
