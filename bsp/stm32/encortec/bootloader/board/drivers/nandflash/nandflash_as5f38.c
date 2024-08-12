@@ -1,6 +1,7 @@
 #include "stm32u5xx_hal.h"
 #include "nandflash_as5f38.h"
 #include "drv_common.h"
+#include <string.h>
 
 OSPI_HandleTypeDef hospi;
 
@@ -124,12 +125,14 @@ bool NAND_CheckECC(void) {
     }
 }
 
-
 bool CheckIfBadBlock(uint32_t blockAddr) {
-    uint8_t marker = 0xFF;
-    // 坏块标记通常位于每个块的第一页的备用区域中
-    NAND_Read(blockAddr + BAD_BLOCK_PAGE * PAGE_SIZE + SPARE_AREA_SIZE - 1, &marker, 1);
-    return marker != 0xFF; // 如果标记为非0xFF，则判断为坏块
+    uint8_t marker = 0xFF;  // 初始化为非坏块标记的值
+    
+    // 读取块的第一个页面的备用区的坏块标记
+    NAND_ReadPage(blockAddr + BAD_BLOCK_PAGE * PAGE_SIZE + BAD_BLOCK_MARKER_OFFSET, &marker, 1);
+    
+    // 如果标记为0x00，则判断为坏块
+    return marker == 0x00;
 }
 
 void MarkBlockAsBad(uint32_t blockAddr) {
@@ -164,7 +167,7 @@ void MarkBlockAsBad(uint32_t blockAddr) {
     }
 }
 
-void NAND_Read(uint32_t address, uint8_t *pData, uint32_t size) {
+void NAND_ReadPage(uint32_t address, uint8_t *pData, uint32_t size) {
     uint32_t blockAddr = address & ~(BLOCK_SIZE - 1);
     if (CheckIfBadBlock(blockAddr)) {
         return;
@@ -172,6 +175,10 @@ void NAND_Read(uint32_t address, uint8_t *pData, uint32_t size) {
 
     NAND_EnableECC();
 
+    // 假设 size 不大于 4096 字节
+    uint8_t buffer[PAGE_SIZE]; // 用于存储整个页面的数据，包括备用区
+
+    // Step 1: 使用 PAGE_READ_CMD 读取页面数据到缓存
     OSPI_RegularCmdTypeDef sCommand = {
         .OperationType = HAL_OSPI_OPTYPE_COMMON_CFG,
         .FlashId = HAL_OSPI_FLASH_ID_1,
@@ -190,23 +197,28 @@ void NAND_Read(uint32_t address, uint8_t *pData, uint32_t size) {
         Error_Handler();
     }
 
+    // Step 2: 使用 READ_FROM_CACHE_CMD 从缓存读取数据到 buffer
     sCommand.Instruction = READ_FROM_CACHE_CMD;
     sCommand.DataMode = HAL_OSPI_DATA_1_LINE;
-    sCommand.NbData = size;
+    sCommand.NbData = PAGE_SIZE;  // 读取整个页面（包括备用区）
     sCommand.DummyCycles = 8;
 
     if (HAL_OSPI_Command(&hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK ||
-        HAL_OSPI_Receive(&hospi, pData, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        HAL_OSPI_Receive(&hospi, buffer, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
         Error_Handler();
     }
 
+    // Step 3: 检查 ECC 状态
     if (!NAND_CheckECC()) {
         MarkBlockAsBad(blockAddr);
         Error_Handler();
     }
+
+    // 将前 4096 字节的数据区内容复制到用户提供的缓冲区中
+    memcpy(pData, buffer, size);
 }
 
-void NAND_Write(uint32_t address, uint8_t *pData, uint32_t size, bool updateSpareArea) {
+void NAND_WritePage(uint32_t address, uint8_t *pData, uint32_t size, bool updateSpareArea) {
     uint32_t blockAddr = address & ~(BLOCK_SIZE - 1);
     if (CheckIfBadBlock(blockAddr)) {
         MarkBlockAsBad(blockAddr);
@@ -214,6 +226,14 @@ void NAND_Write(uint32_t address, uint8_t *pData, uint32_t size, bool updateSpar
     }
 
     NAND_EnableECC();
+
+    // 限制写入大小为前 4096 字节
+    if (size > 4096) {
+        size = 4096; // 防止用户写入超出数据区的内容
+    }
+
+    uint8_t buffer[PAGE_SIZE] = {0}; // 用于存储要写入的数据，包括备用区
+    memcpy(buffer, pData, size);     // 将用户数据复制到缓冲区
 
     OSPI_RegularCmdTypeDef sCommand = {
         .OperationType = HAL_OSPI_OPTYPE_COMMON_CFG,
@@ -224,14 +244,15 @@ void NAND_Write(uint32_t address, uint8_t *pData, uint32_t size, bool updateSpar
         .AddressSize = HAL_OSPI_ADDRESS_24_BITS,
         .Address = address,
         .DataMode = HAL_OSPI_DATA_1_LINE,
-        .NbData = size,
+        .NbData = PAGE_SIZE,
         .DummyCycles = 0,
         .DQSMode = HAL_OSPI_DQS_DISABLE,
         .SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD
     };
 
+    // 将数据和备用区一起写入
     if (HAL_OSPI_Command(&hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK ||
-        HAL_OSPI_Transmit(&hospi, pData, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        HAL_OSPI_Transmit(&hospi, buffer, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
         Error_Handler();
     }
 
@@ -248,3 +269,133 @@ void NAND_Write(uint32_t address, uint8_t *pData, uint32_t size, bool updateSpar
     }
 }
 
+bool NAND_MovePage(uint32_t sourceAddr, uint32_t destAddr) {
+    uint8_t buffer[PAGE_SIZE]; // 用于存储页面数据，包括备用区
+
+    // Step 1: 读取源页面的数据
+    NAND_ReadPage(sourceAddr, buffer, PAGE_SIZE - SPARE_AREA_SIZE);
+
+    // 检查是否成功读取
+    if (CheckIfBadBlock(sourceAddr & ~(BLOCK_SIZE - 1))) {
+        return false; // 如果源页面在坏块中，则不进行移动
+    }
+
+    // Step 2: 将数据写入目标页面
+    NAND_WritePage(destAddr, buffer, PAGE_SIZE - SPARE_AREA_SIZE, true);
+
+    // 检查是否成功写入
+    if (CheckIfBadBlock(destAddr & ~(BLOCK_SIZE - 1))) {
+        MarkBlockAsBad(destAddr & ~(BLOCK_SIZE - 1)); // 如果目标页面在坏块中，标记该块为坏块
+        return false;
+    }
+
+    return true; // 成功移动页面
+}
+
+void NAND_EraseBlock(uint32_t blockAddr) {
+    if (CheckIfBadBlock(blockAddr)) {
+        MarkBlockAsBad(blockAddr);
+        return;
+    }
+
+    OSPI_RegularCmdTypeDef sCommand = {
+        .OperationType = HAL_OSPI_OPTYPE_COMMON_CFG,
+        .FlashId = HAL_OSPI_FLASH_ID_1,
+        .Instruction = BLOCK_ERASE_CMD,
+        .InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE,
+        .AddressMode = HAL_OSPI_ADDRESS_1_LINE,
+        .AddressSize = HAL_OSPI_ADDRESS_24_BITS,
+        .Address = blockAddr,
+        .DataMode = HAL_OSPI_DATA_NONE,
+        .DummyCycles = 0,
+        .DQSMode = HAL_OSPI_DQS_DISABLE,
+        .SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD
+    };
+
+    if (HAL_OSPI_Command(&hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
+    // 等待擦除操作完成
+    while (HAL_OSPI_GetState(&hospi) != HAL_OSPI_STATE_READY) {
+        // 可以添加超时或其他处理机制
+    }
+
+    if (!NAND_CheckECC()) {
+        MarkBlockAsBad(blockAddr);
+        Error_Handler();
+    }
+
+    // 检查操作状态并处理错误
+    uint8_t status = NAND_ReadStatus();
+    if ((status & 0x01) == 0x01) {  // 检查是否发生错误 (假设状态位0表示错误)
+        NAND_Reset();
+        Error_Handler();  // 可选择进行复位或其他错误处理
+    }
+}
+
+uint8_t NAND_ReadStatus(void) {
+    uint8_t status;
+    OSPI_RegularCmdTypeDef sCommand = {
+        .OperationType = HAL_OSPI_OPTYPE_COMMON_CFG,
+        .FlashId = HAL_OSPI_FLASH_ID_1,
+        .Instruction = READ_STATUS_CMD,
+        .InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE,
+        .AddressMode = HAL_OSPI_ADDRESS_NONE,
+        .DataMode = HAL_OSPI_DATA_1_LINE,
+        .NbData = 1,
+        .DummyCycles = 0,
+        .DQSMode = HAL_OSPI_DQS_DISABLE,
+        .SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD
+    };
+
+    if (HAL_OSPI_Command(&hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK ||
+        HAL_OSPI_Receive(&hospi, &status, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
+    return status;
+}
+
+void NAND_Reset(void) {
+    OSPI_RegularCmdTypeDef sCommand = {
+        .OperationType = HAL_OSPI_OPTYPE_COMMON_CFG,
+        .FlashId = HAL_OSPI_FLASH_ID_1,
+        .Instruction = RESET_CMD,
+        .InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE,
+        .AddressMode = HAL_OSPI_ADDRESS_NONE,
+        .DataMode = HAL_OSPI_DATA_NONE,
+        .DummyCycles = 0,
+        .DQSMode = HAL_OSPI_DQS_DISABLE,
+        .SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD
+    };
+
+    if (HAL_OSPI_Command(&hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
+    // 等待复位操作完成
+    while (HAL_OSPI_GetState(&hospi) != HAL_OSPI_STATE_READY) {
+        // 可以添加超时或其他处理机制
+    }
+}
+
+void NAND_ReadID(uint8_t *id, uint32_t size) {
+    OSPI_RegularCmdTypeDef sCommand = {
+        .OperationType = HAL_OSPI_OPTYPE_COMMON_CFG,
+        .FlashId = HAL_OSPI_FLASH_ID_1,
+        .Instruction = READ_ID_CMD,
+        .InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE,
+        .AddressMode = HAL_OSPI_ADDRESS_NONE,
+        .DataMode = HAL_OSPI_DATA_1_LINE,
+        .NbData = size,
+        .DummyCycles = 0,
+        .DQSMode = HAL_OSPI_DQS_DISABLE,
+        .SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD
+    };
+
+    if (HAL_OSPI_Command(&hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK ||
+        HAL_OSPI_Receive(&hospi, id, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+}
