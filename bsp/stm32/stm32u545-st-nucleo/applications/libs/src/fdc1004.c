@@ -146,12 +146,11 @@ rt_err_t fdc1004_meas_read(struct rt_i2c_bus_device *iic_dev, rt_uint8_t reg, rt
     return res;
 }
 
-rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
+rt_err_t fdc1004_meas_all_config(struct rt_i2c_bus_device *iic_dev)
 {
     rt_err_t res = RT_ERROR;
-    rt_uint8_t i, j;
+    rt_uint8_t i;
 
-    /* Measurement config */
     for (i = 0; i < 4; i++)
     {
         res = fdc1004_meas_config(
@@ -162,7 +161,13 @@ rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
             return res;
         }
     }
+    return res;
+}
 
+rt_err_t fdc1004_meas_all_trigger(struct rt_i2c_bus_device *iic_dev)
+{
+    rt_err_t res = RT_ERROR;
+    rt_uint8_t i;
     /* Measurement trigger */
     for (i = 0; i < 4; i++)
     {
@@ -172,11 +177,15 @@ rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
             return res;
         }
     }
+    return res;
+}
 
-    /* Measurement wait done */
-    rt_uint8_t meas_done[4] = {0};
+rt_err_t fdc1004_meas_all_done(struct rt_i2c_bus_device *iic_dev, rt_uint8_t *meas_done, rt_uint8_t size)
+{
+    rt_err_t res = RT_ERROR;
+    rt_uint8_t i;
     rt_uint32_t timeout = 3000;
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < size; i++)
     {
         res = fdc1004_meas_done(iic_dev, i + 1, timeout, &meas_done[i]);
         LOG_D("MEAS%d done %d", i, meas_done[i]);
@@ -185,10 +194,14 @@ rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
             return res;
         }
     }
+}
 
-    /* Measurement read data */
+rt_err_t fdc1004_meas_all_read(struct rt_i2c_bus_device *iic_dev, rt_uint8_t *meas_done, rt_int32_t *measuerment, rt_int8_t size)
+{
+    rt_err_t res = RT_ERROR;
+    rt_uint8_t i, j;
     rt_uint16_t meas_data[4][2] = {0};
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < size; i++)
     {
         if (meas_done[i] == 1)
         {
@@ -202,8 +215,7 @@ rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
             }
         }
     }
-    rt_int32_t measuerment[4] = {0};
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < size; i++)
     {
         measuerment[i] = (meas_data[i][0] << 16) | meas_data[i][1];
     }
@@ -211,7 +223,81 @@ rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
         "MEAS1=0x%02X, MEAS2=0x%02X, MEAS3=0x%02X, MEAS4=0x%02X",
         measuerment[0], measuerment[1], measuerment[2], measuerment[3]
     );
-    *value = (float)(measuerment[0] - measuerment[3]) / (float)(measuerment[1] - measuerment[2]);
+    return res;
+}
+
+
+rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
+{
+    rt_err_t res = RT_ERROR;
+
+    /* Measurement config */
+    res = fdc1004_meas_all_config(iic_dev);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Measurement trigger */
+    res = fdc1004_meas_all_trigger(iic_dev);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Measurement wait done */
+    rt_uint8_t meas_done[4] = {0};
+    res = fdc1004_meas_all_done(iic_dev, meas_done, 4);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Measurement read data */
+    rt_int32_t measuerment[4] = {0};
+    res = fdc1004_meas_all_read(iic_dev, meas_done, measuerment, 4);
+    if (res == RT_EOK)
+    {
+        *value = ((float)(measuerment[0] - measuerment[3]) - FDC1004_CLEVEL0) / (float)(measuerment[1] - measuerment[2]);
+    }
+
+    return res;
+}
+
+rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev)
+{
+    rt_err_t res = RT_ERROR;
+
+    /* Measurement config */
+    res = fdc1004_meas_all_config(iic_dev);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Measurement trigger */
+    res = fdc1004_meas_all_trigger(iic_dev);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Measurement wait done */
+    rt_int8_t meas_done[4] = {0};
+    res = fdc1004_meas_all_done(iic_dev, meas_done, 4);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Measurement read data */
+    rt_int32_t measuerment[4] = {0};
+    res = fdc1004_meas_all_read(iic_dev, meas_done, measuerment, 4);
+    if (res == RT_EOK)
+    {
+        FDC1004_CLEVEL0 = measuerment[0] - measuerment[3];
+    }
+
     return res;
 }
 
@@ -236,6 +322,13 @@ static rt_err_t test_fdc1004(int argc, char **argv)
     rt_uint16_t dev_id = 0x00;
     res = dfc1004_read_device_id(iic_dev, &dev_id);
     LOG_D("dfc1004_read_device_id %s 0x%02X", res != RT_EOK ? "failed" : "success", dev_id);
+
+    /* FDC1004_CLEVEL0 need to be saved to naflash. */
+    if (FDC1004_CLEVEL0 == 0)
+    {
+        res = fdc1004_check_clevel0(iic_dev);
+        LOG_D("fdc1004_check_clevel0 %s 0x%02X", res != RT_EOK ? "failed" : "success", dev_id);
+    }
 
     float value = 0.0;
     res = fdc1004_meas_data(iic_dev, &value);

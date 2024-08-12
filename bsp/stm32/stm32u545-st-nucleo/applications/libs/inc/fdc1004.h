@@ -61,6 +61,9 @@ static rt_uint8_t FDC1004_MEAS_READ_REGS[4][2] = {
     {FDC1004_MEAS4_MSB_REG, FDC1004_MEAS4_LSB_REG},
 };
 
+/* TODO: Read clevel0 from flash. */
+static rt_int32_t FDC1004_CLEVEL0 = 0;
+
 rt_err_t fdc1004_read_manufacturer_id(struct rt_i2c_bus_device *iic_dev, rt_uint16_t *manufacturer_id);
 rt_err_t dfc1004_read_device_id(struct rt_i2c_bus_device *iic_dev, rt_uint16_t *dev_id);
 rt_err_t fdc1004_meas_config(struct rt_i2c_bus_device *iic_dev, rt_uint8_t reg, rt_uint8_t val_h, rt_uint8_t val_l);
@@ -68,6 +71,7 @@ rt_err_t fdc1004_meas_trigger(struct rt_i2c_bus_device *iic_dev, rt_uint8_t val_
 rt_err_t fdc1004_meas_done(struct rt_i2c_bus_device *iic_dev, rt_uint8_t meas_id, rt_uint32_t timeout, rt_uint8_t *done);
 rt_err_t fdc1004_meas_read(struct rt_i2c_bus_device *iic_dev, rt_uint8_t reg, rt_uint16_t *value);
 rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value);
+rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev);
 
 static rt_err_t test_fdc1004(int argc, char **argv);
 
