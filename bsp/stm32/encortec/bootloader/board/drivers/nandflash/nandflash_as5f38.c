@@ -13,16 +13,16 @@ void MX_OSPI_Init(void) {
     hospi.Init.FifoThreshold = 4;
     hospi.Init.DualQuad = HAL_OSPI_DUALQUAD_DISABLE;
     hospi.Init.MemoryType = HAL_OSPI_MEMTYPE_MICRON;
-    hospi.Init.DeviceSize = POSITION_VAL(4096) - 1;
-    hospi.Init.ChipSelectHighTime = 1;
+    hospi.Init.DeviceSize = 30;
+    hospi.Init.ChipSelectHighTime = 3;
     hospi.Init.FreeRunningClock = HAL_OSPI_FREERUNCLK_DISABLE;
     hospi.Init.ClockMode = HAL_OSPI_CLOCK_MODE_0;
     hospi.Init.WrapSize = HAL_OSPI_WRAP_NOT_SUPPORTED;
-    hospi.Init.ClockPrescaler = 2;
-    hospi.Init.SampleShifting = HAL_OSPI_SAMPLE_SHIFTING_NONE;
+    hospi.Init.ClockPrescaler = 32;
+    hospi.Init.SampleShifting = HAL_OSPI_SAMPLE_SHIFTING_NONE; //可能会存在信号延迟
     hospi.Init.ChipSelectBoundary = 0;
-    hospi.Init.DelayHoldQuarterCycle = HAL_OSPI_DHQC_DISABLE;
-    hospi.Init.DelayBlockBypass = HAL_OSPI_DELAY_BLOCK_BYPASSED;
+    hospi.Init.DelayHoldQuarterCycle = HAL_OSPI_DHQC_DISABLE; //可能会存在信号延迟
+    hospi.Init.DelayBlockBypass = HAL_OSPI_DELAY_BLOCK_BYPASSED; //可能会存在信号延迟
     hospi.Init.MaxTran = 0;
     hospi.Init.Refresh = 0;
 
@@ -48,10 +48,12 @@ void HAL_OSPI_MspInit(OSPI_HandleTypeDef *ospiHandle) {
         // 配置 NCS (片选) 引脚: PA4
         GPIO_InitStruct.Pin = GPIO_PIN_4;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF10_OCTOSPI1;
         HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
 
         // 配置 CLK 引脚: PB10
         GPIO_InitStruct.Pin = GPIO_PIN_10;
@@ -126,14 +128,35 @@ bool NAND_CheckECC(void) {
 }
 
 bool CheckIfBadBlock(uint32_t blockAddr) {
-    uint8_t marker = 0xFF;  // 初始化为非坏块标记的值
+    uint8_t marker = 0xFF;
+    OSPI_RegularCmdTypeDef sCommand;
     
-    // 读取块的第一个页面的备用区的坏块标记
-    NAND_ReadPage(blockAddr + BAD_BLOCK_PAGE * PAGE_SIZE + BAD_BLOCK_MARKER_OFFSET, &marker, 1);
-    
+    // 读取块的第一个页面的备用区中的坏块标记
+    sCommand.OperationType = HAL_OSPI_OPTYPE_COMMON_CFG;
+    sCommand.FlashId = HAL_OSPI_FLASH_ID_1;
+    sCommand.Instruction = PAGE_READ_CMD;
+    sCommand.InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE;
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_1_LINE;
+    sCommand.AddressSize = HAL_OSPI_ADDRESS_24_BITS;
+    sCommand.Address = blockAddr + BAD_BLOCK_PAGE * PAGE_SIZE + BAD_BLOCK_MARKER_OFFSET;
+    sCommand.DataMode = HAL_OSPI_DATA_1_LINE;
+    sCommand.NbData = 1;  // 读取一个字节的坏块标记
+    sCommand.DummyCycles = 8;
+    sCommand.DQSMode = HAL_OSPI_DQS_DISABLE;
+    sCommand.SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD;
+
+    if (HAL_OSPI_Command(&hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
+    if (HAL_OSPI_Receive(&hospi, &marker, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
     // 如果标记为0x00，则判断为坏块
     return marker == 0x00;
 }
+
 
 void MarkBlockAsBad(uint32_t blockAddr) {
     uint8_t marker = BAD_BLOCK_MARKER;
@@ -175,7 +198,6 @@ void NAND_ReadPage(uint32_t address, uint8_t *pData, uint32_t size) {
 
     NAND_EnableECC();
 
-    // 假设 size 不大于 4096 字节
     uint8_t buffer[PAGE_SIZE]; // 用于存储整个页面的数据，包括备用区
 
     // Step 1: 使用 PAGE_READ_CMD 读取页面数据到缓存
