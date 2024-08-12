@@ -1,0 +1,48 @@
+menu "Encorteec Application Config"
+
+menu "Logging configuration"
+
+    config APP_USING_LOG
+        bool "Enable application log printing"
+        if APP_USING_LOG
+            menuconfig APP_LOG_PRINT_CHANNEL
+                bool "Select log printing channel"
+                default y
+                if APP_LOG_PRINT_CHANNEL
+                    config APP_LOG_PRINT_TO_UART
+                        bool "Print log to UART"
+                        default y
+                    config APP_LOG_PRINT_TO_FILE
+                        bool "Print log to file"
+                        default n
+                endif
+
+            menuconfig APP_LOG_LEVEL
+                bool "Select log printing level"
+                default y
+                if APP_LOG_LEVEL
+                    config APP_LOG_LEVEL_DBG
+                        bool "Log level: debug"
+                        default y
+                    config APP_LOG_LEVEL_INF
+                        bool "Log level: info"
+                        default n
+                    config APP_LOG_LEVEL_WAR
+                        bool "Log level: warning"
+                        default n
+                    config APP_LOG_LEVEL_ERR
+                        bool "Log level: error"
+                        default n
+                endif
+
+            config APP_LOG_USING_TS
+                bool "Enable time stamp in log text"
+                default n
+
+            config APP_LOG_BUF_SIZE
+                int "Set log buffer size"
+                default 512
+        endif
+
+endmenu
+endmenu
