@@ -2,8 +2,8 @@
  * linker script for STM32L4XX with GNU ld
  */
 
-BOOTLOADER_ROM_SIZE = 192K;
-APP_ROM_SIZE = 320K;
+BOOTLOADER_ROM_SIZE = 256K;
+APP_ROM_SIZE = 256K;
 
 BOOTLOADER_SRAM1_SIZE = 32K;
 APP_SRAM1_SIZE = 160K;
@@ -32,6 +32,55 @@ SECTIONS
         KEEP(*(.isr_vector))            /* Startup code */
 
         . = ALIGN(4);
+        KEEP(build\kernel\components\drivers\core\device.o(.text*))
+        KEEP(build\kernel\components\drivers\i2c\i2c-bit-ops.o(.text*))
+        KEEP(build\kernel\components\drivers\i2c\i2c_core.o(.text*))
+        KEEP(build\kernel\components\drivers\i2c\i2c_dev.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\completion_comm.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\completion_up.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\condvar.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\dataqueue.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\pipe.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\ringblk_buf.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\ringbuffer.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\waitqueue.o(.text*))
+        KEEP(build\kernel\components\drivers\ipc\workqueue.o(.text*))
+        KEEP(build\kernel\components\drivers\misc\adc.o(.text*))
+        KEEP(build\kernel\components\drivers\misc\rt_drv_pwm.o(.text*))
+        KEEP(build\kernel\components\drivers\misc\rt_random.o(.text*))
+        KEEP(build\kernel\components\drivers\mtd\mtd_nand.o(.text*))
+        KEEP(build\kernel\components\drivers\pin\pin.o(.text*))
+        KEEP(build\kernel\components\drivers\rtc\alarm.o(.text*))
+        KEEP(build\kernel\components\drivers\rtc\rtc.o(.text*))
+        KEEP(build\kernel\components\drivers\sensor\v2\sensor.o(.text*))
+        KEEP(build\kernel\components\drivers\serial\serial.o(.text*))
+        KEEP(build\kernel\components\drivers\spi\spi_dev.o(.text*))
+        KEEP(build\kernel\components\drivers\watchdog\watchdog.o(.text*))
+        KEEP(build\kernel\components\finsh\cmd.o(.text*))
+        KEEP(build\kernel\components\finsh\msh.o(.text*))
+        KEEP(build\kernel\components\finsh\msh_parse.o(.text*))
+        KEEP(build\kernel\components\finsh\shell.o(.text*))
+        KEEP(build\kernel\components\libc\compilers\common\cctype.o(.text*))
+        KEEP(build\kernel\components\libc\compilers\common\cstdlib.o(.text*))
+        KEEP(build\kernel\components\libc\compilers\common\cstring.o(.text*))
+        KEEP(build\kernel\components\libc\compilers\common\ctime.o(.text*))
+        KEEP(build\kernel\components\libc\compilers\common\cunistd.o(.text*))
+        KEEP(build\kernel\components\libc\compilers\common\cwchar.o(.text*))
+        KEEP(build\kernel\components\libc\compilers\newlib\syscalls.o(.text*))
+        KEEP(build\kernel\components\net\at\src\at_client.o(.text*))
+        KEEP(build\kernel\src\clock.o(.text*))
+        KEEP(build\kernel\src\components.o(.text*))
+        KEEP(build\kernel\src\ipc.o(.text*))
+        KEEP(build\kernel\src\irq.o(.text*))
+        KEEP(build\kernel\src\klibc\kstdio.o(.text*))
+        KEEP(build\kernel\src\klibc\kstring.o(.text*))
+        KEEP(build\kernel\src\kservice.o(.text*))
+        KEEP(build\kernel\src\mem.o(.text*))
+        KEEP(build\kernel\src\mempool.o(.text*))
+        KEEP(build\kernel\src\object.o(.text*))
+        KEEP(build\kernel\src\signal.o(.text*))
+        KEEP(build\kernel\src\thread.o(.text*))
+        KEEP(build\kernel\src\timer.o(.text*))
         *(.text)                        /* remaining code */
         *(.text.*)                      /* remaining code */
         *(.rodata)                      /* read-only data (constants) */

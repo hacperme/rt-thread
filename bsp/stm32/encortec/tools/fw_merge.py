@@ -1,5 +1,5 @@
-BOOTLOADER_SIZE = 192 * 1024  # 128KB
-APP_SIZE = 320 * 1024  # 384KB
+BOOTLOADER_SIZE = 256 * 1024  # 128KB
+APP_SIZE = 256 * 1024  # 384KB
 
 def merge_bin_files(bootloader_file, app_file, output_file):
     with open(bootloader_file, 'rb') as bootloader_f:

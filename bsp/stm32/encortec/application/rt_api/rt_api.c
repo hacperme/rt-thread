@@ -85,6 +85,18 @@ rt_err_t  rt_thread_get_name(rt_thread_t thread, char *name, rt_uint8_t name_siz
     return ((rt_thread_get_name_api_ptr_t)(rt_thread_get_name_addr))(thread, name, name_size);
 }
 
+void  rt_thread_alloc_sig(rt_thread_t tid) {
+    return ((rt_thread_alloc_sig_api_ptr_t)(rt_thread_alloc_sig_addr))(tid);
+}
+
+void  rt_thread_free_sig(rt_thread_t tid) {
+    return ((rt_thread_free_sig_api_ptr_t)(rt_thread_free_sig_addr))(tid);
+}
+
+int   rt_thread_kill(rt_thread_t tid, int sig) {
+    return ((rt_thread_kill_api_ptr_t)(rt_thread_kill_addr))(tid, sig);
+}
+
 rt_base_t  rt_enter_critical(void) {
     return ((rt_enter_critical_api_ptr_t)(rt_enter_critical_addr))();
 }

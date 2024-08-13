@@ -38,8 +38,8 @@
 #define RT_USING_SEMAPHORE
 #define RT_USING_MUTEX
 #define RT_USING_EVENT
-#define RT_USING_MAILBOX
 #define RT_USING_MESSAGEQUEUE
+#define RT_USING_SIGNALS
 /* end of Inter-Thread communication */
 
 /* Memory Management */
@@ -100,10 +100,16 @@
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_ADC
+#define RT_USING_RANDOM
 #define RT_USING_PWM
 #define RT_USING_MTD_NAND
 #define RT_MTD_NAND_DEBUG
+#define RT_USING_RTC
+#define RT_USING_ALARM
 #define RT_USING_SPI
+#define RT_USING_WDT
+#define RT_USING_SENSOR
+#define RT_USING_SENSOR_V2
 #define RT_USING_PIN
 /* end of Device Drivers */
 
@@ -134,6 +140,11 @@
 
 /* Network */
 
+#define RT_USING_AT
+#define AT_USING_CLIENT
+#define AT_CLIENT_NUM_MAX 3
+#define AT_USING_CLI
+#define AT_SW_VERSION_NUM 0x10301
 /* end of Network */
 
 /* Memory protection */
