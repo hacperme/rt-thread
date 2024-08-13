@@ -1,8 +1,8 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-#define SOC_STM32U545RE
-#define BOARD_STM32U545_NUCLEO
+#define SOC_STM32U535RE
+#define BOARD_STM32U535_NUCLEO
 
 /* RT-Thread Kernel */
 
@@ -86,6 +86,10 @@
 /* DFS: device virtual file system */
 
 /* end of DFS: device virtual file system */
+#define RT_USING_FAL
+#define FAL_DEBUG_CONFIG
+#define FAL_DEBUG 1
+#define FAL_PART_HAS_TABLE_CFG
 
 /* Device Drivers */
 
@@ -420,6 +424,7 @@
 #define BSP_I2C1_SDA_PIN 19
 #define BSP_USING_ONCHIP_RTC
 #define BSP_RTC_USING_LSE
+#define BSP_USING_ON_CHIP_FLASH
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */

@@ -273,7 +273,7 @@ rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz)
     do {
         recv_buf = 0x00;
         res = adxl732_read(ADI_ADXL372_STATUS_1, &recv_buf, 1);
-        // LOG_I("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
+        LOG_I("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
         cnt++;
     } while ((recv_buf & 0x01) == 0 && cnt < 20);
 
@@ -561,7 +561,8 @@ static void test_adxl372(int argc, char **argv)
     struct adxl372_xyz xyz = {0};
     rt_uint8_t recv_buf;
 
-    sensor_pwron_pin_enable(1);
+    res = sensor_pwron_pin_enable(1);
+    LOG_D("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
     rt_hw_spi_adxl372_init();
 
     rt_uint16_t milliscond = 5200;
@@ -570,17 +571,17 @@ static void test_adxl372(int argc, char **argv)
 
     res = adxl372_query_dev_info();
 
-    // rt_uint16_t cnt = 10 * 30;
-    // while (cnt > 0)
-    // {
-    //     res = adxl372_query_xyz(&xyz);
-    //     // if (res == RT_EOK)
-    //     // {
-    //     //     LOG_D("zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
-    //     // }
-    //     cnt--;
-    //     rt_thread_mdelay(100);
-    // }
+    rt_uint16_t cnt = 10 * 30;
+    while (cnt > 0)
+    {
+        res = adxl372_query_xyz(&xyz);
+        if (res == RT_EOK)
+        {
+            LOG_D("zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
+        }
+        cnt--;
+        rt_thread_mdelay(100);
+    }
 }
 
 MSH_CMD_EXPORT(test_adxl372, test adxl372);

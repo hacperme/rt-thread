@@ -13,6 +13,7 @@
 #include "rtthread.h"
 #include "rtdevice.h"
 #include "board.h"
+#include "board_pin.h"
 
 #ifndef FDC1004_ADDR
 #define FDC1004_ADDR 0x50

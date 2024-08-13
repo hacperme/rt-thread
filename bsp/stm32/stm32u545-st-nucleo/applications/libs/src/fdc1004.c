@@ -194,6 +194,7 @@ rt_err_t fdc1004_meas_all_done(struct rt_i2c_bus_device *iic_dev, rt_uint8_t *me
             return res;
         }
     }
+    return res;
 }
 
 rt_err_t fdc1004_meas_all_read(struct rt_i2c_bus_device *iic_dev, rt_uint8_t *meas_done, rt_int32_t *measuerment, rt_int8_t size)
@@ -270,6 +271,7 @@ rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev)
 
     /* Measurement config */
     res = fdc1004_meas_all_config(iic_dev);
+    LOG_D("fdc1004_meas_all_config res=%d", res);
     if (res != RT_EOK)
     {
         return res;
@@ -277,6 +279,7 @@ rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev)
 
     /* Measurement trigger */
     res = fdc1004_meas_all_trigger(iic_dev);
+    LOG_D("fdc1004_meas_all_trigger res=%d", res);
     if (res != RT_EOK)
     {
         return res;
@@ -285,6 +288,7 @@ rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev)
     /* Measurement wait done */
     rt_int8_t meas_done[4] = {0};
     res = fdc1004_meas_all_done(iic_dev, meas_done, 4);
+    LOG_D("fdc1004_meas_all_done res=%d", res);
     if (res != RT_EOK)
     {
         return res;
@@ -293,6 +297,7 @@ rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev)
     /* Measurement read data */
     rt_int32_t measuerment[4] = {0};
     res = fdc1004_meas_all_read(iic_dev, meas_done, measuerment, 4);
+    LOG_D("fdc1004_meas_all_read res=%d", res);
     if (res == RT_EOK)
     {
         FDC1004_CLEVEL0 = measuerment[0] - measuerment[3];
@@ -306,6 +311,9 @@ static rt_err_t test_fdc1004(int argc, char **argv)
     rt_err_t res = RT_ERROR;
     char i2c_bus_name[] = "i2c1";
     static struct rt_i2c_bus_device *iic_dev;
+
+    res = sensor_pwron_pin_enable(1);
+    LOG_D("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
 
     iic_dev = rt_i2c_bus_device_find(i2c_bus_name);
     res = !iic_dev ? RT_ERROR : RT_EOK;
@@ -327,7 +335,7 @@ static rt_err_t test_fdc1004(int argc, char **argv)
     if (FDC1004_CLEVEL0 == 0)
     {
         res = fdc1004_check_clevel0(iic_dev);
-        LOG_D("fdc1004_check_clevel0 %s 0x%02X", res != RT_EOK ? "failed" : "success", dev_id);
+        LOG_D("fdc1004_check_clevel0 %s 0x%02X", res != RT_EOK ? "failed" : "success", FDC1004_CLEVEL0);
     }
 
     float value = 0.0;
