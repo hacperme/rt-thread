@@ -251,8 +251,8 @@ int stm32_flash_erase(rt_uint32_t addr, size_t size)
     /* Get the bank */
     BankNumber = GetBank(addr);
     /* Fill EraseInit structure*/
-    // EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
-    EraseInitStruct.TypeErase   = FLASH_TYPEERASE_MASSERASE;
+    EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
+    // EraseInitStruct.TypeErase   = FLASH_TYPEERASE_MASSERASE;
     EraseInitStruct.Banks       = BankNumber;
     EraseInitStruct.Page        = FirstPage;
     EraseInitStruct.NbPages     = NbOfPages;

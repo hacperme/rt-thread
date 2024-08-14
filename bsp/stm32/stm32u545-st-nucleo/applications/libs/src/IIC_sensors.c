@@ -12,9 +12,9 @@
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
-#define HDC3021_ADDR 0x44
-static rt_uint8_t HDC3021_TRIGGER_ON_DEMAND[2] = {0x24, 0x00};
-static rt_uint8_t HDC3021_SOFT_RESET[2] = {0x30, 0xA2};
+// #define HDC3021_ADDR 0x44
+// static rt_uint8_t HDC3021_TRIGGER_ON_DEMAND[2] = {0x24, 0x00};
+// static rt_uint8_t HDC3021_SOFT_RESET[2] = {0x30, 0xA2};
 
 #define TMP116_1_ADDR 0x48
 #define TMP116_2_ADDR 0x49
@@ -180,26 +180,29 @@ static void iic_sensors_filter_entry(void *device)
 
 static rt_err_t read_hw_hdc3021_temperature_humidity(iic_sensor_t dev, hdc3021_iic_t *temp_rh)
 {
-    rt_uint8_t data[6] = {0};
-    if (rt_i2c_master_send(dev->i2c, HDC3021_ADDR, RT_I2C_WR, HDC3021_TRIGGER_ON_DEMAND, 2) == 2)
-    {
-        rt_thread_delay(rt_tick_from_millisecond(20));
-        if (rt_i2c_master_recv(dev->i2c, HDC3021_ADDR, RT_I2C_RD, data, 6) == 6)
-        {
-            // LOG_D("DATA: %02X, %02X, %02X, %02X, %02X, %02X", data[0], data[1], data[2], data[3], data[4], data[5]);
-            temp_rh->temperature = (float)((data[0] << 8) | data[1]) / 65536.0 * 175.0 - 45.0;
-            temp_rh->humidity = (float)((data[3] << 8) | data[4]) / 65536.0 * 100.0;
-            return RT_EOK;
-        }
-        else
-        {
-            LOG_E("hdc3021 rt_i2c_master_recv failed.");
-        }
-    }
-    else{
-        LOG_E("hdc3021 rt_i2c_master_send failed.");
-    }
-    return RT_ERROR;
+    rt_err_t res = hdc3021_read_by_trigger_on_demand_mode(dev->i2c, &temp_rh->temperature, &temp_rh->humidity);
+    return res;
+
+    // rt_uint8_t data[6] = {0};
+    // if (rt_i2c_master_send(dev->i2c, HDC3021_ADDR, RT_I2C_WR, HDC3021_TRIGGER_ON_DEMAND, 2) == 2)
+    // {
+    //     rt_thread_delay(rt_tick_from_millisecond(20));
+    //     if (rt_i2c_master_recv(dev->i2c, HDC3021_ADDR, RT_I2C_RD, data, 6) == 6)
+    //     {
+    //         // LOG_D("DATA: %02X, %02X, %02X, %02X, %02X, %02X", data[0], data[1], data[2], data[3], data[4], data[5]);
+    //         temp_rh->temperature = (float)((data[0] << 8) | data[1]) / 65536.0 * 175.0 - 45.0;
+    //         temp_rh->humidity = (float)((data[3] << 8) | data[4]) / 65536.0 * 100.0;
+    //         return RT_EOK;
+    //     }
+    //     else
+    //     {
+    //         LOG_E("hdc3021 rt_i2c_master_recv failed.");
+    //     }
+    // }
+    // else{
+    //     LOG_E("hdc3021 rt_i2c_master_send failed.");
+    // }
+    // return RT_ERROR;
 }
 
 static rt_err_t read_hw_tmp116_temperature(iic_sensor_t dev, const rt_uint8_t addr, float *temp)
