@@ -15,10 +15,6 @@
 #include "board_pin.h"
 #include "gnss.h"
 
-#define DBG_SECTION_NAME "LPM"
-#define DBG_LEVEL DBG_LOG
-#include <rtdbg.h>
-
 void rtc_wakeup_irq_enable(void);
 rt_err_t nbiot_power_on(void);
 rt_err_t nbiot_power_off(void);

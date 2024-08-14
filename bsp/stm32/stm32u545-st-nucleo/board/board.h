@@ -47,6 +47,7 @@ extern int __bss_end;
 #endif
 
 void SystemClock_Config(void);
+void MX_ICACHE_Init(void);
 
 #ifdef __cplusplus
 }

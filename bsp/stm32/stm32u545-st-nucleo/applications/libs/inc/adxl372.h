@@ -14,11 +14,6 @@
 #include "board.h"
 #include "board_pin.h"
 
-#define DBG_SECTION_NAME "ADXL372"
-#define DBG_LEVEL DBG_LOG
-// #define DBG_LEVEL DBG_INFO
-#include <rtdbg.h>
-
 static const rt_uint8_t ADI_ADXL372_ADI_DEVID         = 0x00;   // Analog Devices, Inc., accelerometer ID 
 static const rt_uint8_t ADI_ADXL372_MST_DEVID         = 0x01;   // Analog Devices MEMS device ID
 static const rt_uint8_t ADI_ADXL372_DEVID             = 0x02;   // Device ID

@@ -8,6 +8,10 @@
  */
 #include "adxl372.h"
 
+#define DBG_SECTION_NAME "ADXL372"
+#define DBG_LEVEL DBG_LOG
+#include <rtdbg.h>
+
 #define ADXL372_SPI_NAME "spi1"
 #define ADXL372_DEV_NAME "adxl372"
 

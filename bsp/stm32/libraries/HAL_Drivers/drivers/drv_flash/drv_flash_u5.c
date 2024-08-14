@@ -29,7 +29,7 @@
   * @param  Addr: Address of the FLASH Memory
   * @retval The page of a given address
   */
-static uint32_t GetPage(uint32_t Addr)
+uint32_t GetPage(uint32_t Addr)
 {
     uint32_t page = 0;
 
@@ -52,7 +52,7 @@ static uint32_t GetPage(uint32_t Addr)
   * @param  Addr: Address of the FLASH Memory
   * @retval The bank of a given address
   */
-static uint32_t GetBank(uint32_t Addr)
+uint32_t GetBank(uint32_t Addr)
 {
     uint32_t bank = 0;
     if (Addr < (FLASH_BASE + FLASH_BANK_SIZE))
@@ -114,13 +114,13 @@ int stm32_flash_read(rt_uint32_t addr, rt_uint8_t *buf, size_t size)
 
     if ((addr + size) > STM32_FLASH_END_ADDRESS)
     {
-        LOG_E("read outrange flash size! addr is (0x%p)", (void*)(addr + size));
+        LOG_E("read outrange flash size! addr is (%p)", (void*)(addr + size));
         return -RT_EINVAL;
     }
 
     for (i = 0; i < size; i++, buf++, addr++)
     {
-        *buf = *(rt_uint8_t *) addr;
+        *buf = *(uint8_t *) addr;
     }
 
     return size;
@@ -138,13 +138,13 @@ int stm32_flash_read(rt_uint32_t addr, rt_uint8_t *buf, size_t size)
  * @return result
  */
 
-int stm32_flash_write(rt_uint32_t addr, const uint8_t *buf, size_t size)
+int stm32_flash_write(rt_uint32_t addr, const rt_uint8_t *buf, size_t size)
 {
     size_t i, j, k, n;
     rt_err_t result = 0;
     uint32_t write_data[4] = {0};
     uint32_t temp_data = 0;
-    LOG_D("stm32_flash_write addr=0x%02X, buf=0x%02X, size=0x%02X", addr, buf, size);
+    LOG_D("stm32_flash_write addr=0x%08X, buf=0x%08X, size=0x%08X", addr, buf, size);
 
     if ((addr + size) > STM32_FLASH_END_ADDRESS)
     {
@@ -160,7 +160,7 @@ int stm32_flash_write(rt_uint32_t addr, const uint8_t *buf, size_t size)
 
     HAL_FLASH_Unlock();
 
-    // __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR);
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR);
 
     if (size < 1)
     {
@@ -180,15 +180,15 @@ int stm32_flash_write(rt_uint32_t addr, const uint8_t *buf, size_t size)
             }
         }
         LOG_D(
-            "write_data=0x%02X 0x%02X 0x%02X 0x%02X 0x%02X",
+            "write_data_addr=0x%08X write_data[0]=0x%08X write_data[1]=0x%08X write_data[2]=0x%08X write_data[3]=0x%08X",
             write_data, write_data[0], write_data[1], write_data[2], write_data[3]
         );
 
         /* write data */
-        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, addr, (uint32_t)write_data) == HAL_OK)
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, (uint32_t)addr, (uint32_t)write_data) == HAL_OK)
         {
             /* Check the written value */
-            if (Check_Program(addr, write_data) != 0)
+            if (Check_Program((uint32_t)addr, (uint32_t *)write_data) != 0)
             {
                 LOG_E("ERROR: write data != read data\n");
                 result = -RT_ERROR;
@@ -209,6 +209,7 @@ int stm32_flash_write(rt_uint32_t addr, const uint8_t *buf, size_t size)
 
 __exit:
     HAL_FLASH_Lock();
+
     if (result != 0)
     {
         return result;
@@ -245,11 +246,11 @@ int stm32_flash_erase(rt_uint32_t addr, size_t size)
     HAL_FLASH_Unlock();
 
     /* Get the 1st page to erase */
-    FirstPage = GetPage(addr);
+    FirstPage = GetPage((uint32_t)addr);
     /* Get the number of pages to erase from 1st page */
-    NbOfPages = GetPage(addr + size - 1) - FirstPage + 1;
+    NbOfPages = GetPage((uint32_t)addr + size - 1) - FirstPage + 1;
     /* Get the bank */
-    BankNumber = GetBank(addr);
+    BankNumber = GetBank((uint32_t)addr);
     /* Fill EraseInit structure*/
     EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
     // EraseInitStruct.TypeErase   = FLASH_TYPEERASE_MASSERASE;
@@ -271,7 +272,7 @@ __exit:
         return result;
     }
 
-    LOG_D("erase done: addr (0x%p), size %d", (void*)addr, size);
+    LOG_D("erase done: addr (%p), size %d", (void*)addr, size);
     return size;
 }
 

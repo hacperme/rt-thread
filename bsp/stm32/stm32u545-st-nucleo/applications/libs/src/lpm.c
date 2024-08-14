@@ -8,6 +8,10 @@
  */
 #include "lpm.h"
 
+#define DBG_SECTION_NAME "LPM"
+#define DBG_LEVEL DBG_LOG
+#include <rtdbg.h>
+
 rt_device_t rtc_dev;
 
 void rtc_wakeup_irq_enable(void)
