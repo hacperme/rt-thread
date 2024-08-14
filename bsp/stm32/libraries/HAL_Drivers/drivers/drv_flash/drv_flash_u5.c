@@ -160,7 +160,7 @@ int stm32_flash_write(rt_uint32_t addr, const rt_uint8_t *buf, size_t size)
 
     HAL_FLASH_Unlock();
 
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR);
+    // __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR);
 
     if (size < 1)
     {
