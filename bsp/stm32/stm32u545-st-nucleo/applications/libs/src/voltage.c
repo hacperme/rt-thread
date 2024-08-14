@@ -19,42 +19,30 @@
 #define VCAT_ADC_CHANNEL 2
 #define VBAT_ADC_CHANNEL RT_ADC_INTERN_CH_VBAT
 
-static const rt_uint16_t ADC_VREF = 3253;
-
 static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint16_t *value)
 {
+    rt_err_t res;
     rt_adc_device_t adc_dev;
-    rt_err_t ret = RT_EOK;
+    rt_uint16_t vol = 0;
 
     adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
-    // LOG_E("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
-    if (adc_dev == RT_NULL)
+    LOG_E("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
+    res = !adc_dev ? RT_ERROR : RT_EOK;
+    if (res != RT_EOK)
     {
-        return RT_ERROR;
+        return res;
     }
 
     /* vref 3305 */
-    *value = rt_adc_voltage(adc_dev, channel);
-    LOG_D("rt_adc_voltage channel %d value %d", channel, *value);
-
-    // ret = rt_adc_enable(adc_dev, channel);
-    // // LOG_D("rt_adc_enable channel %d res %s. value %d", channel, (ret == RT_EOK ? "success" : "failed"), *value);
-    // if (ret != RT_EOK)
-    // {
-    //     return ret;
-    // }
-    // *value = rt_adc_read(adc_dev, channel) * ADC_VREF / ((1 << 12) - 1);
-    // // *value = rt_adc_read(adc_dev, channel);
-    // // LOG_D("CUR_ADC value %d", *value);
-    // ret = rt_adc_disable(adc_dev, channel);
-    // // LOG_D("rt_adc_disable channel %d res %s. ret %d", channel, (ret == RT_EOK ? "success" : "failed"), ret);
-
-    if (*value > 0)
+    vol = rt_adc_voltage(adc_dev, channel);
+    LOG_D("rt_adc_voltage channel %d value %d", channel, vol);
+    res = vol > 0 ? RT_EOK : RT_ERROR;
+    if (res == RT_EOK)
     {
-        ret = RT_EOK;
+        *value = vol;
     }
 
-    return ret;
+    return res;
 }
 
 rt_err_t cur_vol_read(rt_uint16_t *value)
@@ -75,7 +63,7 @@ rt_err_t vbat_vol_read(rt_uint16_t *value)
 {
     rt_err_t res = RT_EOK;
     res = adc_vol_read((rt_int8_t)VBAT_ADC_CHANNEL, value);
-    *value = *value * 4;
+    *value *= 4;
     return res;
 }
 
