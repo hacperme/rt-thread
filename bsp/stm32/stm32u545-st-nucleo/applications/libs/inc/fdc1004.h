@@ -15,9 +15,7 @@
 #include "board.h"
 #include "board_pin.h"
 
-#ifndef FDC1004_ADDR
 #define FDC1004_ADDR 0x50
-#endif
 
 static const rt_uint8_t FDC1004_MEAS1_MSB_REG = 0x00;
 static const rt_uint8_t FDC1004_MEAS1_LSB_REG = 0x01;

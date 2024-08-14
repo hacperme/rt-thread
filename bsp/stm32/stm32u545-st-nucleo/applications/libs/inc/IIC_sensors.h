@@ -16,6 +16,7 @@
 #include "board_pin.h"
 #include "fdc1004.h"
 #include "hdc3021.h"
+#include "tmp116.h"
 
 #define IIC_SAMPLE_SIZE 10
 #define IIC_SAMPLE_PERIOD 1000

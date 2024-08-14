@@ -12,15 +12,6 @@
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
-// #define HDC3021_ADDR 0x44
-// static rt_uint8_t HDC3021_TRIGGER_ON_DEMAND[2] = {0x24, 0x00};
-// static rt_uint8_t HDC3021_SOFT_RESET[2] = {0x30, 0xA2};
-
-#define TMP116_1_ADDR 0x48
-#define TMP116_2_ADDR 0x49
-static rt_uint8_t TMP116_CFG_OS_DATA[3] = {0x01, 0x0E, 0x20};
-static rt_uint8_t TMP116_TEMP_REG_ADDR = 0x00;
-
 static rt_uint8_t TPH_THD_EXIT = 0;
 static float ERROR_SENSOR_VALUE = -999.0;
 
@@ -130,7 +121,7 @@ static void iic_sensors_filter_entry(void *device)
             dev->hdc3021_humi_filter.index++;
 
             filter_check_full(&dev->tmp116_1_temp_filter);
-            if (read_hw_tmp116_temperature(dev, (rt_uint8_t)TMP116_1_ADDR, &tmp116_1_temp) == RT_EOK)
+            if (read_hw_tmp116_temperature(dev, TMP116_1_ADDR, &tmp116_1_temp) == RT_EOK)
             {
                 dev->tmp116_1_temp_filter.buf[dev->tmp116_1_temp_filter.index] = tmp116_1_temp;
             }
@@ -141,7 +132,7 @@ static void iic_sensors_filter_entry(void *device)
             dev->tmp116_1_temp_filter.index++;
 
             filter_check_full(&dev->tmp116_2_temp_filter);
-            if (read_hw_tmp116_temperature(dev, (rt_uint8_t)TMP116_2_ADDR, &tmp116_2_temp) == RT_EOK)
+            if (read_hw_tmp116_temperature(dev, TMP116_2_ADDR, &tmp116_2_temp) == RT_EOK)
             {
                 dev->tmp116_2_temp_filter.buf[dev->tmp116_2_temp_filter.index] = tmp116_2_temp;
             }
@@ -180,64 +171,15 @@ static void iic_sensors_filter_entry(void *device)
 
 static rt_err_t read_hw_hdc3021_temperature_humidity(iic_sensor_t dev, hdc3021_iic_t *temp_rh)
 {
-    rt_err_t res = hdc3021_read_by_trigger_on_demand_mode(dev->i2c, &temp_rh->temperature, &temp_rh->humidity);
+    rt_err_t res;
+    res = hdc3021_read_by_trigger_on_demand_mode(dev->i2c, &temp_rh->temperature, &temp_rh->humidity);
     return res;
-
-    // rt_uint8_t data[6] = {0};
-    // if (rt_i2c_master_send(dev->i2c, HDC3021_ADDR, RT_I2C_WR, HDC3021_TRIGGER_ON_DEMAND, 2) == 2)
-    // {
-    //     rt_thread_delay(rt_tick_from_millisecond(20));
-    //     if (rt_i2c_master_recv(dev->i2c, HDC3021_ADDR, RT_I2C_RD, data, 6) == 6)
-    //     {
-    //         // LOG_D("DATA: %02X, %02X, %02X, %02X, %02X, %02X", data[0], data[1], data[2], data[3], data[4], data[5]);
-    //         temp_rh->temperature = (float)((data[0] << 8) | data[1]) / 65536.0 * 175.0 - 45.0;
-    //         temp_rh->humidity = (float)((data[3] << 8) | data[4]) / 65536.0 * 100.0;
-    //         return RT_EOK;
-    //     }
-    //     else
-    //     {
-    //         LOG_E("hdc3021 rt_i2c_master_recv failed.");
-    //     }
-    // }
-    // else{
-    //     LOG_E("hdc3021 rt_i2c_master_send failed.");
-    // }
-    // return RT_ERROR;
 }
 
 static rt_err_t read_hw_tmp116_temperature(iic_sensor_t dev, const rt_uint8_t addr, float *temp)
 {
-    rt_err_t res = RT_ERROR;
-    rt_uint8_t data[2] = {0};
-    rt_ssize_t i2c_res;
-    i2c_res = rt_i2c_master_send(dev->i2c, addr, RT_I2C_WR, TMP116_CFG_OS_DATA, 3);
-    LOG_D("read_hw_tmp116_temperature ADDR %#02X, rt_i2c_master_send %d", addr, res);
-    if (i2c_res == 3)
-    {
-        rt_thread_delay(rt_tick_from_millisecond(50));
-        if(rt_i2c_master_send(dev->i2c, addr, RT_I2C_WR, &TMP116_TEMP_REG_ADDR, 1) == 1)
-        {
-            rt_thread_delay(rt_tick_from_millisecond(20));
-            if (rt_i2c_master_recv(dev->i2c, addr, RT_I2C_RD, data, 2) == 2)
-            {
-                LOG_D("TMP116 DATA 0x%02X, 0x%02X", data[0], data[1]);
-                *temp = (float)((data[0] << 8) | data[1]) * 0.0078125;
-                res = RT_EOK;
-            }
-            else
-            {
-                LOG_E("rt_i2c_master_recv failed");
-            }
-        }
-        else
-        {
-            LOG_E("rt_i2c_master_send TMP116_TEMP_REG_ADDR failed.");
-        }
-    }
-    else
-    {
-        LOG_E("rt_i2c_master_send TMP116_CFG_OS_DATA failed.");
-    }
+    rt_err_t res;
+    res = temp116_read_temp_by_one_shot(dev->i2c, addr, temp);
     return res;
 }
 
