@@ -8,11 +8,19 @@
  */
 #include "board_pin.h"
 
+#define DBG_SECTION_NAME "BOARD_PIN"
+#define DBG_LEVEL DBG_LOG
+#include <rtdbg.h>
+
 #define GNSS_PWRON_PIN          GET_PIN(E, 0)
 #define GNSS_RST_PIN            GET_PIN(E, 1)
 #define EG915_GNSSEN_PIN        GET_PIN(B, 5)
 #define SENSOR_PWRON_PIN        GET_PIN(D, 8)
+// #ifdef SOC_STM32U545RE
+// #define PWRCTRL_PWR_WKUP3       GET_PIN(B, 7)
+// #else
 #define PWRCTRL_PWR_WKUP3       GET_PIN(E, 6)
+// #endif
 #define NBIOT_PWRON_PIN         GET_PIN(E, 2)
 #define ESP32_PWRON_PIN         GET_PIN(H, 1)
 #define ESP32_EN_PIN            GET_PIN(E, 5)
@@ -70,18 +78,36 @@ rt_err_t sensor_pwron_pin_enable(rt_uint8_t mode)
 
 void pwrctrl_pwr_wkup3_init(void)
 {
-    rt_pin_mode(PWRCTRL_PWR_WKUP3, PIN_MODE_INPUT);
+    rt_pin_mode(PWRCTRL_PWR_WKUP3, PIN_MODE_INPUT_PULLDOWN);
+}
+
+void pwrctrl_pwr_wkup3_irq(void *args)
+{
+    LOG_D("pwrctrl_pwr_wkup3_irq");
 }
 
 rt_err_t pwrctrl_pwr_wkup3_irq_enable(void)
 {
-    /* Power harvster/tracker monitor wakeup pin irq enable. */
-    if (rt_pin_irq_enable(PWRCTRL_PWR_WKUP3, PIN_IRQ_ENABLE) == RT_EOK)
+    rt_err_t res;
+    res = rt_pin_attach_irq(PWRCTRL_PWR_WKUP3, PIN_IRQ_MODE_RISING_FALLING, pwrctrl_pwr_wkup3_irq, RT_NULL);
+    LOG_D("rt_pin_attach_irq PWRCTRL_PWR_WKUP3 PIN_IRQ_MODE_RISING_FALLING res=%d");
+    if (res != RT_EOK)
     {
-        HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN3_HIGH_0);
-        return RT_EOK;
+        return res;
     }
-    return RT_ERROR;
+    res = rt_pin_irq_enable(PWRCTRL_PWR_WKUP3, PIN_IRQ_ENABLE);
+    LOG_D("rt_pin_irq_enable PWRCTRL_PWR_WKUP3 PIN_IRQ_ENABLE res=%d", res);
+    /* Power harvster/tracker monitor wakeup pin irq enable. */
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+// #ifdef SOC_STM32U545RE
+//     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN4_HIGH_2);
+// #else
+    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN3_HIGH_0);
+// #endif
+    return res;
 }
 
 void nbiot_pwron_pin_init(void)

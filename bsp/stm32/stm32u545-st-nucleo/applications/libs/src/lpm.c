@@ -62,8 +62,10 @@ rt_err_t cat1_power_off(void)
 
 void shut_down(void)
 {
+    rt_err_t res;
     /* Wakup irq enable. */
-    pwrctrl_pwr_wkup3_irq_enable();
+    res = pwrctrl_pwr_wkup3_irq_enable();
+    LOG_D("pwrctrl_pwr_wkup3_irq_enable %s.", res != RT_EOK ? "failed" : "success");
     rtc_wakeup_irq_enable();
     // test_button_wakeup_irq_enable();
 
