@@ -370,6 +370,8 @@ int rt_kprintf(const char *fmt, ...) {
     va_end(args);
 
     return len;
+#else
+    return 0;
 #endif
 }
 

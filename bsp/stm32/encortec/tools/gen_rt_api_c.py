@@ -54,6 +54,8 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
     va_end(args);
 
     return len;
+#else
+    return 0;
 #endif
 }\n
 """
