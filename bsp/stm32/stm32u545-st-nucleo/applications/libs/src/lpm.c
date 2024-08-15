@@ -203,7 +203,7 @@ rt_err_t rtc_set_datetime(int year, int month, int day, int hour, int minute, in
     return err;
 }
 
-rt_err_t rtc_get_datatime(void)
+static rt_err_t rtc_get_datatime(void)
 {
     time_t cur_time;
     struct tm *time_now;

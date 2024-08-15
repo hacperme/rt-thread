@@ -26,6 +26,8 @@ rt_err_t cat1_power_on(void);
 rt_err_t cat1_power_off(void);
 void shut_down(void);
 rt_uint8_t get_wakeup_source(void);
+rt_uint8_t is_pin_wakeup(const rt_uint8_t *source);
+rt_uint8_t is_rtc_wakeup(const rt_uint8_t *source);
 static void alarm_callback(rt_alarm_t alarm, time_t timestamp);
 rt_err_t rtc_init(void);
 rt_err_t rtc_set_datetime(int year, int month, int day, int hour, int minute, int second);
