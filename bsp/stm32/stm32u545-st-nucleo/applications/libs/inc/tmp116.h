@@ -25,8 +25,8 @@ rt_err_t tmp116_read_device_id(struct rt_i2c_bus_device *iic_dev, const rt_uint8
 rt_err_t tmp116_set_configuration(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, rt_uint8_t *cfg, rt_uint8_t size);
 rt_err_t tmp116_read_configuration(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, rt_uint16_t *cfg);
 rt_err_t tmp116_data_ready(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, rt_uint8_t *ready);
-rt_err_t tmp116_read_temperature(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, float *temp);
-rt_err_t temp116_read_temp_by_one_shot(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, float *temp);
+rt_err_t tmp116_measure_temperature(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, float *temp);
+rt_err_t temp116_read_temperture(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, float *temp);
 rt_err_t test_temp116(void);
 
 #endif  // __TMP116_H__

@@ -102,7 +102,7 @@ rt_err_t hdc3021_read_temp_humi_by_tod(struct rt_i2c_bus_device *iic_dev, float 
     return res;
 }
 
-rt_err_t hdc3021_read_by_trigger_on_demand_mode(struct rt_i2c_bus_device *iic_dev, float *temp, float *humi)
+rt_err_t hdc3021_read_temp_humi(struct rt_i2c_bus_device *iic_dev, float *temp, float *humi)
 {
     rt_err_t res = RT_EOK;
     res = hdc3021_trigger_on_demand(iic_dev);
@@ -163,8 +163,8 @@ rt_err_t test_hdc3021(void)
         /* Not Use soft reset, humi will not be 0.0 after soft reset. */
         // res = hdc3021_soft_reset(iic_dev);
         // LOG_D("hdc3021_soft_reset %s.", res != RT_EOK ? "failed" : "success");
-        res = hdc3021_read_by_trigger_on_demand_mode(iic_dev, &temp, &humi);
-        LOG_D("hdc3021_read_by_trigger_on_demand_mode %s.", res != RT_EOK ? "failed" : "success");
+        res = hdc3021_read_temp_humi(iic_dev, &temp, &humi);
+        LOG_D("hdc3021_read_temp_humi %s.", res != RT_EOK ? "failed" : "success");
         rt_thread_mdelay(1000);
     }
 

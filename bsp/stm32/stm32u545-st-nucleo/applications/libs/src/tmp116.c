@@ -100,7 +100,7 @@ rt_err_t tmp116_data_ready(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t a
     return res;
 }
 
-rt_err_t tmp116_read_temperature(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, float *temp)
+rt_err_t tmp116_measure_temperature(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, float *temp)
 {
     rt_err_t res = RT_ERROR;
     rt_uint8_t ready = 0;
@@ -147,7 +147,7 @@ rt_err_t tmp116_read_temperature(struct rt_i2c_bus_device *iic_dev, const rt_uin
     return res;
 }
 
-rt_err_t temp116_read_temp_by_one_shot(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, float *temp)
+rt_err_t temp116_read_temperture(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, float *temp)
 {
     rt_err_t res;
 
@@ -155,8 +155,8 @@ rt_err_t temp116_read_temp_by_one_shot(struct rt_i2c_bus_device *iic_dev, const 
     res = tmp116_set_configuration(iic_dev, addr, cfg, 2);
     LOG_D("tmp116_set_configuration addr=0x%02X %s", addr, res != RT_EOK ? "failed" : "success");
 
-    res = tmp116_read_temperature(iic_dev, addr, temp);
-    LOG_D("tmp116_read_temperature addr=0x%02X %s temp=%f", addr, res != RT_EOK ? "failed" : "success", *temp);
+    res = tmp116_measure_temperature(iic_dev, addr, temp);
+    LOG_D("tmp116_measure_temperature addr=0x%02X %s temp=%f", addr, res != RT_EOK ? "failed" : "success", *temp);
 
     return res;
 }
@@ -189,8 +189,8 @@ rt_err_t test_temp116(void)
         LOG_D("tmp116_read_device_id addr=0x%02X %s dev_id=0x%02X", addrs[i], res != RT_EOK ? "failed" : "success", dev_id);
 
         temp = -999.0;
-        res = temp116_read_temp_by_one_shot(iic_dev, addrs[i], &temp);
-        LOG_D("temp116_read_temp_by_one_shot addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
+        res = temp116_read_temperture(iic_dev, addrs[i], &temp);
+        LOG_D("temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
     }
 
     return res;

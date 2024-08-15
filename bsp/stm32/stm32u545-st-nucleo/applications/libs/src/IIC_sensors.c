@@ -172,14 +172,14 @@ static void iic_sensors_filter_entry(void *device)
 static rt_err_t read_hw_hdc3021_temperature_humidity(iic_sensor_t dev, hdc3021_iic_t *temp_rh)
 {
     rt_err_t res;
-    res = hdc3021_read_by_trigger_on_demand_mode(dev->i2c, &temp_rh->temperature, &temp_rh->humidity);
+    res = hdc3021_read_temp_humi(dev->i2c, &temp_rh->temperature, &temp_rh->humidity);
     return res;
 }
 
 static rt_err_t read_hw_tmp116_temperature(iic_sensor_t dev, const rt_uint8_t addr, float *temp)
 {
     rt_err_t res;
-    res = temp116_read_temp_by_one_shot(dev->i2c, addr, temp);
+    res = temp116_read_temperture(dev->i2c, addr, temp);
     return res;
 }
 
