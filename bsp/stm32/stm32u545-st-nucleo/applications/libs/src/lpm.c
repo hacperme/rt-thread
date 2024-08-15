@@ -78,6 +78,47 @@ void shut_down(void)
     HAL_PWREx_EnterSHUTDOWNMode();
 }
 
+rt_uint8_t get_wakeup_source(void)
+{
+    rt_uint8_t source = 0;
+    rt_int32_t status;
+    rt_uint32_t PWR_WAKEUP_FLAGS[7] = {
+        PWR_WAKEUP_FLAG1,
+        PWR_WAKEUP_FLAG2,
+        PWR_WAKEUP_FLAG3,
+        PWR_WAKEUP_FLAG4,
+        PWR_WAKEUP_FLAG5,
+        PWR_WAKEUP_FLAG6,
+        PWR_WAKEUP_FLAG7,
+    };
+    for (rt_uint8_t i = 0; i < 7; i++)
+    {
+        status = __HAL_PWR_GET_FLAG(PWR_WAKEUP_FLAGS[i]);
+        LOG_D("__HAL_PWR_GET_FLAG(PWR_WAKEUP_FLAG%d)=%d", i + 1, status);
+        if (status == 1)
+        {
+            status = __HAL_PWR_CLEAR_FLAG(PWR_WAKEUP_FLAGS[i]);
+            LOG_D("__HAL_PWR_CLEAR_FLAG(PWR_WAKEUP_FLAG%d)=%d", i + 1, status);
+            source |= (1 << i);
+        }
+    }
+    /*
+    GPIO Wakeup: (source & (1 << 2)) >> 2 == 1
+     RTC Wakeup: (source & (1 << 6)) >> 6 == 1
+    */
+    return source;
+}
+
+rt_uint8_t is_pin_wakeup(const rt_uint8_t *source)
+{
+    return (*source & (1 << 2)) >> 2;
+}
+
+rt_uint8_t is_rtc_wakeup(const rt_uint8_t *source)
+{
+    return (*source & (1 << 6)) >> 6;
+}
+
 static void alarm_callback(rt_alarm_t alarm, time_t timestamp)
 {
     LOG_D("user alarm callback function.");
@@ -97,22 +138,82 @@ rt_err_t rtc_init(void)
     return res;
 }
 
-rt_err_t rtc_set_datetime(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day,
-                          rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
+rt_err_t rtc_set_datetime(int year, int month, int day, int hour, int minute, int second)
 {
-    rt_err_t res = RT_ERROR;
+    rt_err_t err = RT_ERROR;
+    /* set time and date */
+    struct tm tm_new = {0};
+    time_t old = (time_t)0;
+    time_t now = (time_t)0;
 
-    res = set_date(year, month, day);
-    LOG_D("set_date(%d, %d, %d) %s.", year, month, day, res != RT_EOK ? "failed" : "success");
-    if (res != RT_EOK)
+    tm_new.tm_year = year - 1900;
+    tm_new.tm_mon = month - 1; /* .tm_min's range is [0-11] */
+    tm_new.tm_mday = day;
+    tm_new.tm_hour = hour;
+    tm_new.tm_min = minute;
+    tm_new.tm_sec = second;
+    if (tm_new.tm_year <= 0)
     {
-        return res;
+        LOG_D("year is out of range [1900-]\n");
+        return err;
     }
+    if (tm_new.tm_mon > 11) /* .tm_min's range is [0-11] */
+    {
+        LOG_D("month is out of range [1-12]\n");
+        return err;
+    }
+    if (tm_new.tm_mday == 0 || tm_new.tm_mday > 31)
+    {
+        LOG_D("day is out of range [1-31]\n");
+        return err;
+    }
+    if (tm_new.tm_hour > 23)
+    {
+        LOG_D("hour is out of range [0-23]\n");
+        return err;
+    }
+    if (tm_new.tm_min > 59)
+    {
+        LOG_D("minute is out of range [0-59]\n");
+        return err;
+    }
+    if (tm_new.tm_sec > 60)
+    {
+        LOG_D("second is out of range [0-60]\n");
+        return err;
+    }
+    /* save old timestamp */
+    err = get_timestamp(&old);
+    if (err != RT_EOK)
+    {
+        LOG_D("Get current timestamp failed. %d\n", err);
+        return err;
+    }
+    /* converts the local time into the calendar time. */
+    now = mktime(&tm_new);
+    err = set_timestamp(now);
+    if (err != RT_EOK)
+    {
+        LOG_D("set date failed. %d\n", err);
+        return err;
+    }
+    get_timestamp(&now); /* get new timestamp */
+    LOG_D("old: %.*s", 25, ctime(&old));
+    LOG_D("now: %.*s", 25, ctime(&now));
+    return err;
+}
 
-    res = set_time(hour, minute, second);
-    if (res != RT_EOK)
-    LOG_D("set_time(%d, %d, %d) %s.", hour, minute, second, res != RT_EOK ? "failed" : "success");
-    return res;
+rt_err_t rtc_get_datatime(void)
+{
+    time_t cur_time;
+    struct tm *time_now;
+    char buf[64];
+
+    time(&cur_time);
+    time_now = localtime(&cur_time);
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", time_now);
+    LOG_D("Now time %s", buf);
+    return RT_EOK;
 }
 
 rt_err_t rtc_set_wakeup(time_t sleep_time)
@@ -149,6 +250,41 @@ rt_err_t rtc_set_wakeup(time_t sleep_time)
     return res;
 }
 
+static void test_rtc(void)
+{
+    rt_err_t res;
+
+    res = rtc_init();
+    LOG_D("rtc_init %s", res == RT_EOK ? "success" : "failed");
+
+    res = rtc_set_datetime(2024, 8, 10, 0, 0, 0);
+    LOG_D("rtc_set_datetime %s", res == RT_EOK ? "success" : "failed");
+
+    res = rtc_get_datatime();
+
+    res = rtc_set_wakeup(30);
+
+    if (res == RT_EOK)
+    {
+        shut_down();
+    }
+}
+
+MSH_CMD_EXPORT(test_rtc, test rtc);
+
+static void test_show_wkup_status(void)
+{
+    rt_uint8_t res;
+    rt_uint8_t wkup_source = get_wakeup_source();
+    LOG_D("get_wakeup_source=%d", wkup_source);
+    res = is_pin_wakeup(&wkup_source);
+    LOG_D("is_pin_wakeup res=%d", res);
+    res = is_rtc_wakeup(&wkup_source);
+    LOG_D("is_rtc_wakeup res=%d", res);
+}
+
+MSH_CMD_EXPORT(test_show_wkup_status, test show reset status);
+
 static void test_rtc_wakeup(int argc, char **argv)
 {
     rt_err_t res;
@@ -170,18 +306,8 @@ static void test_rtc_wakeup(int argc, char **argv)
 
     res = esp32_en_off();
     LOG_D("esp32_en_off %s", res == RT_EOK ? "success" : "failed");
-
-    res = rtc_init();
-    LOG_D("rtc_init %s", res == RT_EOK ? "success" : "failed");
-
-    res = rtc_set_datetime(2024, 8, 10, 0, 0, 0);
-    LOG_D("rtc_set_datetime %s", res == RT_EOK ? "success" : "failed");
-
-    res = rtc_set_wakeup(60);
-    LOG_D("rtc_set_wakeup(60) %s", res == RT_EOK ? "success" : "failed");
-
-    shut_down();
 }
+
 MSH_CMD_EXPORT(test_rtc_wakeup, test rtc wakeup);
 
 static void test_all_pin_enable(int argc, char **argv)

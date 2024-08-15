@@ -16,11 +16,11 @@
 #define GNSS_RST_PIN            GET_PIN(E, 1)
 #define EG915_GNSSEN_PIN        GET_PIN(B, 5)
 #define SENSOR_PWRON_PIN        GET_PIN(D, 8)
-// #ifdef SOC_STM32U545RE
-// #define PWRCTRL_PWR_WKUP3       GET_PIN(B, 7)
-// #else
+#ifdef SOC_STM32U545RE
+#define PWRCTRL_PWR_WKUP3       GET_PIN(B, 7)
+#else
 #define PWRCTRL_PWR_WKUP3       GET_PIN(E, 6)
-// #endif
+#endif
 #define NBIOT_PWRON_PIN         GET_PIN(E, 2)
 #define ESP32_PWRON_PIN         GET_PIN(H, 1)
 #define ESP32_EN_PIN            GET_PIN(E, 5)
@@ -90,7 +90,7 @@ rt_err_t pwrctrl_pwr_wkup3_irq_enable(void)
 {
     rt_err_t res;
     res = rt_pin_attach_irq(PWRCTRL_PWR_WKUP3, PIN_IRQ_MODE_RISING_FALLING, pwrctrl_pwr_wkup3_irq, RT_NULL);
-    LOG_D("rt_pin_attach_irq PWRCTRL_PWR_WKUP3 PIN_IRQ_MODE_RISING_FALLING res=%d");
+    LOG_D("rt_pin_attach_irq PWRCTRL_PWR_WKUP3 PIN_IRQ_MODE_RISING_FALLING res=%d", res);
     if (res != RT_EOK)
     {
         return res;
@@ -102,11 +102,11 @@ rt_err_t pwrctrl_pwr_wkup3_irq_enable(void)
     {
         return res;
     }
-// #ifdef SOC_STM32U545RE
-//     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN4_HIGH_2);
-// #else
+#ifdef SOC_STM32U545RE
+    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN4_HIGH_2);
+#else
     HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN3_HIGH_0);
-// #endif
+#endif
     return res;
 }
 
