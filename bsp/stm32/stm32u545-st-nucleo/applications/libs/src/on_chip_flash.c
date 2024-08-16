@@ -17,7 +17,7 @@ const struct fal_partition *app_part;
 static rt_uint32_t FAL_PAGE_SIZE = 0x2000;
 static rt_uint8_t PAGE_BUFF[0x2000] = {0};
 
-#define FLASH_USER_START_ADDR ((uint32_t)0x08060000)
+#define FLASH_USER_START_ADDR ((uint32_t)0x0807E000)
 #define FLASH_USER_END_ADDR   (FLASH_USER_START_ADDR + FLASH_PAGE_SIZE - 1)
 uint32_t FirstPage = 0, NbOfPages = 0, BankNumber = 0;
 uint32_t Address = 0, PageError = 0;

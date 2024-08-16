@@ -72,17 +72,6 @@ rt_err_t adxl372_recv_inact_event_thd_start(void)
     }
     while (res == RT_EOK);
 
-    if (adxl372_recv_inact_thd != RT_NULL && adxl372_recv_inact_exit != 0)
-    {
-        if (adxl372_recv_inact_exit == 0)
-        {
-            LOG_D("adxl372_recv_inact_thd is running.");
-            res = RT_EOK;
-            return res;
-        }
-        rt_thread_delete(adxl372_recv_inact_thd);
-        adxl372_recv_inact_thd = RT_NULL;
-    }
     adxl372_recv_inact_thd = rt_thread_create(
         "grecvin", adxl372_recv_inact_event, RT_NULL, 0x400, 10, 5
     );
@@ -141,6 +130,12 @@ rt_err_t rt_hw_spi_adxl372_init(void)
 {
     rt_err_t res = RT_ERROR;
 
+    res = adxl372_dev != RT_NULL ? RT_EOK : RT_ERROR;
+    if (res == RT_EOK)
+    {
+        return res;
+    }
+
     rt_device_t spi_dev = rt_device_find(ADXL372_SPI_NAME);
     LOG_D("find device %s %s.", ADXL372_SPI_NAME, spi_dev == RT_NULL ? "failed" : "success");
     if (spi_dev == RT_NULL)
@@ -183,13 +178,25 @@ rt_err_t adxl372_init(rt_uint16_t inact_ms, rt_uint16_t inact_threshold)
 
     res = adxl372_recv_inact_event_thd_start();
     LOG_D("adxl372_recv_inact_event_thd_start %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     power_ctl_val = 0x00;
     res = adxl372_set_power_ctl(&power_ctl_val);
     LOG_D("adxl372_set_power_ctl %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     res = adxl372_int1_pin_irq_enable();
     LOG_D("adxl372_int1_pin_irq_enable %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     /* Set Bandwidth */
     // measure_val = 0x04;  // 3200 Hz
@@ -198,6 +205,10 @@ rt_err_t adxl372_init(rt_uint16_t inact_ms, rt_uint16_t inact_threshold)
     measure_val = 0x00;  // 200 Hz (Default)
     res = adxl372_set_measure(&measure_val);
     LOG_D("adxl372_set_measure %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     /* Set ORD */
     // odr_val = 0x80;  // 6400 Hz
@@ -206,13 +217,25 @@ rt_err_t adxl372_init(rt_uint16_t inact_ms, rt_uint16_t inact_threshold)
     odr_val = 0x00;  // 400 Hz (Default)
     res = adxl372_set_odr(&odr_val);
     LOG_D("adxl372_set_odr %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     res = adxl372_enable_inactive_irq(inact_ms, inact_threshold);
     LOG_D("adxl372_enable_inactive_irq %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     hpf_val = 0x03;
     res = adxl372_set_hpf(&hpf_val);
     LOG_D("adxl372_set_hpf %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     power_ctl_val = 0x03;
     res = adxl372_set_power_ctl(&power_ctl_val);
