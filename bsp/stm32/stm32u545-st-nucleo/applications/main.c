@@ -12,6 +12,7 @@
 #include <rtdevice.h>
 #include <board.h>
 // #include "on_chip_flash.h"
+// #include "board_pin.h"
 
 #define DBG_SECTION_NAME "main"
 #define DBG_LEVEL DBG_LOG
@@ -53,6 +54,12 @@ int main(void)
     LOG_I("__heap_end: %p\r\n", __heap_end);
 
     // test_on_chip_flash();
+    // cat1_pwron_pin_enable(1);
+    // gnss_pwron_pin_enable(1);
+    // sensor_pwron_pin_enable(1);
+    // nbiot_pwron_pin_enable(1);
+    // esp32_pwron_pin_enable(1);
+    // flash_pwron_pin_enable(1);
 
     return RT_EOK;
 }
