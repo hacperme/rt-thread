@@ -76,7 +76,7 @@ rt_err_t write_app_partition(rt_uint32_t addr, rt_uint8_t *buf, rt_int32_t size)
     LOG_D("write_app_partition addr=0x%02X buf=0x%02X size=0x%02X", addr, buf, size);
     ret = fal_partition_write(app_part, addr, buf, size);
     res = ret == size ? RT_EOK : RT_ERROR;
-    LOG_D("write_app_partition %s ret=%d", res == RT_EOK ? "success" : "failed", ret);
+    LOG_D("fal_partition_write %s ret=%d", res == RT_EOK ? "success" : "failed", ret);
     return res;
 }
 
@@ -114,7 +114,7 @@ rt_err_t test_on_chip_flash(void)
     // rt_memset(write_buf, 0x11, size);
     // LOG_D("write_buf=0x%02X", write_buf);
 
-    rt_memset(PAGE_BUFF, 0x11, FAL_PAGE_SIZE);
+    rt_memset(PAGE_BUFF, 0x33, FAL_PAGE_SIZE);
     LOG_D("PAGE_BUFF=0x%02X", PAGE_BUFF);
     res = write_app_partition(addr, PAGE_BUFF, FAL_PAGE_SIZE);
     LOG_D("write_app_partition %s", res == RT_EOK ? "success" : "failed");

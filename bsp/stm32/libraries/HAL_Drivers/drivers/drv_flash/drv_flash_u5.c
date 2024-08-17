@@ -20,7 +20,7 @@
 #include "fal.h"
 #endif
 
-//#define DRV_DEBUG
+#define DRV_DEBUG
 #define LOG_TAG                "drv.flash"
 #include <drv_log.h>
 
@@ -85,6 +85,7 @@ static uint32_t Check_Program(uint32_t StartAddress, uint32_t *Data)
     for(index = 0; index<4; index++)
     {
         data32 = *(uint32_t*)Address;
+        // LOG_D("Address=0x%08X, data32=0x%08X, Data[%d]=0x%08X", Address, data32, index, Data[index]);
         if(data32 != Data[index])
         {
             FailCounter++;
@@ -141,7 +142,7 @@ int stm32_flash_read(rt_uint32_t addr, rt_uint8_t *buf, size_t size)
 
 int stm32_flash_write(rt_uint32_t addr, const rt_uint8_t *buf, size_t size)
 {
-    size_t i, j, k, n;
+    size_t i;
     rt_err_t result = RT_EOK;
     LOG_D("stm32_flash_write addr=0x%08X, buf=0x%08X, size=0x%08X", addr, buf, size);
 
@@ -171,17 +172,7 @@ int stm32_flash_write(rt_uint32_t addr, const rt_uint8_t *buf, size_t size)
     for (i = 0; i < size; i += 16, addr += 16)
     {
         /* write data */
-        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, (uint32_t)addr, (uint32_t)(buf + i)) == HAL_OK)
-        {
-            /* Check the written value */
-            if (Check_Program((uint32_t)addr, (uint32_t *)(buf + i)) != 0)
-            {
-                LOG_E("ERROR: write data != read data\n");
-                result = -RT_ERROR;
-                goto __exit;
-            }
-        }
-        else
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, (uint32_t)addr, (uint32_t)(buf + i)) != HAL_OK)
         {
             result = -RT_ERROR;
             goto __exit;
@@ -190,6 +181,21 @@ int stm32_flash_write(rt_uint32_t addr, const rt_uint8_t *buf, size_t size)
 
 __exit:
     HAL_FLASH_Lock();
+
+    if (result == RT_EOK)
+    {
+        addr -= size;
+        for (i = 0; i < size; i += 16, addr += 16)
+        {
+            /* Check the written value */
+            if (Check_Program((uint32_t)addr, (uint32_t *)(buf + i)) != 0)
+            {
+                LOG_E("ERROR: write data != read data\n");
+                result = -RT_ERROR;
+                break;
+            }
+        }
+    }
 
     if (result != RT_EOK)
     {

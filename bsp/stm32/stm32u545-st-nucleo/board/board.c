@@ -17,7 +17,7 @@ rt_mem_region_t static_regions[NUM_STATIC_REGIONS] = {
   /* Flash region, read only */
   {
     .start = (void *)STM32_FLASH_START_ADRESS,
-    .size = (rt_size_t)384*1024,
+    .size = (rt_size_t)STM32_FLASH_MPU_SIZE,
     .attr = RT_MEM_REGION_P_RX_U_RX,
   },
 };
