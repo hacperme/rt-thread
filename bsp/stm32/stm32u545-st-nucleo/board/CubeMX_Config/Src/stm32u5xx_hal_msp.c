@@ -628,7 +628,11 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef* hrtc)
   /** Initializes the peripherals clock
   */
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+#ifdef BSP_RTC_USING_LSE
     PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+#else
+    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+#endif
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
     {
       Error_Handler();
