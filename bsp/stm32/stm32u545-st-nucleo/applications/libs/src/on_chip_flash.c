@@ -73,10 +73,10 @@ rt_err_t write_app_partition(rt_uint32_t addr, rt_uint8_t *buf, rt_int32_t size)
 {
     rt_err_t res = RT_ERROR;
     rt_int32_t ret;
-    LOG_D("write_app_partition addr=0x%02X buf=0x%02X size=0x%02X");
+    LOG_D("write_app_partition addr=0x%02X buf=0x%02X size=0x%02X", addr, buf, size);
     ret = fal_partition_write(app_part, addr, buf, size);
     res = ret == size ? RT_EOK : RT_ERROR;
-    LOG_D("fal_partition_read %s ret=%d", res == RT_EOK ? "success" : "failed", ret);
+    LOG_D("write_app_partition %s ret=%d", res == RT_EOK ? "success" : "failed", ret);
     return res;
 }
 

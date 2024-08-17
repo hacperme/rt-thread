@@ -75,27 +75,24 @@ uint32_t GetBank(uint32_t Addr)
   */
 static uint32_t Check_Program(uint32_t StartAddress, uint32_t *Data)
 {
-  uint32_t Address;
-  uint32_t index, FailCounter = 0;
-  uint32_t data32;
+    uint32_t Address;
+    uint32_t index, FailCounter = 0;
+    uint32_t data32;
 
-  /* check the user Flash area word by word */
-  Address = StartAddress;
+    /* check the user Flash area word by word */
+    Address = StartAddress;
 
-  while(Address < STM32_FLASH_END_ADDRESS)
-  {
     for(index = 0; index<4; index++)
     {
-      data32 = *(uint32_t*)Address;
-      if(data32 != Data[index])
-      {
-        FailCounter++;
-        return FailCounter;
-      }
-      Address +=4;
+        data32 = *(uint32_t*)Address;
+        if(data32 != Data[index])
+        {
+            FailCounter++;
+            return FailCounter;
+        }
+        Address +=4;
     }
-  }
-  return FailCounter;
+    return FailCounter;
 }
 
 /**
@@ -111,6 +108,10 @@ static uint32_t Check_Program(uint32_t StartAddress, uint32_t *Data)
 int stm32_flash_read(rt_uint32_t addr, rt_uint8_t *buf, size_t size)
 {
     size_t i;
+
+    if(buf == RT_NULL || size < 1) {
+        return -RT_EINVAL;
+    }
 
     if ((addr + size) > STM32_FLASH_END_ADDRESS)
     {
@@ -141,10 +142,17 @@ int stm32_flash_read(rt_uint32_t addr, rt_uint8_t *buf, size_t size)
 int stm32_flash_write(rt_uint32_t addr, const rt_uint8_t *buf, size_t size)
 {
     size_t i, j, k, n;
-    rt_err_t result = 0;
-    uint32_t write_data[4] = {0};
-    uint32_t temp_data = 0;
+    rt_err_t result = RT_EOK;
     LOG_D("stm32_flash_write addr=0x%08X, buf=0x%08X, size=0x%08X", addr, buf, size);
+
+    if(buf == RT_NULL || size < 1) {
+        return -RT_EINVAL;
+    }
+
+    if(size  % 16 != 0) {
+        LOG_E("ERROR: data size must be mutilple of 16!");
+        return -RT_EINVAL;
+    }
 
     if ((addr + size) > STM32_FLASH_END_ADDRESS)
     {
@@ -154,41 +162,19 @@ int stm32_flash_write(rt_uint32_t addr, const rt_uint8_t *buf, size_t size)
 
     if(addr % 16 != 0)
     {
-        LOG_E("write addr must be 16-byte alignment");
+        LOG_E("ERROR: write addr must be 16-byte alignment");
         return -RT_EINVAL;
     }
 
     HAL_FLASH_Unlock();
 
-    // __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGSERR);
-
-    if (size < 1)
+    for (i = 0; i < size; i += 16, addr += 16)
     {
-        return -RT_ERROR;
-    }
-
-    for (i = 0; i < size;)
-    {
-        for (k = 0; k < 4; k++)
-        {
-            n = (size - i) < 4 ? (size - i) : 4;
-            for (j = 0; j < n; j++, i++)
-            {
-                temp_data = *buf;
-                write_data[k] = (write_data[k]) | (temp_data << 8 * j);
-                buf ++;
-            }
-        }
-        LOG_D(
-            "write_data_addr=0x%08X write_data[0]=0x%08X write_data[1]=0x%08X write_data[2]=0x%08X write_data[3]=0x%08X",
-            write_data, write_data[0], write_data[1], write_data[2], write_data[3]
-        );
-
         /* write data */
-        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, (uint32_t)addr, (uint32_t)write_data) == HAL_OK)
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, (uint32_t)addr, (uint32_t)(buf + i)) == HAL_OK)
         {
             /* Check the written value */
-            if (Check_Program((uint32_t)addr, (uint32_t *)write_data) != 0)
+            if (Check_Program((uint32_t)addr, (uint32_t *)(buf + i)) != 0)
             {
                 LOG_E("ERROR: write data != read data\n");
                 result = -RT_ERROR;
@@ -200,17 +186,12 @@ int stm32_flash_write(rt_uint32_t addr, const rt_uint8_t *buf, size_t size)
             result = -RT_ERROR;
             goto __exit;
         }
-
-        temp_data = 0;
-        rt_memset(write_data, 0, 4);
-
-        addr += 16;
     }
 
 __exit:
     HAL_FLASH_Lock();
 
-    if (result != 0)
+    if (result != RT_EOK)
     {
         return result;
     }
@@ -233,6 +214,18 @@ int stm32_flash_erase(rt_uint32_t addr, size_t size)
     rt_err_t result = RT_EOK;
     uint32_t FirstPage = 0, NbOfPages = 0, BankNumber = 0;
     uint32_t PAGEError = 0;
+
+    if(addr % FLASH_PAGE_SIZE != 0)
+    {
+        LOG_E("ERROR: erase addr must be mutiple of FLASH_PAGE_SIZE.");
+        return -RT_EINVAL;
+    }
+
+    if(size < FLASH_PAGE_SIZE ||  size % FLASH_PAGE_SIZE != 0)
+    {
+        LOG_E("ERROR: erase size must be equal or greater than FLASH_PAGE_SIZE and be mutiple of FLASH_PAGE_SIZE.");
+        return -RT_EINVAL;
+    }
 
     if ((addr + size) > STM32_FLASH_END_ADDRESS)
     {
