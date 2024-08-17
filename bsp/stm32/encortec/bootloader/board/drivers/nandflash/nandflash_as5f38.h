@@ -22,7 +22,7 @@
 #define ECC_UNCORRECTABLE_ERROR 0x04   // ECCS1 = 1, ECCS0 = 0 表示检测到但未能纠正错误
 
 #define PAGE_READ_CMD 0x13             // 读取页面到缓存的命令
-#define READ_FROM_CACHE_CMD 0x0B       // 从缓存读取数据的快速读取命令
+#define READ_FROM_CACHE_CMD 0xEB       // 从缓存读取数据的快速读取命令
 #define WRITE_CMD_02 0x02              // 标准写入命令，适用于普通数据区
 #define WRITE_CMD_32 0x32              // 扩展写入命令，适用于数据及备用区
 #define PROGRAM_EXECUTE_CMD 0x10       // 执行写入的命令
