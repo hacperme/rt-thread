@@ -52,7 +52,16 @@ rt_err_t esp32_en_off(void)
 
 rt_err_t cat1_power_on(void)
 {
-    return cat1_pwron_pin_enable(1);
+    rt_err_t res;
+    res = cat1_pwron_pin_enable(1);
+    if (res != RT_ERROR)
+    {
+        return res;
+    }
+    res = cat1_pwrkey_stm_pin_enable(1);
+    rt_thread_mdelay(1000);
+    res = cat1_pwrkey_stm_pin_enable(0);
+    return res;
 }
 
 rt_err_t cat1_power_off(void)

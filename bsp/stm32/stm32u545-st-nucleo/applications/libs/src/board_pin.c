@@ -24,12 +24,19 @@
 #define NBIOT_PWRON_PIN         GET_PIN(E, 2)
 #define ESP32_PWRON_PIN         GET_PIN(H, 1)
 #define ESP32_EN_PIN            GET_PIN(E, 5)
-#define CAT1_PWRON_PIN          GET_PIN(A, 8)
 #define SIM_SELECT_PIN          GET_PIN(C, 9)
 #define NB_CAT1_RF_PIN          GET_PIN(E, 3)
 #define INTN_EXT_ANT_PIN        GET_PIN(D, 7)
 #define ANTENNA_ACTIVE_PIN      GET_PIN(E, 4)
 #define FLASH_PWRON_PIN         GET_PIN(D, 14)
+
+#define CAT1_PWRON_PIN          GET_PIN(A, 8)
+#define CAT1_BOOT_PIN           GET_PIN(C, 6)
+#define CAT1_STATUS_PIN         GET_PIN(D, 4)
+#define CAT1_RESET_STM_PIN      GET_PIN(C, 8)
+#define CAT1_PWRKEY_STM_PIN     GET_PIN(D, 1)
+#define CAT1_PSM_IND_STM_PIN    GET_PIN(C, 11)
+#define CAT1_PSM_INT_STM_PIN    GET_PIN(C, 10)
 
 
 void gnss_pwron_pin_init(void)
@@ -143,17 +150,6 @@ rt_err_t esp32_en_pin_enable(rt_uint8_t mode)
     return rt_pin_read(ESP32_EN_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
-void cat1_pwron_pin_init(void)
-{
-    rt_pin_mode(CAT1_PWRON_PIN, PIN_MODE_OUTPUT);
-}
-
-rt_err_t cat1_pwron_pin_enable(rt_uint8_t mode)
-{
-    rt_pin_write(CAT1_PWRON_PIN, mode);
-    return rt_pin_read(CAT1_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
-}
-
 void sim_select_pin_init(void)
 {
     rt_pin_mode(SIM_SELECT_PIN, PIN_MODE_OUTPUT);
@@ -209,6 +205,83 @@ rt_err_t flash_pwron_pin_enable(rt_uint8_t mode)
     return rt_pin_read(FLASH_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
+void cat1_pwron_pin_init(void)
+{
+    rt_pin_mode(CAT1_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_PWRON_PIN, mode);
+    return rt_pin_read(CAT1_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_boot_pin_init(void)
+{
+    rt_pin_mode(CAT1_BOOT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_boot_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_BOOT_PIN, mode);
+    return rt_pin_read(CAT1_BOOT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_status_pin_init(void)
+{
+    rt_pin_mode(CAT1_STATUS_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_status_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_STATUS_PIN, mode);
+    return rt_pin_read(CAT1_STATUS_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_reset_stm_pin_init(void)
+{
+    rt_pin_mode(CAT1_RESET_STM_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_reset_stm_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_RESET_STM_PIN, mode);
+    return rt_pin_read(CAT1_RESET_STM_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_pwrkey_stm_pin_init(void)
+{
+    rt_pin_mode(CAT1_PWRKEY_STM_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_pwrkey_stm_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_PWRKEY_STM_PIN, mode);
+    return rt_pin_read(CAT1_PWRKEY_STM_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_psm_ind_stm_pin_init(void)
+{
+    rt_pin_mode(CAT1_PSM_IND_STM_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_psm_ind_stm_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_PSM_IND_STM_PIN, mode);
+    return rt_pin_read(CAT1_PSM_IND_STM_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_psm_int_stm_pin_init(void)
+{
+    rt_pin_mode(CAT1_PSM_INT_STM_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_psm_int_stm_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_PSM_INT_STM_PIN, mode);
+    return rt_pin_read(CAT1_PSM_INT_STM_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
 int board_pins_init(void)
 {
     rt_err_t res = RT_EOK;
@@ -221,12 +294,18 @@ int board_pins_init(void)
     nbiot_pwron_pin_init();
     esp32_pwron_pin_init();
     esp32_en_pin_init();
-    cat1_pwron_pin_init();
     sim_select_pin_init();
     nb_cat1_rf_pin_init();
     intn_ext_ant_pin_init();
     antenna_active_pin_init();
     flash_pwron_pin_init();
+    cat1_pwron_pin_init();
+    cat1_boot_pin_init();
+    cat1_status_pin_init();
+    cat1_reset_stm_pin_init();
+    cat1_pwrkey_stm_pin_init();
+    cat1_psm_ind_stm_pin_init();
+    cat1_psm_int_stm_pin_init();
 
     return res;
 }

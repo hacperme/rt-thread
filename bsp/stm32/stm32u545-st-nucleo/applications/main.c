@@ -13,6 +13,7 @@
 #include <board.h>
 // #include "on_chip_flash.h"
 // #include "board_pin.h"
+// #include "lpm.h"
 
 #define DBG_SECTION_NAME "main"
 #define DBG_LEVEL DBG_LOG
@@ -60,6 +61,7 @@ int main(void)
     // nbiot_pwron_pin_enable(1);
     // esp32_pwron_pin_enable(1);
     // flash_pwron_pin_enable(1);
+    // cat1_power_on();
 
     return RT_EOK;
 }

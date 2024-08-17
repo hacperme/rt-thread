@@ -132,7 +132,8 @@ void adxl372_inactive_irq_callback(void *args);
 rt_err_t adxl372_int1_pin_irq_enable(void);
 rt_err_t adxl372_int1_pin_irq_disable(void);
 rt_err_t rt_hw_spi_adxl372_init(void);
-rt_err_t adxl372_init(rt_uint16_t inact_ms, rt_uint16_t inact_threshold);
+rt_err_t adxl372_init(rt_uint16_t *inact_ms, rt_uint16_t *inact_threshold,
+                      rt_uint8_t *measure_val, rt_uint8_t *odr_val, rt_uint8_t *hpf_val);
 rt_err_t adxl732_read(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
 rt_err_t adxl732_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
 
@@ -141,11 +142,11 @@ rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz);
 rt_err_t adxl372_set_measure(rt_uint8_t *val);
 rt_err_t adxl372_set_power_ctl(rt_uint8_t *val);
 rt_err_t adxl372_set_odr(rt_uint8_t *val);
-rt_err_t adxl372_set_time_inact(rt_uint16_t milliseconds);
-rt_err_t adxl372_set_thresh_inact(rt_uint16_t threshold);
+rt_err_t adxl372_set_time_inact(rt_uint16_t *milliseconds);
+rt_err_t adxl372_set_thresh_inact(rt_uint16_t *threshold);
 rt_err_t adxl372_set_int1_map(rt_uint8_t *val);
 rt_err_t adxl372_set_hpf(rt_uint8_t *val);
-rt_err_t adxl372_enable_inactive_irq(rt_uint16_t milliseconds, rt_uint16_t threshold);
+rt_err_t adxl372_enable_inactive_irq(rt_uint16_t *milliseconds, rt_uint16_t *threshold);
 rt_err_t adxl372_reset(void);
 rt_err_t adxl372_set_standby(void);
 
