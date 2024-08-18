@@ -112,8 +112,8 @@ rt_err_t tmp116_measure_temperature(struct rt_i2c_bus_device *iic_dev, const rt_
             break;
         }
         cnt++;
-        rt_thread_mdelay(20);
-    } while (ready != 1 && cnt < 50);
+        rt_thread_mdelay(5);
+    } while (ready != 1 && cnt < 20);
 
     if (ready != 1)
     {

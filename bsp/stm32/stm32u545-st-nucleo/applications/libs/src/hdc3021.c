@@ -112,7 +112,7 @@ rt_err_t hdc3021_read_temp_humi(struct rt_i2c_bus_device *iic_dev, float *temp, 
     {
         return res;
     }
-    // rt_thread_mdelay(10);
+    rt_thread_mdelay(10);
     res = hdc3021_read_temp_humi_by_tod(iic_dev, temp, humi);
     LOG_D(
         "hdc3021_read_temp_humi_by_tod %s. temp=%f, humi=%f",
