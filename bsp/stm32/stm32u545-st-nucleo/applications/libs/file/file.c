@@ -17,6 +17,9 @@
 #define DBG_LEVEL DBG_LOG
 #include <rtdbg.h>
 
+extern void ls(const char *pathname);
+extern void cat(const char *filename);
+
 static int test_file(void)
 {
     ls("/");
