@@ -1,8 +1,8 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-#define SOC_STM32U545RE
-#define BOARD_STM32U545_NUCLEO
+#define SOC_STM32U535RE
+#define BOARD_STM32U535_NUCLEO
 
 /* RT-Thread Kernel */
 
@@ -157,6 +157,8 @@
 
 /* POSIX (Portable Operating System Interface) layer */
 
+#define RT_USING_POSIX_FS
+#define RT_USING_POSIX_DEVIO
 #define RT_USING_POSIX_DELAY
 #define RT_USING_POSIX_CLOCK
 #define RT_USING_POSIX_TIMER
@@ -462,7 +464,7 @@
 #define BSP_I2C1_SCL_PIN 24
 #define BSP_I2C1_SDA_PIN 19
 #define BSP_USING_ONCHIP_RTC
-#define BSP_RTC_USING_LSI
+#define BSP_RTC_USING_LSE
 #define BSP_USING_CRC
 #define BSP_USING_ON_CHIP_FLASH
 /* end of On-chip Peripheral Drivers */

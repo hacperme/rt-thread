@@ -12,11 +12,13 @@
 #define DBG_LEVEL DBG_LOG
 #include <rtdbg.h>
 
-static rt_device_t gnss_serial;
+static rt_device_t gnss_serial = RT_NULL;
 static rt_uint8_t GNSS_THD_EXIT=0;
-rt_mutex_t GNSS_LOCK=NULL;
+rt_mutex_t GNSS_LOCK = RT_NULL;
 static lwgps_t hgps;
 static char nmea[GNSS_BUFF_SIZE];
+static struct rt_thread gnss_read_thd;
+static char gnss_read_thd_stack[0x1000];
 
 static rt_err_t gnss_power_on(void)
 {
@@ -43,7 +45,7 @@ static rt_err_t gnss_reset_init(void)
 rt_err_t gnss_reset(void)
 {
     gnss_rst_pin_enable(0);
-    rt_thread_delay(rt_tick_from_millisecond(300)); //at least 300 ms
+    rt_thread_mdelay(300); //at least 300 ms
     return gnss_rst_pin_enable(1);
 }
 
@@ -57,65 +59,83 @@ static void gnss_thread_entry(void *parameter)
         {
             if (rt_device_read(gnss_serial, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
-                // LOG_D(nmea);
+                LOG_D(nmea);
                 lwgps_process(&hgps, nmea, rt_strlen(nmea));
             }
-            // else
-            // {
-            //     LOG_I("No gnss nmea data output.");
-            // }
         }
         else
         {
             LOG_E("Take GNSS_LOCK to read nmea failed.");
         }
         rt_mutex_release(GNSS_LOCK);
-        rt_thread_delay(rt_tick_from_millisecond(250)); //at least 250 ms
+        rt_thread_mdelay(250); //at least 250 ms
     }
 }
 
 rt_err_t gnss_open(void)
 {
-    rt_err_t ret = RT_EOK;
+    rt_err_t res = RT_EOK;
 
-    GNSS_LOCK = rt_mutex_create("GNSSLK", RT_IPC_FLAG_FIFO);
+    if (GNSS_LOCK == RT_NULL)
+    {
+        GNSS_LOCK = rt_mutex_create("GNSSLK", RT_IPC_FLAG_FIFO);
+    }
+
+    res = lwgps_init(&hgps) == 1 ? RT_EOK : RT_ERROR;
+    LOG_D("lwgps_init %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
     gnss_power_on();
     gnss_reset_init();
     swith_gnss_source(0);
 
     /* 查找系统中的串口设备 */
-    gnss_serial = rt_device_find(GNSS_UART_NAME);
-    if (!gnss_serial)
+    if (gnss_serial == RT_NULL)
     {
-        LOG_D("find %s failed!\n", GNSS_UART_NAME);
-        return RT_ERROR;
+        gnss_serial = rt_device_find(GNSS_UART_NAME);
+        if (gnss_serial == RT_NULL)
+        {
+            LOG_D("find %s failed!\n", GNSS_UART_NAME);
+            return RT_ERROR;
+        }
     }
 
     /* 以中断接收及轮询发送模式打开串口设备 */
-    rt_device_open(gnss_serial, RT_DEVICE_FLAG_INT_RX);
+    res = rt_device_open(gnss_serial, RT_DEVICE_FLAG_INT_RX);
+    LOG_D("rt_device_open gnss_serial %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     /* 创建 GNSS 线程 */
-    rt_thread_t thread = rt_thread_create("GNSS", gnss_thread_entry, RT_NULL, 0x1000, 25, 10);
-    /* 创建成功则启动线程 */
-    if (thread != RT_NULL)
+    res = rt_thread_init(&gnss_read_thd, "GNSSTHD", gnss_thread_entry, RT_NULL, gnss_read_thd_stack, 0x1000, 25, 10);
+    LOG_D("rt_thread_init gnss_read_thd %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
     {
-        GNSS_THD_EXIT = 0;
-        lwgps_init(&hgps);
-        rt_thread_startup(thread);
-    }
-    else
-    {
-        ret = RT_ERROR;
+        rt_device_close(gnss_serial);
+        return res;
     }
 
-    return ret;
+    GNSS_THD_EXIT = 0;
+    res = rt_thread_startup(&gnss_read_thd);
+    LOG_D("gnss_thread_entry start %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        rt_device_close(gnss_serial);
+        GNSS_THD_EXIT = 1;
+    }
+
+    return res;
 }
 
 rt_err_t gnss_close(void)
 {
     GNSS_THD_EXIT = 1;
-    rt_thread_delay(rt_tick_from_millisecond(300)); //at least 250 ms
-    rt_mutex_delete(GNSS_LOCK);
+    rt_device_close(gnss_serial);
     return gnss_power_off();
 }
 
@@ -161,18 +181,18 @@ rt_err_t gnss_read_data(lwgps_t *gnss_data)
 static void gnss_data_show(int argc, char **argv)
 {
     gnss_open();
-    rt_thread_delay(rt_tick_from_millisecond(100)); //at least 300 ms
+    rt_thread_mdelay(100); //at least 300 ms
     rt_uint8_t cnt = 0;
-    while (cnt < 120)
+    while (cnt < 10)
     {
         LOG_D("GNSS Date: %d-%d-%d %d:%d:%d\r\n", hgps.year, hgps.month, hgps.date, 
             hgps.hours, hgps.minutes, hgps.seconds);
         LOG_D("Valid status: %d\r\n", hgps.is_valid);
-        LOG_D("Latitude: %f degrees\r\n", hgps.latitude);
-        LOG_D("Longitude: %f degrees\r\n", hgps.longitude);
-        LOG_D("Altitude: %f meters\r\n", hgps.altitude);
+        LOG_D("Latitude: %f degrees\r\n", (float)hgps.latitude);
+        LOG_D("Longitude: %f degrees\r\n", (float)hgps.longitude);
+        LOG_D("Altitude: %f meters\r\n", (float)hgps.altitude);
         cnt++;
-        rt_thread_delay(rt_tick_from_millisecond(1000)); //at least 300 ms
+        rt_thread_mdelay(1000); //at least 300 ms
     }
     gnss_close();
 }
