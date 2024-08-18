@@ -61,7 +61,7 @@ static void gnss_thread_entry(void *parameter)
             rt_memset(nmea, 0, GNSS_BUFF_SIZE);
             if (rt_device_read(gnss_serial, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
-                LOG_D(nmea);
+                // LOG_D(nmea);
                 lwgps_process(&hgps, nmea, rt_strlen(nmea));
             }
         }

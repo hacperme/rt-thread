@@ -16,7 +16,7 @@
 #include "board_pin.h"
 
 #define GNSS_UART_NAME "uart4"
-#define GNSS_BUFF_SIZE 0x400
+#define GNSS_BUFF_SIZE 0x800
 
 static void gnss_thread_entry(void *parameter);
 static rt_err_t gnss_power_on(void);
