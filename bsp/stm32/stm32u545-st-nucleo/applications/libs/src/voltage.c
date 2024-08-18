@@ -9,6 +9,7 @@
 
 #include "rtthread.h"
 #include "rtdevice.h"
+#include "voltage.h"
 
 #define DBG_SECTION_NAME "VOLTAGE"
 #define DBG_LEVEL DBG_LOG
