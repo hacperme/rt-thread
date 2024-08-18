@@ -8,6 +8,7 @@
  */
 #include "adxl372.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 #define DBG_SECTION_NAME "ADXL372"
 #define DBG_LEVEL DBG_LOG
@@ -224,12 +225,12 @@ rt_err_t adxl372_init(rt_uint16_t *inact_ms, rt_uint16_t *inact_threshold,
         return res;
     }
 
-    // res = adxl372_enable_inactive_irq(inact_ms, inact_threshold);
-    // LOG_D("adxl372_enable_inactive_irq %s", res == RT_EOK ? "success" : "failed");
-    // if (res != RT_EOK)
-    // {
-    //     return res;
-    // }
+    res = adxl372_enable_inactive_irq(inact_ms, inact_threshold);
+    LOG_D("adxl372_enable_inactive_irq %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     // *hpf_val = 0x03;
     res = adxl372_set_hpf(hpf_val);
@@ -636,14 +637,22 @@ static void test_adxl372(int argc, char **argv)
     res = adxl372_query_dev_info();
 
     // rt_uint16_t cnt = 10 * 60;
-    while (1)
+    char msg[128];
+    while (adxl372_recv_inact_exit == 0)
     {
         res = adxl372_query_xyz(&xyz);
         if (res == RT_EOK)
         {
-            LOG_D("zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
+            sprintf(msg, "zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
+            LOG_D(msg);
         }
         // cnt--;
+        recv_buf = 0xFF;
+        res = adxl732_read(ADI_ADXL372_STATUS_2, &recv_buf, 1);
+        LOG_D(
+            "ADI_ADXL372_STATUS_2 reg=0x%02X recv_buf=0x%02X",
+            ADI_ADXL372_STATUS_2, recv_buf
+        );
         rt_thread_mdelay(1000);
     }
 }

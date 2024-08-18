@@ -7,6 +7,7 @@
  * @copyright : Copyright (c) 2024
  */
 #include "tmp116.h"
+#include <stdio.h>
 
 #define DBG_TAG "TMP116"
 #define DBG_LVL DBG_LOG
@@ -181,6 +182,7 @@ rt_err_t test_temp116(void)
     rt_uint8_t addrs[2] = {TMP116_1_ADDR, TMP116_2_ADDR};
     rt_uint16_t dev_id;
     float temp;
+    char msg[256];
 
     for (rt_uint8_t i = 0; i < 2; i ++)
     {
@@ -190,7 +192,8 @@ rt_err_t test_temp116(void)
 
         temp = -999.0;
         res = temp116_read_temperture(iic_dev, addrs[i], &temp);
-        LOG_D("temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
+        sprintf(msg, "temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
+        LOG_D(msg);
     }
 
     return res;

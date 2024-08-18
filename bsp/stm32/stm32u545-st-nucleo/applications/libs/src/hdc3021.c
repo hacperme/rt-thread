@@ -7,6 +7,7 @@
  * @copyright : Copyright (c) 2024
  */
 #include "hdc3021.h"
+#include <stdio.h>
 
 #define DBG_TAG "HDC3021"
 #define DBG_LVL DBG_LOG
@@ -158,13 +159,15 @@ rt_err_t test_hdc3021(void)
 
     float temp = -999.0;
     float humi = -999.0;
+    char msg[256];
     for (rt_uint8_t i = 0; i < 3; i++)
     {
         /* Not Use soft reset, humi will not be 0.0 after soft reset. */
         // res = hdc3021_soft_reset(iic_dev);
         // LOG_D("hdc3021_soft_reset %s.", res != RT_EOK ? "failed" : "success");
         res = hdc3021_read_temp_humi(iic_dev, &temp, &humi);
-        LOG_D("hdc3021_read_temp_humi %s.", res != RT_EOK ? "failed" : "success");
+        sprintf(msg, "hdc3021_read_temp_humi %s. temp=%f, humi=%f", res != RT_EOK ? "failed" : "success", temp, humi);
+        LOG_D(msg);
         rt_thread_mdelay(1000);
     }
 

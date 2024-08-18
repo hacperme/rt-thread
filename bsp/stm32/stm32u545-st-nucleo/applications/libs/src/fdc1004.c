@@ -8,6 +8,7 @@
  */
 
 #include "fdc1004.h"
+#include <stdio.h>
 
 #define DBG_TAG "FDC1004"
 #define DBG_LVL DBG_LOG
@@ -340,7 +341,9 @@ static rt_err_t test_fdc1004(int argc, char **argv)
 
     float value = 0.0;
     res = fdc1004_meas_data(iic_dev, &value);
-    LOG_D("fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
+    char msg[128];
+    sprintf(msg, "fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
+    LOG_D(msg);
 }
 
 MSH_CMD_EXPORT(test_fdc1004, test fdc1004);

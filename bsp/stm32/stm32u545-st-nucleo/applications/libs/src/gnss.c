@@ -7,6 +7,7 @@
  * @copyright : Copyright (c) 2024
  */
 #include "gnss.h"
+#include <stdio.h>
 
 #define DBG_SECTION_NAME "GNSS"
 #define DBG_LEVEL DBG_LOG
@@ -59,7 +60,7 @@ static void gnss_thread_entry(void *parameter)
         {
             if (rt_device_read(gnss_serial, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
-                LOG_D(nmea);
+                // LOG_D(nmea);
                 lwgps_process(&hgps, nmea, rt_strlen(nmea));
             }
         }
@@ -68,7 +69,7 @@ static void gnss_thread_entry(void *parameter)
             LOG_E("Take GNSS_LOCK to read nmea failed.");
         }
         rt_mutex_release(GNSS_LOCK);
-        rt_thread_mdelay(250); //at least 250 ms
+        rt_thread_mdelay(100);
     }
 }
 
@@ -182,15 +183,21 @@ static void gnss_data_show(int argc, char **argv)
 {
     gnss_open();
     rt_thread_mdelay(100); //at least 300 ms
+    char msg[256];
     rt_uint8_t cnt = 0;
-    while (cnt < 10)
+    while (cnt < 30)
     {
-        LOG_D("GNSS Date: %d-%d-%d %d:%d:%d\r\n", hgps.year, hgps.month, hgps.date, 
-            hgps.hours, hgps.minutes, hgps.seconds);
-        LOG_D("Valid status: %d\r\n", hgps.is_valid);
-        LOG_D("Latitude: %f degrees\r\n", (float)hgps.latitude);
-        LOG_D("Longitude: %f degrees\r\n", (float)hgps.longitude);
-        LOG_D("Altitude: %f meters\r\n", (float)hgps.altitude);
+        sprintf(msg, "GNSS Date: %d-%d-%d %d:%d:%d", hgps.year, hgps.month, hgps.date, 
+                hgps.hours, hgps.minutes, hgps.seconds);
+        LOG_D(msg);
+        sprintf(msg, "Valid status: %d", hgps.is_valid);
+        LOG_D(msg);
+        sprintf(msg, "Latitude: %f degrees", (float)hgps.latitude);
+        LOG_D(msg);
+        sprintf(msg, "Longitude: %f degrees", (float)hgps.longitude);
+        LOG_D(msg);
+        sprintf(msg, "Altitude: %f meters", (float)hgps.altitude);
+        LOG_D(msg);
         cnt++;
         rt_thread_mdelay(1000); //at least 300 ms
     }
