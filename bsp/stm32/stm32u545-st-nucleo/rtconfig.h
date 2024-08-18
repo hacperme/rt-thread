@@ -20,6 +20,7 @@
 #define RT_USING_TIMER_SOFT
 #define RT_TIMER_THREAD_PRIO 4
 #define RT_TIMER_THREAD_STACK_SIZE 1024
+#define RT_USING_CPU_USAGE_TRACER
 
 /* kservice optimization */
 
@@ -50,10 +51,13 @@
 #define RT_USING_HEAP
 /* end of Memory Management */
 #define RT_USING_DEVICE
+#define RT_USING_DEVICE_OPS
+#define RT_USING_SCHED_THREAD_CTX
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 512
 #define RT_CONSOLE_DEVICE_NAME "lpuart1"
 #define RT_VER_NUM 0x50200
+#define RT_USING_STDC_ATOMIC
 #define RT_BACKTRACE_LEVEL_MAX_NR 32
 /* end of RT-Thread Kernel */
 #define RT_USING_HW_ATOMIC
@@ -66,7 +70,7 @@
 
 #define RT_USING_COMPONENTS_INIT
 #define RT_USING_USER_MAIN
-#define RT_MAIN_THREAD_STACK_SIZE 2048
+#define RT_MAIN_THREAD_STACK_SIZE 8192
 #define RT_MAIN_THREAD_PRIORITY 10
 #define RT_USING_MSH
 #define RT_USING_FINSH
@@ -85,6 +89,13 @@
 
 /* DFS: device virtual file system */
 
+#define RT_USING_DFS
+#define DFS_USING_WORKDIR
+#define DFS_FD_MAX 16
+#define RT_USING_DFS_V1
+#define DFS_FILESYSTEMS_MAX 4
+#define DFS_FILESYSTEM_TYPES_MAX 4
+#define RT_USING_DFS_DEVFS
 /* end of DFS: device virtual file system */
 #define RT_USING_FAL
 #define FAL_DEBUG_CONFIG
@@ -105,7 +116,11 @@
 #define RT_I2C_DEBUG
 #define RT_USING_I2C_BITOPS
 #define RT_USING_ADC
+#define RT_USING_NULL
+#define RT_USING_ZERO
+#define RT_USING_RANDOM
 #define RT_USING_PWM
+#define RT_USING_MTD_NOR
 #define RT_USING_PM
 #define PM_TICKLESS_THRESHOLD_TIME 2
 #define PM_ENABLE_DEBUG
@@ -123,6 +138,7 @@
 #define RT_HWCRYPTO_USING_CRC_07
 #define RT_HWCRYPTO_USING_CRC_04C11DB7
 #define RT_USING_PIN
+#define RT_USING_KTIME
 /* end of Device Drivers */
 
 /* C/C++ and POSIX layer */
@@ -140,6 +156,9 @@
 
 /* POSIX (Portable Operating System Interface) layer */
 
+#define RT_USING_POSIX_DELAY
+#define RT_USING_POSIX_CLOCK
+#define RT_USING_POSIX_TIMER
 
 /* Interprocess Communication (IPC) */
 
@@ -174,6 +193,7 @@
 
 /* Utilities */
 
+#define RT_USING_RESOURCE_ID
 /* end of Utilities */
 
 /* Using USB legacy version */
@@ -226,6 +246,8 @@
 
 /* JSON: JavaScript Object Notation, a lightweight data-interchange format */
 
+#define PKG_USING_CJSON
+#define PKG_USING_CJSON_V1717
 /* end of JSON: JavaScript Object Notation, a lightweight data-interchange format */
 
 /* XML: Extensible Markup Language */
@@ -279,6 +301,15 @@
 /* end of Micrium: Micrium software products porting for RT-Thread */
 #define PKG_USING_PERF_COUNTER
 #define PKG_USING_PERF_COUNTER_V2241
+#define PKG_USING_LITTLEFS
+#define PKG_USING_LITTLEFS_LATEST_VERSION
+#define LFS_READ_SIZE 2048
+#define LFS_PROG_SIZE 2048
+#define LFS_BLOCK_SIZE 8192
+#define LFS_CACHE_SIZE 2048
+#define LFS_BLOCK_CYCLES 100
+#define LFS_THREADSAFE
+#define LFS_LOOKAHEAD_MAX 8
 /* end of system packages */
 
 /* peripheral libraries and drivers */

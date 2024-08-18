@@ -21,6 +21,8 @@
 // #define DBG_LEVEL DBG_WARNING
 // #define DBG_LEVEL DBG_ERROR
 #include <rtdbg.h>
+#include "dfs.h"
+#include "drv_dfs.h"
 
 extern char __bootloader_rom_start[];
 extern char __bootloader_rom_end[];
@@ -36,6 +38,8 @@ extern char __app_ram_end[];
 
 extern char __heap_start[];
 extern char __heap_end[];
+
+#define FS_PARTITION_NAME "fs"
 
 int main(void)
 {
@@ -54,14 +58,8 @@ int main(void)
     LOG_I("__heap_start: %p\r\n", __heap_start);
     LOG_I("__heap_end: %p\r\n", __heap_end);
 
-    // test_on_chip_flash();
-    // cat1_pwron_pin_enable(1);
-    // gnss_pwron_pin_enable(1);
-    // sensor_pwron_pin_enable(1);
-    // nbiot_pwron_pin_enable(1);
-    // esp32_pwron_pin_enable(1);
-    // flash_pwron_pin_enable(1);
-    // cat1_power_on();
+    int res = rt_hw_fs_mount();
+    LOG_I("rt_hw_fs_mount %s", res == RT_EOK ? "success" : "failed");
 
     return RT_EOK;
 }

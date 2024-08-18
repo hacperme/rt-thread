@@ -20,7 +20,7 @@
 #include "fal.h"
 #endif
 
-#define DRV_DEBUG
+// #define DRV_DEBUG
 #define LOG_TAG                "drv.flash"
 #include <drv_log.h>
 
