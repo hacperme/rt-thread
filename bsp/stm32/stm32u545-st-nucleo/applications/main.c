@@ -39,8 +39,6 @@ extern char __app_ram_end[];
 extern char __heap_start[];
 extern char __heap_end[];
 
-#define FS_PARTITION_NAME "fs"
-
 int main(void)
 {
     LOG_I("__bootloader_rom_start: %p\r\n", __bootloader_rom_start);

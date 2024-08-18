@@ -58,9 +58,10 @@ static void gnss_thread_entry(void *parameter)
         result = rt_mutex_take(GNSS_LOCK, RT_WAITING_FOREVER);
         if (result == RT_EOK)
         {
+            rt_memset(nmea, 0, GNSS_BUFF_SIZE);
             if (rt_device_read(gnss_serial, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
-                // LOG_D(nmea);
+                LOG_D(nmea);
                 lwgps_process(&hgps, nmea, rt_strlen(nmea));
             }
         }
@@ -69,7 +70,7 @@ static void gnss_thread_entry(void *parameter)
             LOG_E("Take GNSS_LOCK to read nmea failed.");
         }
         rt_mutex_release(GNSS_LOCK);
-        rt_thread_mdelay(100);
+        rt_thread_mdelay(500);
     }
 }
 
@@ -185,7 +186,7 @@ static void gnss_data_show(int argc, char **argv)
     rt_thread_mdelay(100); //at least 300 ms
     char msg[256];
     rt_uint8_t cnt = 0;
-    while (cnt < 30)
+    while (cnt < 60)
     {
         sprintf(msg, "GNSS Date: %d-%d-%d %d:%d:%d", hgps.year, hgps.month, hgps.date, 
                 hgps.hours, hgps.minutes, hgps.seconds);

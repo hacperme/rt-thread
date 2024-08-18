@@ -304,8 +304,8 @@ static void test_rtc_wakeup(int argc, char **argv)
     res = cat1_power_off();
     LOG_D("cat1_power_off %s", res == RT_EOK ? "success" : "failed");
 
-    res = gnss_close();
-    LOG_D("gnss_close %s", res == RT_EOK ? "success" : "failed");
+    res = gnss_pwron_pin_enable(0);
+    LOG_D("gnss_pwron_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
 
     res = sensor_pwron_pin_enable(0);
     LOG_D("sensor_pwron_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
@@ -315,6 +315,11 @@ static void test_rtc_wakeup(int argc, char **argv)
 
     res = esp32_en_off();
     LOG_D("esp32_en_off %s", res == RT_EOK ? "success" : "failed");
+
+    res = flash_pwron_pin_enable(0);
+    LOG_D("flash_pwron_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
+
+    shut_down();
 }
 
 MSH_CMD_EXPORT(test_rtc_wakeup, test rtc wakeup);
@@ -329,8 +334,8 @@ static void test_all_pin_enable(int argc, char **argv)
     res = cat1_power_on();
     LOG_D("cat1_power_on %s", res == RT_EOK ? "success" : "failed");
 
-    res = gnss_open();
-    LOG_D("gnss_open %s", res == RT_EOK ? "success" : "failed");
+    res = gnss_pwron_pin_enable(1);
+    LOG_D("gnss_pwron_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
 
     res = sensor_pwron_pin_enable(1);
     LOG_D("sensor_pwron_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
@@ -340,6 +345,9 @@ static void test_all_pin_enable(int argc, char **argv)
 
     res = esp32_en_on();
     LOG_D("esp32_en_on %s", res == RT_EOK ? "success" : "failed");
+
+    res = flash_pwron_pin_enable(1);
+    LOG_D("flash_pwron_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
 
 }
 MSH_CMD_EXPORT(test_all_pin_enable, test all pin enable);
