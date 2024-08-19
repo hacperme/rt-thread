@@ -54,7 +54,7 @@
 #define RT_USING_DEVICE_OPS
 #define RT_USING_SCHED_THREAD_CTX
 #define RT_USING_CONSOLE
-#define RT_CONSOLEBUF_SIZE 512
+#define RT_CONSOLEBUF_SIZE 2048
 #define RT_CONSOLE_DEVICE_NAME "lpuart1"
 #define RT_VER_NUM 0x50200
 #define RT_USING_STDC_ATOMIC
@@ -463,7 +463,7 @@
 #define BSP_I2C1_SCL_PIN 24
 #define BSP_I2C1_SDA_PIN 19
 #define BSP_USING_ONCHIP_RTC
-#define BSP_RTC_USING_LSE
+#define BSP_RTC_USING_LSI
 #define BSP_USING_CRC
 #define BSP_USING_ON_CHIP_FLASH
 /* end of On-chip Peripheral Drivers */

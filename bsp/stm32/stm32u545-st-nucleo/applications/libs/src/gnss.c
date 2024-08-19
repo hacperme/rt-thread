@@ -61,7 +61,10 @@ static void gnss_thread_entry(void *parameter)
             rt_memset(nmea, 0, GNSS_BUFF_SIZE);
             if (rt_device_read(gnss_serial, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
-                // LOG_D(nmea);
+                // LOG_D("===================================");
+                // LOG_D("\r\n%s", nmea);
+                // LOG_D("===================================");
+                LOG_D("NMEA Size %d", rt_strlen(nmea));
                 lwgps_process(&hgps, nmea, rt_strlen(nmea));
             }
         }
@@ -70,7 +73,7 @@ static void gnss_thread_entry(void *parameter)
             LOG_E("Take GNSS_LOCK to read nmea failed.");
         }
         rt_mutex_release(GNSS_LOCK);
-        rt_thread_mdelay(500);
+        rt_thread_mdelay(1000);
     }
 }
 
@@ -184,6 +187,7 @@ static void gnss_data_show(int argc, char **argv)
 {
     gnss_open();
     rt_thread_mdelay(100); //at least 300 ms
+    char gnss_data[2048] = {0};
     char msg[256];
     rt_uint8_t cnt = 0;
     while (cnt < 60)
@@ -199,6 +203,11 @@ static void gnss_data_show(int argc, char **argv)
         LOG_D(msg);
         sprintf(msg, "Altitude: %f meters", (float)hgps.altitude);
         LOG_D(msg);
+        rt_memset(gnss_data, 0, 2048);
+        gnss_read_nmea(gnss_data, 2048);
+        LOG_D("=============================");
+        LOG_D("\r\n%s", gnss_data);
+        LOG_D("=============================");
         cnt++;
         rt_thread_mdelay(1000); //at least 300 ms
     }
