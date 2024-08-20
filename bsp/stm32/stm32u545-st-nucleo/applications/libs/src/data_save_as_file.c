@@ -5,26 +5,16 @@
 #include <time.h>
 #include "dfs_fs.h"
 #include <ctype.h>
+#include "data_save_as_file.h"
 
 #define DBG_TAG "DATASAVE"
-#define DBG_LVL DBG_LOG
+#define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
-#define FILE_SYSTEM_SIZE 128 * 1024 // 文件系统大小 128KB
-#define MAX_FILE_SIZE 4 * 1024      // 单个文件最大大小 4KB
-#define MIN_FREE_BLOCKS 3            // 最小空闲空间 3 个 block
-#define TIMESTAMP_FORMAT "%y%m%d%H%M%S.dat" // 时间戳格式
-
-// 文件系统结构体
-struct FileSystem {
-    char *files[32]; // 假设最多 32 个文件
-    int file_count;
-};
-
 // 检查文件名是否符合时间戳格式
-int is_valid_timestamp_filename(const char *filename) {
-    if (strlen(filename) != 16) return 0; // 长度不符合要求
-    if (strncmp(filename + 12, ".dat", 4) != 0) return 0; // 后缀不符合要求
+static int is_valid_timestamp_filename(const char *filename) {
+    if (rt_strlen(filename) != 16) return 0; // 长度不符合要求
+    if (rt_strncmp(filename + 12, ".dat", 4) != 0) return 0; // 后缀不符合要求
 
     // 检查每个部分是否都是数字
     for (int i = 0; i < 12; i++) {
@@ -34,23 +24,8 @@ int is_valid_timestamp_filename(const char *filename) {
     return 1;
 }
 
-void data_save_as_file_init(struct FileSystem *fs) {
-    DIR *dir;
-    struct dirent *ent;
-    rt_memset(fs, 0, sizeof(struct FileSystem));
-    if ((dir = opendir("/")) != NULL) {
-        while ((ent = readdir(dir)) != NULL) {
-            if(is_valid_timestamp_filename(ent->d_name)) {
-                fs->files[fs->file_count] = rt_strdup(ent->d_name);
-                fs->file_count++;
-            }
-        }
-        closedir(dir);
-    }
-}
-
 // 将字符串转换为 long long 类型的时间值
-long long string_to_long_long(const char *timestamp_str) {
+static long long string_to_long_long(const char *timestamp_str) {
     long long time_value = 0;
     int year, month, day, hour, minute, second;
 
@@ -79,104 +54,76 @@ long long string_to_long_long(const char *timestamp_str) {
 }
 
 // 生成时间戳文件名
-void generate_timestamp_filename(char *filename) {
+static void generate_timestamp_filename(char *filename) {
     time_t now = time(NULL);
-    strftime(filename, 20, TIMESTAMP_FORMAT, localtime(&now));
+    strftime(filename, FILE_NAME_MAX_LEN, TIMESTAMP_FORMAT, localtime(&now));
 }
 
-// 删除最早的文件
-void delete_oldest_file(struct FileSystem *fs) {
-    if (fs->file_count > 0) {
-        char tmp[20] = {0};
-        DIR *dir;
-        struct dirent *ent;
-        char oldest_filename[20] = {0};
-        time_t _time = time(NULL);
-        long long current_time = 0;
-        long long oldest_time = 0;
-        strftime(tmp, 20, TIMESTAMP_FORMAT, localtime(&_time));
-        oldest_time = string_to_long_long(tmp);
-
-        // 打开跟目录
-        if ((dir = opendir("/")) != NULL) {
-            while ((ent = readdir(dir)) != NULL) {
-                // 检查文件名是否符合时间戳格式
-                LOG_D("Checking existed file: %s", ent->d_name);
-                rt_memset(tmp, 0, sizeof(tmp));
-                if(is_valid_timestamp_filename(ent->d_name)) {
-                    rt_snprintf(tmp, 12, ent->d_name);
-                    current_time = string_to_long_long(tmp);
-                    if (current_time < oldest_time) {
-                        oldest_time = current_time;
-                        rt_memset(oldest_filename, 0, sizeof(oldest_filename));
-                        rt_strncpy(oldest_filename, ent->d_name, rt_strlen(ent->d_name));
-                    }
-                }
-            }
-
-            // 删除最早的文件
-            if (strlen(oldest_filename)) {
-                LOG_D("Deleting oldest file: %s", oldest_filename);
-                remove(oldest_filename);
-                fs->file_count--; // 减少文件计数
-
-                // 更新文件列表
-                int i;
-                for (i = 0; i < fs->file_count; i++) {
-                    LOG_D("fs->files[i]: %d, %s", i, fs->files[i]);
-                    if (strcmp(fs->files[i], oldest_filename) == 0) {
-                        LOG_D("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR");
-                        rt_free(fs->files[i]);
-                        LOG_D("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-                        fs->files[i] = NULL;
-                        break;
-                    }
-                }
-                LOG_D("MMMMMMMMMMMMMMMMMMMMMMMMMMMM");
-                memmove(&fs->files[i], &fs->files[i + 1], (fs->file_count - i - 1) * sizeof(char *));
-                fs->files[fs->file_count] = NULL;
-            }
-            closedir(dir);
-        }
-    }
-}
-
-// 获取最新文件名
-int get_latest_file_name(char *filename) {
+// 初始化文件系统
+static void data_save_as_file_info_refresh(struct FileSystem *fs) {
+	char tmp[FILE_NAME_MAX_LEN];
     DIR *dir;
     struct dirent *ent;
-    char *latest_filename = NULL;
-    long long current_time = 0;
+    char oldest_file_name[FILE_NAME_MAX_LEN] = {0};
+    char latest_file_name[FILE_NAME_MAX_LEN] = {0};
+    long long oldest_time = 0x0FFFFFFFFFFFFFFF;
     long long latest_time = 0;
 
-    if(filename == NULL) {
-        return -1;
-    }
-
-    // 打开根目录
     if ((dir = opendir("/")) != NULL) {
         while ((ent = readdir(dir)) != NULL) {
             // 检查文件名是否符合时间戳格式
-            char tmp[20];
-            rt_memset(tmp, 0, sizeof(tmp));
-            if(is_valid_timestamp_filename(ent->d_name)) {
-                rt_snprintf(tmp, 12, ent->d_name);
-                current_time = string_to_long_long(tmp);
+            if (is_valid_timestamp_filename(ent->d_name)) {
+                rt_memset(tmp, 0, FILE_NAME_MAX_LEN);
+                rt_strncpy(tmp, ent->d_name, strlen(ent->d_name));
+                long long current_time = string_to_long_long(tmp);
+
+                if (current_time < oldest_time) {
+                    rt_memset(oldest_file_name, 0, FILE_NAME_MAX_LEN);
+                    rt_strncpy(oldest_file_name, ent->d_name, rt_strlen(ent->d_name));
+                    oldest_time = current_time;
+                }
+
                 if (current_time > latest_time) {
+                    rt_memset(latest_file_name, 0, FILE_NAME_MAX_LEN);
+                    rt_strncpy(latest_file_name, ent->d_name, rt_strlen(ent->d_name));
                     latest_time = current_time;
-                    latest_filename = ent->d_name;
                 }
             }
         }
         closedir(dir);
     }
 
-    if(latest_filename) {
-        rt_snprintf(filename, 17, latest_filename);
-        return 0;
+    rt_memset(fs->oldest_file_name, 0, FILE_NAME_MAX_LEN);
+    rt_memset(fs->latest_file_name, 0, FILE_NAME_MAX_LEN);
+    rt_strncpy(fs->oldest_file_name, oldest_file_name, rt_strlen(oldest_file_name));
+    rt_strncpy(fs->latest_file_name, latest_file_name, rt_strlen(latest_file_name));
+}
+
+void data_save_as_file_init(struct FileSystem *fs, int single_file_size_limit) {
+    data_save_as_file_info_refresh(fs);
+    if(single_file_size_limit) {
+        fs->single_file_size_limit = single_file_size_limit;
+    } else {
+        fs->single_file_size_limit = SINGLE_FILE_SIZE_LIMIT_DFT;
     }
-        
-    return -1;
+}
+
+char *get_oldest_file_name(struct FileSystem *fs) {
+    data_save_as_file_info_refresh(fs);
+    if(fs && fs->oldest_file_name[0] != '\0') {
+        return fs->oldest_file_name;
+    }
+
+    return NULL;
+}
+
+char *get_latest_file_name(struct FileSystem *fs) {
+    data_save_as_file_info_refresh(fs);
+    if(fs && fs->latest_file_name[0] != '\0') {
+        return fs->latest_file_name;
+    }
+
+    return NULL;
 }
 
 // 获取文件大小
@@ -201,81 +148,127 @@ int check_free_space(const char *path) {
     return stat.f_bfree;
 }
 
+// 删除最早的文件
+void delete_oldest_file(struct FileSystem *fs) {
+    char *oldest_file_name = NULL;
+    if((oldest_file_name = get_oldest_file_name(fs))) {
+        LOG_D("xx Deleting oldest file: %s", oldest_file_name);
+        remove(oldest_file_name);
+        data_save_as_file_info_refresh(fs);
+    }
+}
+
 // 追加或创建文件
-int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length) {
-    char filename[20] = {0};
-    generate_timestamp_filename(filename);
+int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, bool disable_single_file_size_limit) {
+    // 获取最新文件的大小
+    char *latest_file_name = NULL;
+    size_t latest_file_size = 0;
+
+    if((latest_file_name = get_latest_file_name(fs))) {
+        latest_file_size = get_file_size(latest_file_name);
+    }
 
     // 检查是否有足够的空闲空间
     int free_blocks = check_free_space("/");
-    LOG_D("Free blocks: %d", free_blocks);
-    if (free_blocks < MIN_FREE_BLOCKS) {
+    if (free_blocks <= MIN_FREE_BLOCKS) {
         delete_oldest_file(fs); // 删除最早的文件
     }
 
-    // 获取最新文件的大小
-    char latest_filename[20] = {0};
-    get_latest_file_name(latest_filename);
-    size_t latest_file_size = 0;
-
-    if(strlen(latest_filename) == 0) {
-        latest_file_size = 0;
-    } else {
-        LOG_D("Latest file name: %s", latest_filename);
-        latest_file_size = get_file_size(latest_filename);
-    }
-
     // 判断是否需要新建文件
-    if (strlen(latest_filename) == 0 || latest_file_size + length > MAX_FILE_SIZE) {
-        LOG_D("Creating new file: %s", filename);
+    if (latest_file_name == NULL || (!disable_single_file_size_limit && (latest_file_size + length > fs->single_file_size_limit))) {
+        char filename[FILE_NAME_MAX_LEN] = {0};
+        generate_timestamp_filename(filename);
+
         // 创建新文件
+        LOG_D("++ Creating file: %s", filename);
         FILE *file = fopen(filename, "ab");
         if (!file) {
             return -1; // 打开文件失败
         }
-        fwrite(buffer, 1, length, file);
+
+        int retry = 0;
+        for(retry = 0; retry < 5 && fwrite(buffer, 1, length, file) != length; retry++){
+            LOG_E("?? Write file failed (%d)", retry);
+        }
+
         fclose(file);
 
-        fs->files[fs->file_count] = rt_strdup(filename); // 添加文件名到文件系统
-        fs->file_count++; // 增加文件计数
+        data_save_as_file_info_refresh(fs);
+
+        if(retry >= 5) {
+            return -1;
+        }
     } else {
         // 追加到现有文件
-        LOG_D("Appending to existed file: %s", latest_filename);
-        FILE *file = fopen(latest_filename, "ab");
+        LOG_D("-- Append to file %s", latest_file_name);
+        FILE *file = fopen(latest_file_name, "ab");
         if (!file) {
             return -1; // 打开文件失败
         }
-        fwrite(buffer, 1, length, file);
+
+        int retry = 0;
+        for(retry = 0; retry < 5 && fwrite(buffer, 1, length, file) != length; retry++){
+            LOG_E("?? Write file failed, retry (%d)", retry);
+        }
+
         fclose(file);
+
+        if(retry >= 5) {
+            return -1;
+        }
     }
 
     return 0; // 成功
 }
 
+void list_files(const char *path) {
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(path)) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            rt_kprintf("%s    %d Bytes\r\n", ent->d_name, get_file_size(ent->d_name));
+        }
+        closedir(dir);
+    }
+}
 
-#include "rtthread.h"
-char buffer[1024];
+//-------------------- Test Code --------------------
 
-void data_save_as_file_test() {
+char data_buffer[1024];
+
+// void del_files(const char *path) {
+static void del_files() {
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir("/")) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            LOG_I("Deleting %s", ent->d_name);
+            remove(ent->d_name);
+        }
+        closedir(dir);
+    }
+}
+// MSH_CMD_EXPORT(del_files, del files);
+
+static void data_save_as_file_test() {
     struct FileSystem fs;
 
-    data_save_as_file_init(&fs);
-
-    // char *buffer = "This is a test message.";
-    // size_t length = 1024;
-    rt_memset(buffer, '1', 1024);
+    data_save_as_file_init(&fs, 0);
+    
+    rt_memset(data_buffer, '1', 1024);
 
     while (1)
     {
-        // 测试函数
-        if (data_save_as_file(&fs, buffer, 1024) == 0) {
-            LOG_D("================");
+        LOG_I("<<<<<<<<<<<< Before written to file");
+        list_files("/");
+        if (data_save_as_file(&fs, data_buffer, 1024, false) == 0) {
+            LOG_I("Data saved successfully.");
         } else {
-            LOG_D("xxxxxxxxxxxxxxxx");
+            LOG_I("Data saved failed.");
         }
+        LOG_I("----------------------------------------------------------------------");
         rt_thread_mdelay(500);
     }
 }
 
-MSH_CMD_EXPORT(data_save_as_file_test, data save as file test);
-
+// MSH_CMD_EXPORT(data_save_as_file_test, data save as file test);
