@@ -30,6 +30,11 @@ struct rt_spi_device *adxl372_dev;
 rt_sem_t adxl372_inact_sem = RT_NULL;
 rt_thread_t adxl372_recv_inact_thd = RT_NULL;
 rt_uint8_t adxl372_recv_inact_exit = 0;
+rt_uint8_t XYZ_REGS[3][2] = {
+    {ADI_ADXL372_X_DATA_H, ADI_ADXL372_X_DATA_L},
+    {ADI_ADXL372_Y_DATA_H, ADI_ADXL372_Y_DATA_L},
+    {ADI_ADXL372_Z_DATA_H, ADI_ADXL372_Z_DATA_L}
+};
 
 __weak void adxl372_inact_event_handler(void)
 {
@@ -128,7 +133,146 @@ rt_err_t adxl372_int1_pin_irq_disable(void)
     return res;
 }
 
-rt_err_t rt_hw_spi_adxl372_init(void)
+rt_err_t adxl372_enable_inactive_irq(rt_uint16_t *milliseconds, rt_uint16_t *threshold)
+{
+    rt_err_t res = RT_ERROR;
+
+    res = adxl372_set_standby();
+    LOG_D("adxl372_set_standby %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_recv_inact_event_thd_start();
+    LOG_D("adxl372_recv_inact_event_thd_start %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_int1_pin_irq_enable();
+    LOG_D("adxl372_int1_pin_irq_enable %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_set_time_inact(milliseconds);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_set_thresh_inact(threshold);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Set inactive interupt to INT1. */
+    rt_uint8_t int1map_fun = 0x10;
+    res = adxl372_set_int1_map(&int1map_fun);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_full_bandwidth_measurement_mode();
+    LOG_D("adxl372_full_bandwidth_measurement_mode %s", res == RT_EOK ? "success" : "failed");
+
+    return res;
+}
+
+rt_err_t adxl372_disable_inactive_irq(void)
+{
+    rt_err_t res = RT_ERROR;
+
+    res = adxl372_set_standby();
+    LOG_D("adxl372_set_standby %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_recv_inact_event_thd_stop();
+    LOG_D("adxl372_recv_inact_event_thd_stop %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_int1_pin_irq_disable();
+    LOG_D("adxl372_int1_pin_irq_disable %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Remove inactive interupt from INT1. */
+    rt_uint8_t int1map_fun = 0x00;
+    res = adxl372_set_int1_map(&int1map_fun);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_full_bandwidth_measurement_mode();
+    LOG_D("adxl372_full_bandwidth_measurement_mode %s", res == RT_EOK ? "success" : "failed");
+
+    return res;
+}
+
+rt_err_t adxl372_set_measure_config(rt_uint8_t *measure_val, rt_uint8_t *odr_val, rt_uint8_t *hpf_val)
+{
+    rt_err_t res = RT_ERROR;
+
+    res = adxl372_set_standby();
+    LOG_D("adxl372_set_standby %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Set Bandwidth */
+    // *measure_val = 0x04;  // 3200 Hz
+    // *measure_val = 0x03;  // 1600 Hz
+    // *measure_val = 0x02;  // 800 Hz
+    // *measure_val = 0x00;  // 200 Hz (Default)
+    res = adxl372_set_measure(measure_val);
+    LOG_D("adxl372_set_measure %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    /* Set ORD */
+    // *odr_val = 0x80;  // 6400 Hz
+    // *odr_val = 0x60;  // 3200 Hz
+    // *odr_val = 0x40;  // 1600 Hz
+    // *odr_val = 0x00;  // 400 Hz (Default)
+    res = adxl372_set_odr(odr_val);
+    LOG_D("adxl372_set_odr %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    // *hpf_val = 0x03;
+    res = adxl372_set_hpf(hpf_val);
+    LOG_D("adxl372_set_hpf %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = adxl372_full_bandwidth_measurement_mode();
+    LOG_D("adxl372_full_bandwidth_measurement_mode %s", res == RT_EOK ? "success" : "failed");
+
+    return res;
+}
+
+rt_err_t adxl372_init(void)
 {
     rt_err_t res = RT_ERROR;
 
@@ -169,80 +313,6 @@ rt_err_t rt_hw_spi_adxl372_init(void)
     {
         return res;
     }
-
-    return res;
-}
-
-rt_err_t adxl372_init(rt_uint16_t *inact_ms, rt_uint16_t *inact_threshold,
-                      rt_uint8_t *measure_val, rt_uint8_t *odr_val, rt_uint8_t *hpf_val)
-{
-    rt_err_t res = RT_ERROR;
-    rt_uint8_t power_ctl_val;
-
-    res = adxl372_recv_inact_event_thd_start();
-    LOG_D("adxl372_recv_inact_event_thd_start %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    power_ctl_val = 0x00;
-    res = adxl372_set_power_ctl(&power_ctl_val);
-    LOG_D("adxl372_set_power_ctl(0x00) %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    res = adxl372_int1_pin_irq_enable();
-    LOG_D("adxl372_int1_pin_irq_enable %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    /* Set Bandwidth */
-    // *measure_val = 0x04;  // 3200 Hz
-    // *measure_val = 0x03;  // 1600 Hz
-    // *measure_val = 0x02;  // 800 Hz
-    // *measure_val = 0x00;  // 200 Hz (Default)
-    res = adxl372_set_measure(measure_val);
-    LOG_D("adxl372_set_measure %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    /* Set ORD */
-    // *odr_val = 0x80;  // 6400 Hz
-    // *odr_val = 0x60;  // 3200 Hz
-    // *odr_val = 0x40;  // 1600 Hz
-    // *odr_val = 0x00;  // 400 Hz (Default)
-    res = adxl372_set_odr(odr_val);
-    LOG_D("adxl372_set_odr %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    res = adxl372_enable_inactive_irq(inact_ms, inact_threshold);
-    LOG_D("adxl372_enable_inactive_irq %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    // *hpf_val = 0x03;
-    res = adxl372_set_hpf(hpf_val);
-    LOG_D("adxl372_set_hpf %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    power_ctl_val = 0x03;
-    res = adxl372_set_power_ctl(&power_ctl_val);
-    LOG_D("adxl372_set_power_ctl(0x03) %s", res == RT_EOK ? "success" : "failed");
 
     return res;
 }
@@ -312,34 +382,27 @@ rt_err_t adxl372_query_dev_info(void)
     return res;
 }
 
-rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz)
+rt_err_t adxl372_check_xyz_ready(void)
 {
     rt_err_t res;
-    rt_uint8_t recv_buf, cnt;
-    rt_uint16_t raw_x, raw_y, raw_z;
-    float x, y, z;
+    rt_uint8_t recv_buf;
+    rt_tick_t sticks, eticks;
 
-    cnt = 0;
+    sticks = rt_tick_get();
     do {
         recv_buf = 0x00;
         res = adxl732_read(ADI_ADXL372_STATUS_1, &recv_buf, 1);
-        LOG_I("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
-        cnt++;
-    } while ((recv_buf & 0x01) == 0 && cnt < 20);
+        // LOG_I("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
+        eticks = rt_tick_get();
+    } while ((recv_buf & 0x01) == 0 && (eticks - sticks) < 1000);
 
-    if ((recv_buf & 0x01) == 0)
-    {
-        return RT_ERROR;
-    }
+    res = (recv_buf & 0x01) == 0 ? RT_ERROR : RT_EOK;
+}
 
-    rt_uint8_t XYZ_REGS[3][2] = {
-        {ADI_ADXL372_X_DATA_H, ADI_ADXL372_X_DATA_L},
-        {ADI_ADXL372_Y_DATA_H, ADI_ADXL372_Y_DATA_L},
-        {ADI_ADXL372_Z_DATA_H, ADI_ADXL372_Z_DATA_L}
-    };
-    rt_uint8_t XYZ_REGS_VAL[3][2];
-    rt_int16_t XYZ_VAL[3];
-    float XYZ_ACC[3];
+rt_err_t adxl372_read_xyz_regs_val(rt_uint8_t XYZ_REGS_VAL[3][2])
+{
+    rt_err_t res;
+    rt_uint8_t recv_buf;
 
     for (rt_uint8_t i = 0; i < 3; i++)
     {
@@ -357,16 +420,30 @@ rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz)
                 break;
             }
         }
-        if (res == RT_EOK)
-        {
-            XYZ_VAL[i] = (XYZ_REGS_VAL[i][0] << 8) | XYZ_REGS_VAL[i][1];
-            XYZ_VAL[i] = XYZ_VAL[i] >> 4;
-            XYZ_ACC[i] = (float)XYZ_VAL[i] * ADXL372_SCALEG;
-        }
-        else
-        {
-            break;
-        }
+    }
+    return res;
+}
+
+rt_err_t adxl372_convert_xyz_val(rt_uint8_t XYZ_REGS_VAL[3][2], rt_int16_t *XYZ_VAL)
+{
+    for (rt_uint8_t i = 0; i < 3; i++)
+    {
+        XYZ_VAL[i] = (XYZ_REGS_VAL[i][0] << 8) | XYZ_REGS_VAL[i][1];
+        XYZ_VAL[i] = XYZ_VAL[i] >> 4;
+    }
+    return RT_EOK;
+}
+
+rt_err_t adxl372_read_xyz_val(rt_int16_t *XYZ_VAL)
+{
+    rt_err_t res;
+    rt_uint8_t recv_buf;
+    rt_uint8_t XYZ_REGS_VAL[3][2] = {0};
+
+    res = adxl372_read_xyz_regs_val(XYZ_REGS_VAL);
+    if (res == RT_EOK)
+    {
+        res = adxl372_convert_xyz_val(XYZ_REGS_VAL, XYZ_VAL);
     }
     // LOG_D(
     //     "\r\nX H DATA 0x%02X, X L DATA 0x%02X, \r\nY L DATA 0x%02X, Y L DATA 0x%02X, \r\nZ L DATA 0x%02X, Z L DATA 0x%02X",
@@ -374,13 +451,28 @@ rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz)
     //     XYZ_REGS_VAL[1][0], XYZ_REGS_VAL[1][1],
     //     XYZ_REGS_VAL[2][0], XYZ_REGS_VAL[2][1]
     // );
+    return res;
+}
+
+rt_err_t adxl372_query_xyz(adxl372_xyz_t xyz)
+{
+    rt_err_t res;
+
+    res = adxl372_check_xyz_ready();
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    rt_int16_t XYZ_VAL[3] = {0};
+    res = adxl372_read_xyz_val(XYZ_VAL);
+
     if (res == RT_EOK)
     {
-        LOG_I("X VAL %d, Y VAL %d, Z VAL %d", XYZ_VAL[0], XYZ_VAL[1], XYZ_VAL[2]);
-        // LOG_D("X ACC %f, Y ACC %f, Z ACC %f", XYZ_ACC[0], XYZ_ACC[1], XYZ_ACC[2]);
-        xyz->x = XYZ_ACC[0];
-        xyz->y = XYZ_ACC[1];
-        xyz->z = XYZ_ACC[2];
+        // LOG_D("X VAL %d, Y VAL %d, Z VAL %d", XYZ_VAL[0], XYZ_VAL[1], XYZ_VAL[2]);
+        xyz->x = XYZ_VAL[0] * ADXL372_SCALEG;
+        xyz->y = XYZ_VAL[1] * ADXL372_SCALEG;
+        xyz->z = XYZ_VAL[2] * ADXL372_SCALEG;
     }
 
     return res;
@@ -568,28 +660,6 @@ rt_err_t adxl372_set_hpf(rt_uint8_t *val)
     return res;
 }
 
-rt_err_t adxl372_enable_inactive_irq(rt_uint16_t *milliseconds, rt_uint16_t *threshold)
-{
-    rt_err_t res = RT_ERROR;
-
-    res = adxl372_set_time_inact(milliseconds);
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    res = adxl372_set_thresh_inact(threshold);
-    if (res != RT_EOK)
-    {
-        return res;
-    }
-
-    /* Set inactive interupt to INT1. */
-    rt_uint8_t int1map_fun = 0x10;
-    res = adxl372_set_int1_map(&int1map_fun);
-    return res;
-}
-
 rt_err_t adxl372_reset(void)
 {
     rt_err_t res;
@@ -605,20 +675,86 @@ rt_err_t adxl372_set_standby(void)
     return adxl372_set_power_ctl(&val);
 }
 
+rt_err_t adxl372_full_bandwidth_measurement_mode(void)
+{
+    rt_uint8_t val = 0x03;
+    return adxl372_set_power_ctl(&val);
+}
+
+rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
+{
+    rt_err_t res;
+    rt_int16_t *acc_xyz_int16 = (rt_int16_t *)acc_xyz_buff;
+    rt_int32_t *acc_xyz_int32 = (rt_int32_t *)acc_xyz_buff;
+    rt_uint16_t i, j;
+
+    rt_tick_t stime = rt_tick_get();
+    for (i = 0; i < size; i++)
+    {
+        res = adxl372_check_xyz_ready();
+        if (res != RT_EOK)
+        {
+            return res;
+        }
+        acc_xyz_int16 = (rt_int16_t *)&acc_xyz_buff[i];
+        res = adxl372_read_xyz_val(&acc_xyz_int16[i * 6]);
+        if (res != RT_EOK)
+        {
+            return res;
+        }
+        acc_xyz_int16[i * 6 + 4] = acc_xyz_int16[i * 6 + 2];
+        acc_xyz_int16[i * 6 + 2] = acc_xyz_int16[i * 6 + 1];
+    }
+    rt_tick_t etime = rt_tick_get();
+    LOG_D("Start %d, End %d, Run %d", stime, etime, (etime - stime));
+
+    // char msg[64];
+    for (i = 0; i < size; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
+            // LOG_D("acc_xyz_int16[%d]=%d",(i * 3 + j) * 2, acc_xyz_int16[(i * 3 + j) * 2]);
+            acc_xyz_int32[i * 3 + j] = (rt_int32_t)acc_xyz_int16[(i * 3 + j) * 2];
+            // LOG_D("acc_xyz_int32[%d]=%d", i * 3 + j, acc_xyz_int32[i * 3 + j]);
+            acc_xyz_buff[i][j] = acc_xyz_int32[i * 3 + j] * ADXL372_SCALEG;
+            // sprintf(msg, "*acc_xyz_buff[%d][%d]=%f", i, j, acc_xyz_buff[i][j]);
+            // LOG_D(msg);
+        }
+    }
+
+    return res;
+}
+
+static float ACC_XYZ_BUFF[1024][3] = {0};
+static void test_adxl372_measure(void)
+{
+    rt_err_t res;
+    char msg[64];
+    rt_uint16_t size = 1024;
+    res = adxl372_measure_acc(ACC_XYZ_BUFF, size);
+    LOG_D("adxl372_measure_acc %s", res == RT_EOK ? "success" : "failed");
+    if (res == RT_EOK)
+    {
+        for (rt_uint16_t i = 0; i < size; i++)
+        {
+            rt_memset(msg, 0, 64);
+            sprintf(msg, "X=%f, Y=%f, Z=%f", ACC_XYZ_BUFF[i][0], ACC_XYZ_BUFF[i][1], ACC_XYZ_BUFF[i][2]);
+            LOG_D(msg);
+        }
+    }
+}
+
 static void test_adxl372(int argc, char **argv)
 {
     rt_err_t res;
     struct adxl372_xyz xyz = {0};
     rt_uint8_t recv_buf;
 
-    res = sensor_pwron_pin_enable(1);
-    LOG_D("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
-    rt_hw_spi_adxl372_init();
-
+    /* Config args init. */
     rt_uint16_t milliscond = 520;
     rt_uint16_t threshold = 10;  // 0.1 g
-    rt_uint8_t measure_val = 0x00;
-    rt_uint8_t odr_val = 0x00;
+    rt_uint8_t measure_val = 0x30;
+    rt_uint8_t odr_val = 0x60;
     rt_uint8_t hpf_val = 0x03;
     if (argc >= 6)
     {
@@ -628,33 +764,50 @@ static void test_adxl372(int argc, char **argv)
         odr_val = atoi(argv[4]);
         hpf_val = atoi(argv[5]);
     }
+    // LOG_D(
+    //     "adxl372_init milliscond=%d, threshold=%d, measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X",
+    //     milliscond, threshold, measure_val, odr_val, hpf_val
+    // );
+
+    res = sensor_pwron_pin_enable(1);
+    LOG_D("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+    res = adxl372_init();
+    LOG_D("adxl372_init %s", res != RT_EOK ? "failed" : "success");
+    res = adxl372_set_measure_config(&measure_val, &odr_val, &hpf_val);
     LOG_D(
-        "adxl372_init milliscond=%d, threshold=%d, measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X",
-        milliscond, threshold, measure_val, odr_val, hpf_val
+        "adxl372_set_measure_config(measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X) %s",
+        measure_val, odr_val, hpf_val, res != RT_EOK ? "failed" : "success"
     );
-    adxl372_init(&milliscond, &threshold, &measure_val, &odr_val, &hpf_val);
+    // res = adxl372_enable_inactive_irq(&milliscond, &threshold);
+    // LOG_D(
+    //     "adxl372_enable_inactive_irq(milliscond=0x%02X, threshold=0x%02X) %s",
+    //     milliscond, threshold, res != RT_EOK ? "failed" : "success"
+    // );
 
-    res = adxl372_query_dev_info();
+    test_adxl372_measure();
+    return;
 
-    // rt_uint16_t cnt = 10 * 60;
-    char msg[128];
-    while (adxl372_recv_inact_exit == 0)
-    {
-        res = adxl372_query_xyz(&xyz);
-        if (res == RT_EOK)
-        {
-            sprintf(msg, "zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
-            LOG_D(msg);
-        }
-        // cnt--;
-        recv_buf = 0xFF;
-        res = adxl732_read(ADI_ADXL372_STATUS_2, &recv_buf, 1);
-        LOG_D(
-            "ADI_ADXL372_STATUS_2 reg=0x%02X recv_buf=0x%02X",
-            ADI_ADXL372_STATUS_2, recv_buf
-        );
-        rt_thread_mdelay(1000);
-    }
+    // res = adxl372_query_dev_info();
+
+    // // char msg[128];
+    // while (adxl372_recv_inact_exit == 0)
+    // {
+    //     res = adxl372_query_xyz(&xyz);
+    //     if (res == RT_EOK)
+    //     {
+    //         sprintf(msg, "zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
+    //         LOG_D(msg);
+    //     }
+
+    //     /* Inactive irq check. */
+    //     // recv_buf = 0xFF;
+    //     // res = adxl732_read(ADI_ADXL372_STATUS_2, &recv_buf, 1);
+    //     // LOG_D(
+    //     //     "ADI_ADXL372_STATUS_2 reg=0x%02X recv_buf=0x%02X",
+    //     //     ADI_ADXL372_STATUS_2, recv_buf
+    //     // );
+    //     rt_thread_mdelay(1000);
+    // }
 }
 
 MSH_CMD_EXPORT(test_adxl372, test adxl372);

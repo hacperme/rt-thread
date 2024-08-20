@@ -54,7 +54,7 @@ rt_err_t cat1_power_on(void)
 {
     rt_err_t res;
     res = cat1_pwron_pin_enable(1);
-    if (res != RT_ERROR)
+    if (res != RT_EOK)
     {
         return res;
     }
@@ -218,7 +218,11 @@ static rt_err_t rtc_get_datatime(void)
     struct tm *time_now;
     char buf[64];
 
+    time_t now;
+    now = time(NULL);
+    LOG_D("now %s, stamp=%d", ctime(&now), now);
     time(&cur_time);
+    LOG_D("cur_time=%d", cur_time);
     time_now = localtime(&cur_time);
     strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", time_now);
     LOG_D("Now time %s", buf);
@@ -234,7 +238,7 @@ rt_err_t rtc_set_wakeup(time_t sleep_time)
     struct tm p_tm;
 
     now = time(NULL);
-    LOG_D("now %s", ctime(&now));
+    LOG_D("now %s, stamp=%d", ctime(&now), now);
     now += sleep_time;
     LOG_D("wakeup %s", ctime(&now));
     gmtime_r(&now, &p_tm);
@@ -268,7 +272,7 @@ static void test_rtc(void)
 
     res = rtc_set_datetime(2024, 8, 10, 0, 0, 0);
     LOG_D("rtc_set_datetime %s", res == RT_EOK ? "success" : "failed");
-
+  
     res = rtc_get_datatime();
 
     res = rtc_set_wakeup(30);

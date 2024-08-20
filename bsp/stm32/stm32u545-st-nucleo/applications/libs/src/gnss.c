@@ -345,20 +345,23 @@ static rt_err_t test_show_nmea_item(nmea_item_t test_nmea_item)
     rt_uint8_t i;
     res = gnss_read_nmea_item(test_nmea_item);
     LOG_D("gnss_read_nmea_item %s", res == RT_EOK ? "success" : "failed");
-    LOG_D("test_nmea_item->GNRMC: %s", test_nmea_item->GNRMC);
-    LOG_D("test_nmea_item->is_valid: %d", test_nmea_item->is_valid);
-    LOG_D("test_nmea_item->GNGGA: %s", test_nmea_item->GNGGA);
-    LOG_D("test_nmea_item->GNGLL: %s", test_nmea_item->GNGLL);
-    LOG_D("test_nmea_item->GNVTG: %s", test_nmea_item->GNVTG);
-    LOG_D("test_nmea_item->GNGSA_SIZE: %d", test_nmea_item->GNGSA_SIZE);
-    for (i = 0; i < test_nmea_item->GNGSA_SIZE; i++)
+    if (res == RT_EOK)
     {
-        LOG_D("test_nmea_item->GNGSA[%d]: %s", i, test_nmea_item->GNGSA[i]);
-    }
-    LOG_D("test_nmea_item->GPGSV_SIZE: %d", test_nmea_item->GPGSV_SIZE);
-    for (i = 0; i < test_nmea_item->GPGSV_SIZE; i++)
-    {
-        LOG_D("test_nmea_item->GPGSV[%d]: %s", i, test_nmea_item->GPGSV[i]);
+        LOG_D("test_nmea_item->GNRMC: %s", test_nmea_item->GNRMC);
+        LOG_D("test_nmea_item->is_valid: %d", test_nmea_item->is_valid);
+        LOG_D("test_nmea_item->GNGGA: %s", test_nmea_item->GNGGA);
+        LOG_D("test_nmea_item->GNGLL: %s", test_nmea_item->GNGLL);
+        LOG_D("test_nmea_item->GNVTG: %s", test_nmea_item->GNVTG);
+        LOG_D("test_nmea_item->GNGSA_SIZE: %d", test_nmea_item->GNGSA_SIZE);
+        for (i = 0; i < test_nmea_item->GNGSA_SIZE; i++)
+        {
+            LOG_D("test_nmea_item->GNGSA[%d]: %s", i, test_nmea_item->GNGSA[i]);
+        }
+        LOG_D("test_nmea_item->GPGSV_SIZE: %d", test_nmea_item->GPGSV_SIZE);
+        for (i = 0; i < test_nmea_item->GPGSV_SIZE; i++)
+        {
+            LOG_D("test_nmea_item->GPGSV[%d]: %s", i, test_nmea_item->GPGSV[i]);
+        }
     }
     return res;
 }
