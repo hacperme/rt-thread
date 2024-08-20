@@ -343,7 +343,8 @@ static rt_err_t test_show_nmea_item(nmea_item_t test_nmea_item)
     rt_err_t res = RT_ERROR;
     rt_err_t result;
     rt_uint8_t i;
-    gnss_read_nmea_item(test_nmea_item);
+    res = gnss_read_nmea_item(test_nmea_item);
+    LOG_D("gnss_read_nmea_item %s", res == RT_EOK ? "success" : "failed");
     LOG_D("test_nmea_item->GNRMC: %s", test_nmea_item->GNRMC);
     LOG_D("test_nmea_item->is_valid: %d", test_nmea_item->is_valid);
     LOG_D("test_nmea_item->GNGGA: %s", test_nmea_item->GNGGA);
@@ -388,6 +389,8 @@ static void gnss_data_show(int argc, char **argv)
 
         /* Test to show NMEA item data */
         test_show_nmea_item(&test_nmea_item);
+
+        /* Test to show NMEA source data */
         // rt_memset(gnss_data, 0, 2048);
         // gnss_read_nmea(gnss_data, 2048);
         // LOG_D("=============================");

@@ -61,7 +61,7 @@ static rt_uint8_t FDC1004_MEAS_READ_REGS[4][2] = {
 };
 
 /* TODO: Read clevel0 from flash. */
-static rt_int32_t FDC1004_CLEVEL0 = 0;
+static rt_int32_t FDC1004_CLEVEL0 = 0xFC7E2700;
 
 rt_err_t fdc1004_read_manufacturer_id(struct rt_i2c_bus_device *iic_dev, rt_uint16_t *manufacturer_id);
 rt_err_t dfc1004_read_device_id(struct rt_i2c_bus_device *iic_dev, rt_uint16_t *dev_id);
