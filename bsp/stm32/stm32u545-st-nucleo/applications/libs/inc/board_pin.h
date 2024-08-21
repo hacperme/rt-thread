@@ -33,6 +33,7 @@ void cat1_reset_stm_pin_init(void);
 void cat1_pwrkey_stm_pin_init(void);
 void cat1_psm_ind_stm_pin_init(void);
 void cat1_psm_int_stm_pin_init(void);
+void nbiot_boot_pin_init(void);
 
 rt_err_t gnss_pwron_pin_enable(rt_uint8_t mode);
 rt_err_t gnss_rst_pin_enable(rt_uint8_t mode);
@@ -54,6 +55,7 @@ rt_err_t cat1_reset_stm_pin_enable(rt_uint8_t mode);
 rt_err_t cat1_pwrkey_stm_pin_enable(rt_uint8_t mode);
 rt_err_t cat1_psm_ind_stm_pin_enable(rt_uint8_t mode);
 rt_err_t cat1_psm_int_stm_pin_enable(rt_uint8_t mode);
+rt_err_t nbiot_boot_pin_enable(rt_uint8_t mode);
 
 int board_pins_init(void);
 

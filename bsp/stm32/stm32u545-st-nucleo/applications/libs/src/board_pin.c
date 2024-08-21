@@ -38,6 +38,7 @@
 #define CAT1_PSM_IND_STM_PIN    GET_PIN(C, 11)
 #define CAT1_PSM_INT_STM_PIN    GET_PIN(C, 10)
 
+#define NBIOT_BOOT_PIN          GET_PIN(B, 9)
 
 void gnss_pwron_pin_init(void)
 {
@@ -282,6 +283,17 @@ rt_err_t cat1_psm_int_stm_pin_enable(rt_uint8_t mode)
     return rt_pin_read(CAT1_PSM_INT_STM_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
+void nbiot_boot_pin_init(void)
+{
+    rt_pin_mode(NBIOT_BOOT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t nbiot_boot_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(NBIOT_BOOT_PIN, mode);
+    return rt_pin_read(NBIOT_BOOT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
 int board_pins_init(void)
 {
     rt_err_t res = RT_EOK;
@@ -306,6 +318,7 @@ int board_pins_init(void)
     cat1_pwrkey_stm_pin_init();
     cat1_psm_ind_stm_pin_init();
     cat1_psm_int_stm_pin_init();
+    nbiot_boot_pin_init();
 
     return res;
 }
