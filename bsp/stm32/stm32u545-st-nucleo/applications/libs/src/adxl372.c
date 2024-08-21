@@ -725,6 +725,8 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
     return res;
 }
 
+// #define TEST_ADXL372_MEASURE_FUN
+#ifdef TEST_ADXL372_MEASURE_FUN
 static float ACC_XYZ_BUFF[1024][3] = {0};
 static void test_adxl372_measure(void)
 {
@@ -743,6 +745,7 @@ static void test_adxl372_measure(void)
         }
     }
 }
+#endif
 
 static void test_adxl372(int argc, char **argv)
 {
@@ -784,8 +787,10 @@ static void test_adxl372(int argc, char **argv)
     //     milliscond, threshold, res != RT_EOK ? "failed" : "success"
     // );
 
+#ifdef TEST_ADXL372_MEASURE_FUN
     test_adxl372_measure();
     return;
+#endif
 
     // res = adxl372_query_dev_info();
 
