@@ -690,8 +690,6 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
     rt_int16_t *acc_xyz_int16 = (rt_int16_t *)acc_xyz_buff;
     rt_uint16_t i, j;
 
-    rt_memset(acc_xyz_buff, 0, size * 3 * sizeof(float));
-
     rt_tick_t stime = rt_tick_get();
     for (i = 0; i < size; i++)
     {
