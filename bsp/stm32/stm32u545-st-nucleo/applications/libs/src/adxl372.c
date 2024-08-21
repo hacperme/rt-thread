@@ -26,6 +26,8 @@
 #define ADXL372_INT1_Pin          GET_PIN(E, 8)
 #endif
 
+#define rt_tick_diff(a, b) (a <= b ? b - a : UINT32_MAX - a + b + 1)
+
 struct rt_spi_device *adxl372_dev;
 rt_sem_t adxl372_inact_sem = RT_NULL;
 rt_thread_t adxl372_recv_inact_thd = RT_NULL;
@@ -688,6 +690,8 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
     rt_int16_t *acc_xyz_int16 = (rt_int16_t *)acc_xyz_buff;
     rt_uint16_t i, j;
 
+    rt_memset(acc_xyz_buff, 0, size * 3 * sizeof(float));
+
     rt_tick_t stime = rt_tick_get();
     for (i = 0; i < size; i++)
     {
@@ -708,7 +712,8 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
         acc_xyz_int16[i * 6 + 2] = acc_xyz_int16[i * 6 + 1];
     }
     rt_tick_t etime = rt_tick_get();
-    LOG_D("Start %d, End %d, Run %d", stime, etime, (etime - stime));
+    rt_tick_t rtime = rt_tick_diff(stime, etime);
+    LOG_D("Start %d, End %d, Run %d", stime, etime, rtime);
 
     // char msg[64];
     for (i = 0; i < size; i++)
