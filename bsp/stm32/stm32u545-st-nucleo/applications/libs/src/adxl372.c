@@ -106,8 +106,6 @@ void adxl372_inactive_irq_callback(void *args)
 rt_err_t adxl372_int1_pin_irq_enable(void)
 {
     rt_err_t res;
-    /* G-Sensor wakeup pin irq enable. */
-    rt_pin_mode(ADXL372_INT1_Pin, PIN_MODE_INPUT_PULLDOWN);
     res = rt_pin_attach_irq(ADXL372_INT1_Pin, PIN_IRQ_MODE_RISING, adxl372_inactive_irq_callback, RT_NULL);
     if (res != RT_EOK)
     {
@@ -276,6 +274,9 @@ rt_err_t adxl372_init(void)
 {
     rt_err_t res = RT_ERROR;
 
+    /* G-Sensor irq pin init. */
+    rt_pin_mode(ADXL372_INT1_Pin, PIN_MODE_INPUT_PULLDOWN);
+
     res = adxl372_dev != RT_NULL ? RT_EOK : RT_ERROR;
     if (res == RT_EOK)
     {
@@ -290,7 +291,7 @@ rt_err_t adxl372_init(void)
     }
 
     res = rt_hw_spi_device_attach(ADXL372_SPI_NAME, ADXL372_DEV_NAME, ADXL372_CS_PIN);
-    LOG_E("rt_hw_spi_device_attach bus name %s device name %s %s.", ADXL372_SPI_NAME, ADXL372_DEV_NAME, res == RT_EOK ? "success" : "failed");
+    LOG_D("rt_hw_spi_device_attach bus name %s device name %s %s.", ADXL372_SPI_NAME, ADXL372_DEV_NAME, res == RT_EOK ? "success" : "failed");
     if (res != RT_EOK)
     {
         return res;
@@ -392,7 +393,7 @@ rt_err_t adxl372_check_xyz_ready(void)
     do {
         recv_buf = 0x00;
         res = adxl732_read(ADI_ADXL372_STATUS_1, &recv_buf, 1);
-        // LOG_I("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
+        // LOG_D("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
         eticks = rt_tick_get();
     } while ((recv_buf & 0x01) == 0 && (eticks - sticks) < 1000);
 
@@ -685,7 +686,6 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
 {
     rt_err_t res;
     rt_int16_t *acc_xyz_int16 = (rt_int16_t *)acc_xyz_buff;
-    rt_int32_t *acc_xyz_int32 = (rt_int32_t *)acc_xyz_buff;
     rt_uint16_t i, j;
 
     rt_tick_t stime = rt_tick_get();
@@ -694,12 +694,14 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
         res = adxl372_check_xyz_ready();
         if (res != RT_EOK)
         {
+            LOG_E("adxl372_check_xyz_ready acc is not ready.");
             return res;
         }
         acc_xyz_int16 = (rt_int16_t *)&acc_xyz_buff[i];
         res = adxl372_read_xyz_val(&acc_xyz_int16[i * 6]);
         if (res != RT_EOK)
         {
+            LOG_E("adxl372_read_xyz_val failed.");
             return res;
         }
         acc_xyz_int16[i * 6 + 4] = acc_xyz_int16[i * 6 + 2];
@@ -714,9 +716,7 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
         for (j = 0; j < 3; j++)
         {
             // LOG_D("acc_xyz_int16[%d]=%d",(i * 3 + j) * 2, acc_xyz_int16[(i * 3 + j) * 2]);
-            acc_xyz_int32[i * 3 + j] = (rt_int32_t)acc_xyz_int16[(i * 3 + j) * 2];
-            // LOG_D("acc_xyz_int32[%d]=%d", i * 3 + j, acc_xyz_int32[i * 3 + j]);
-            acc_xyz_buff[i][j] = acc_xyz_int32[i * 3 + j] * ADXL372_SCALEG;
+            acc_xyz_buff[i][j] = (float)acc_xyz_int16[(i * 3 + j) * 2] * ADXL372_SCALEG;
             // sprintf(msg, "*acc_xyz_buff[%d][%d]=%f", i, j, acc_xyz_buff[i][j]);
             // LOG_D(msg);
         }
