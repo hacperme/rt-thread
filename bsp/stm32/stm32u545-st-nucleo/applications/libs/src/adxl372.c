@@ -701,7 +701,6 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
             LOG_E("adxl372_check_xyz_ready acc is not ready.");
             return res;
         }
-        acc_xyz_int16 = (rt_int16_t *)&acc_xyz_buff[i];
         res = adxl372_read_xyz_val(&acc_xyz_int16[i * 6]);
         if (res != RT_EOK)
         {
