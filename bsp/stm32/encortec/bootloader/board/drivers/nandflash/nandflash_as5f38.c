@@ -408,7 +408,9 @@ void NAND_ReadID(uint8_t *id, uint32_t size) {
         .FlashId = HAL_OSPI_FLASH_ID_1,
         .Instruction = READ_ID_CMD,
         .InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE,
-        .AddressMode = HAL_OSPI_ADDRESS_NONE,
+        .AddressMode = HAL_OSPI_ADDRESS_1_LINE,  // 使用1线模式传递地址
+        .AddressSize = HAL_OSPI_ADDRESS_8_BITS,  // 地址大小为8位
+        .Address = 0x00,  // 初始地址字节为0x00
         .DataMode = HAL_OSPI_DATA_1_LINE,
         .NbData = size,
         .DummyCycles = 0,
