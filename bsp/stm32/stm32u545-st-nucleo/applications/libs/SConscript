@@ -7,9 +7,6 @@ CPPPATH += [cwd + "/src"]
 CPPPATH += [cwd + "/inc"]
 src     = Glob('src/*.c')
 
-src     += Glob('file/file.c')
-CPPPATH += [cwd + "/file"]
-
 libs = DefineGroup('libs', src, depend = [''], CPPPATH = CPPPATH)
 
 Return('libs')
