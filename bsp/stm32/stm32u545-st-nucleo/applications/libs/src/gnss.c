@@ -233,6 +233,7 @@ static void gnss_thread_entry(void *parameter)
     // LOG_D("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
     res = rt_thread_suspend(rt_thread_self());
     // LOG_D("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
+    rt_schedule();
     rt_exit_critical();
 }
 

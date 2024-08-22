@@ -728,7 +728,7 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
 }
 
 #ifdef RT_USING_MSH
-#define TEST_ADXL372_MEASURE_FUN
+// #define TEST_ADXL372_MEASURE_FUN
 #ifdef TEST_ADXL372_MEASURE_FUN
 static float ACC_XYZ_BUFF[10][3] = {0};
 static void test_adxl372_measure(void)
