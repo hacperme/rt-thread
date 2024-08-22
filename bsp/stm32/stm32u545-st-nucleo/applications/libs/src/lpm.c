@@ -7,6 +7,7 @@
  * @copyright : Copyright (c) 2024
  */
 #include "lpm.h"
+#include "board_pin.h"
 
 #define DBG_SECTION_NAME "LPM"
 #define DBG_LEVEL DBG_LOG
@@ -32,14 +33,25 @@ rt_err_t nbiot_power_off(void)
 
 rt_err_t esp32_power_on(void)
 {
-    return esp32_pwron_pin_enable(1);
+    rt_err_t res;
+    res = esp32_pwron_pin_enable(1);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+    res = esp32_en_pin_enable(1);
+    return res;
 }
 
 rt_err_t esp32_power_off(void)
 {
-    return esp32_pwron_pin_enable(0);
+    rt_err_t res;
+    res = esp32_en_pin_enable(0);
+    res = esp32_pwron_pin_enable(0);
+    return res;
 }
 
+/* TODO: Delete esp32_en_on/esp32_en_off. */
 rt_err_t esp32_en_on(void)
 {
     return esp32_en_pin_enable(1);
@@ -212,23 +224,6 @@ rt_err_t rtc_set_datetime(int year, int month, int day, int hour, int minute, in
     return err;
 }
 
-static rt_err_t rtc_get_datatime(void)
-{
-    time_t cur_time;
-    struct tm *time_now;
-    char buf[64];
-
-    time_t now;
-    now = time(NULL);
-    LOG_D("now %s, stamp=%d", ctime(&now), now);
-    time(&cur_time);
-    LOG_D("cur_time=%d", cur_time);
-    time_now = localtime(&cur_time);
-    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", time_now);
-    LOG_D("Now time %s", buf);
-    return RT_EOK;
-}
-
 rt_err_t rtc_set_wakeup(time_t sleep_time)
 {
     rt_err_t res = RT_ERROR;
@@ -261,6 +256,24 @@ rt_err_t rtc_set_wakeup(time_t sleep_time)
         LOG_D("rt_alarm_start %s.", res != RT_EOK ? "failed" : "success");
     }
     return res;
+}
+
+#ifdef RT_USING_MSH
+static rt_err_t rtc_get_datatime(void)
+{
+    time_t cur_time;
+    struct tm *time_now;
+    char buf[64];
+
+    time_t now;
+    now = time(NULL);
+    LOG_D("now %s, stamp=%d", ctime(&now), now);
+    time(&cur_time);
+    LOG_D("cur_time=%d", cur_time);
+    time_now = localtime(&cur_time);
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", time_now);
+    LOG_D("Now time %s", buf);
+    return RT_EOK;
 }
 
 static void test_rtc(void)
@@ -298,6 +311,7 @@ static void test_show_wkup_status(void)
 
 MSH_CMD_EXPORT(test_show_wkup_status, test show reset status);
 
+#include "gnss.h"
 static void test_rtc_wakeup(int argc, char **argv)
 {
     rt_err_t res;
@@ -355,3 +369,4 @@ static void test_all_pin_enable(int argc, char **argv)
 
 }
 MSH_CMD_EXPORT(test_all_pin_enable, test all pin enable);
+#endif

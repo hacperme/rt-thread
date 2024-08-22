@@ -727,6 +727,7 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
     return res;
 }
 
+#ifdef RT_USING_MSH
 // #define TEST_ADXL372_MEASURE_FUN
 #ifdef TEST_ADXL372_MEASURE_FUN
 static float ACC_XYZ_BUFF[1024][3] = {0};
@@ -749,6 +750,7 @@ static void test_adxl372_measure(void)
 }
 #endif
 
+#include "board_pin.h"
 static void test_adxl372(int argc, char **argv)
 {
     rt_err_t res;
@@ -818,3 +820,4 @@ static void test_adxl372(int argc, char **argv)
 }
 
 MSH_CMD_EXPORT(test_adxl372, test adxl372);
+#endif

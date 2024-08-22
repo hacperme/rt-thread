@@ -13,10 +13,13 @@
 #include "rtdevice.h"
 #include "board.h"
 #include "lwgps/lwgps.h"
-#include "board_pin.h"
 
 #define GNSS_UART_NAME "uart4"
+#ifdef RT_SERIAL_RB_BUFSZ
+#define GNSS_BUFF_SIZE RT_SERIAL_RB_BUFSZ
+#else
 #define GNSS_BUFF_SIZE 0x800
+#endif
 
 typedef struct
 {
@@ -32,21 +35,34 @@ typedef struct
 } nmea_item;
 typedef nmea_item *nmea_item_t;
 
-void gnss_parse_nmea_item(char *item);
-void gnss_parse_nmea(char *nmea);
+#define GNSS_PWRON_PIN          GET_PIN(E, 0)
+#define GNSS_RST_PIN            GET_PIN(E, 1)
+#define EG915_GNSSEN_PIN        GET_PIN(B, 5)
+
+void gnss_pwron_pin_init(void);
+void gnss_rst_pin_init(void);
+void eg915_gnssen_pin_init(void);
+rt_err_t gnss_pwron_pin_enable(rt_uint8_t mode);
+rt_err_t gnss_rst_pin_enable(rt_uint8_t mode);
+rt_err_t eg915_gnssen_pin_enable(rt_uint8_t mode);
+
+static void gnss_parse_nmea_item(char *item);
+static void gnss_parse_nmea(char *nmea);
 static void gnss_thread_entry(void *parameter);
 static rt_err_t gnss_power_on(void);
 static rt_err_t gnss_power_off(void);
 static rt_err_t swith_gnss_source(rt_uint8_t mode);
 static rt_err_t gnss_reset_init(void);
-rt_err_t gnss_reset(void);
+
+static rt_err_t gnss_init(void);
+static rt_err_t gnss_deinit(void);
+
 rt_err_t gnss_open(void);
 rt_err_t gnss_close(void);
-rt_err_t gnss_read_nmea(char *data, rt_uint32_t size);
-rt_err_t gnss_read_data(lwgps_t *gnss_data);
-rt_err_t gnss_read_nmea_item(nmea_item_t nmea_item);
+rt_err_t gnss_reset(void);
 
-static rt_err_t test_show_nmea_item(nmea_item_t test_nmea_item);
-static void gnss_data_show(int argc, char **argv);
+rt_err_t gnss_read_nmea(char *data, rt_uint32_t size, rt_uint16_t timeout);
+rt_err_t gnss_read_data(lwgps_t *gnss_data, rt_uint16_t timeout);
+rt_err_t gnss_read_nmea_item(nmea_item_t nmea_item, rt_uint16_t timeout);
 
 #endif  // __GNSS_H__

@@ -12,8 +12,6 @@
 #include "rtthread.h"
 #include "rtdevice.h"
 #include "board.h"
-#include "board_pin.h"
-#include "gnss.h"
 
 void rtc_wakeup_irq_enable(void);
 rt_err_t nbiot_power_on(void);
@@ -32,8 +30,5 @@ static void alarm_callback(rt_alarm_t alarm, time_t timestamp);
 rt_err_t rtc_init(void);
 rt_err_t rtc_set_datetime(int year, int month, int day, int hour, int minute, int second);
 rt_err_t rtc_set_wakeup(time_t sleep_time);
-
-static void test_rtc_wakeup(int argc, char **argv);
-static void test_all_pin_enable(int argc, char **argv);
 
 #endif  // __LPM_H__

@@ -12,9 +12,6 @@
 #define DBG_LEVEL DBG_LOG
 #include <rtdbg.h>
 
-#define GNSS_PWRON_PIN          GET_PIN(E, 0)
-#define GNSS_RST_PIN            GET_PIN(E, 1)
-#define EG915_GNSSEN_PIN        GET_PIN(B, 5)
 #define SENSOR_PWRON_PIN        GET_PIN(D, 8)
 #ifdef SOC_STM32U545RE
 #define PWRCTRL_PWR_WKUP3       GET_PIN(B, 7)
@@ -39,39 +36,6 @@
 #define CAT1_PSM_INT_STM_PIN    GET_PIN(C, 10)
 
 #define NBIOT_BOOT_PIN          GET_PIN(B, 9)
-
-void gnss_pwron_pin_init(void)
-{
-    rt_pin_mode(GNSS_PWRON_PIN, PIN_MODE_OUTPUT);
-}
-
-rt_err_t gnss_pwron_pin_enable(rt_uint8_t mode)
-{
-    rt_pin_write(GNSS_PWRON_PIN, mode);
-    return rt_pin_read(GNSS_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
-}
-
-void gnss_rst_pin_init(void)
-{
-    rt_pin_mode(GNSS_RST_PIN, PIN_MODE_OUTPUT);
-}
-
-rt_err_t gnss_rst_pin_enable(rt_uint8_t mode)
-{
-    rt_pin_write(GNSS_RST_PIN, mode);
-    return rt_pin_read(GNSS_RST_PIN) == mode ? RT_EOK : RT_ERROR;
-}
-
-void eg915_gnssen_pin_init(void)
-{
-    rt_pin_mode(EG915_GNSSEN_PIN, PIN_MODE_OUTPUT);
-}
-
-rt_err_t eg915_gnssen_pin_enable(rt_uint8_t mode)
-{
-    rt_pin_write(EG915_GNSSEN_PIN, mode);
-    return rt_pin_read(EG915_GNSSEN_PIN) == mode ? RT_EOK : RT_ERROR;
-}
 
 void sensor_pwron_pin_init(void)
 {
@@ -298,9 +262,6 @@ int board_pins_init(void)
 {
     rt_err_t res = RT_EOK;
 
-    gnss_pwron_pin_init();
-    gnss_rst_pin_init();
-    eg915_gnssen_pin_init();
     sensor_pwron_pin_init();
     pwrctrl_pwr_wkup3_init();
     nbiot_pwron_pin_init();

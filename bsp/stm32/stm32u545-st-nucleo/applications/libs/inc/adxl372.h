@@ -12,7 +12,6 @@
 #include "rtthread.h"
 #include "rtdevice.h"
 #include "board.h"
-#include "board_pin.h"
 
 static const rt_uint8_t ADI_ADXL372_ADI_DEVID         = 0x00;   // Analog Devices, Inc., accelerometer ID 
 static const rt_uint8_t ADI_ADXL372_MST_DEVID         = 0x01;   // Analog Devices MEMS device ID
