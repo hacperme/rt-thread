@@ -32,6 +32,7 @@ typedef struct
 {
 	rt_sem_t _qiopen;
 	rt_sem_t _qiurc;
+    rt_sem_t _rdy;
 } qat_sem_s;
 
 qat_sem_s _ql_at_sem = {0};
@@ -46,7 +47,7 @@ static void urc_func(struct at_client *client ,const char *data, rt_size_t size)
 static struct at_urc urc_table[] = {
     {"+QIOPEN:",   	"\r\n",     	urc_func},
     {"+QIURC:", 		"\r\n",		urc_func},
-    
+    {"RDY",         "\r\n",         urc_func},
 };
 
 
@@ -61,14 +62,20 @@ static void urc_func(struct at_client *client ,const char *data, rt_size_t size)
 	{
 		LOG_E("send _qiurc sem\n");
 		rt_sem_release(_ql_at_sem._qiurc);
-	}
+	} else if (strncmp(data, "RDY", strlen("RDY")) == 0) {
+        LOG_E("send _rdy sem\n");
+        rt_sem_release(_ql_at_sem._rdy);
+    }
 }
 
-
-
-void at_multi_client_init(void)
+rt_err_t cat1_wait_rdy()
 {
-    /* ³õÊ¼»¯µÚÒ»¸ö AT Client */
+    return rt_sem_take(_ql_at_sem._rdy, rt_tick_from_millisecond(15000));
+}
+
+void cat1_at_client_init(void)
+{
+    /* åˆå§‹åŒ–ç¬¬ä¸€ä¸ª AT Client */
 	if(RT_EOK != at_client_init("uart1", RESP_BUFFER_SIZE, RESP_BUFFER_SIZE))
 	{
 		LOG_E("AT Client1 (uart1) initialize failed\n");
@@ -76,6 +83,7 @@ void at_multi_client_init(void)
 
 	_ql_at_sem._qiopen = rt_sem_create("iopen_sem", 0, RT_IPC_FLAG_PRIO);
 	_ql_at_sem._qiurc = rt_sem_create("iurc_sem", 0, RT_IPC_FLAG_PRIO);
+    _ql_at_sem._rdy = rt_sem_create("rdy_sem", 0, RT_IPC_FLAG_PRIO);
 	
 	
     LOG_I("AT Client1 (uart1) initialized success\n");
@@ -107,7 +115,7 @@ static bool at_http_send_data(at_client_t client, at_response_t resp, const void
 
 
 
-int at_http_upload_file_chunked(at_client_t client, const char *filename)
+int at_http_upload_file_chunked(const char *filename)
 {
     FILE *file = NULL;
 	int ret = -1;
@@ -125,7 +133,7 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
 	at_set_end_sign('>');
 
 
-    /* ´´½¨ AT Response ¶ÔÏó */
+    /* ï¿½ï¿½ï¿½ï¿½ AT Response ï¿½ï¿½ï¿½ï¿½ */
     resp = at_create_resp(RESP_BUFFER_SIZE, 0, 10000);
 	if (!resp) {
         LOG_E("Failed to create AT response object\n");
@@ -137,7 +145,9 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
         return -1;
     }
 	
-	// ¼ì²éÍøÂç×¢²á×´Ì¬
+	at_client_t client = at_client_get("uart1");
+
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½×´Ì¬
     if (at_obj_exec_cmd(client, resp, "AT+QIACT?") < 0) {
         LOG_E("Failed to execute AT+QIACT?\n");
         goto err;
@@ -161,9 +171,9 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
         //return;
     }
 
-	// ¼¤»î PDP ÉÏÏÂÎÄ (Èç¹ûÐèÒª)
+	// ï¿½ï¿½ï¿½ï¿½ PDP ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½Òª)
     if (pdp_status == 0) {
-        if (at_obj_exec_cmd(client,resp, "AT+QIACT=1") < 0) {
+        if (at_obj_exec_cmd(client, resp, "AT+QIACT=1") < 0) {
             LOG_E("Failed to activate PDP context\n");
             goto err;
         }
@@ -175,7 +185,7 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
 //		at_delete_resp(resp);
 //	}
 
-	//´ò¿ª TCP Á¬½Ó
+	//ï¿½ï¿½ TCP ï¿½ï¿½ï¿½ï¿½
     if (at_obj_exec_cmd(client,resp, "AT+QIOPEN=1,1,\"TCP\",\"112.31.84.164\",8300,0,0") < 0) {
         LOG_E("Failed to open TCP connection\n");
         goto err;
@@ -188,7 +198,7 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
 	}
 
 
-	// ¼ì²é TCP Á¬½ÓÊÇ·ñ³É¹¦
+	// ï¿½ï¿½ï¿½ TCP ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½É¹ï¿½
 //    if (at_resp_parse_line_args(resp, 1, "+QIOPEN: %d,%d",&ip_channel, &pdp_status) <= 0 || pdp_status != 0) {
 //        LOG_E("Failed to open TCP connection, status: %d\n", pdp_status);
 //		PRINTF_RESP(resp);
@@ -217,7 +227,7 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
 	);
 	
 
-	// 6. ¹¹½¨²¢·¢ËÍ HTTP ±¨ÎÄÍ·²¿
+	// 6. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ HTTP ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½
     snprintf(header, sizeof(header),
              "POST /upload.php HTTP/1.1\r\n"
              "Host: 112.31.84.164:8300\r\n"
@@ -242,7 +252,7 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
 	AT_HTTP_SEND(client, send_resp, header, strlen(header));
 
 	
-	 // 7. ·Ö°ü¶ÁÈ¡ÎÄ¼þ²¢·¢ËÍ
+	 // 7. ï¿½Ö°ï¿½ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     while ((bytes_read = fread(buffer, 1, BUFFER_CHUNK_SIZE, file)) > 0) {
 		AT_HTTP_SEND(client, send_resp, buffer, bytes_read);
     }
@@ -253,7 +263,7 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
         goto err;
     }
 
-	// 8. ·¢ËÍ½áÊøµÄ boundary ºÍ HTTP ±¨ÎÄÎ²²¿
+	// 8. ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½ï¿½ boundary ï¿½ï¿½ HTTP ï¿½ï¿½ï¿½ï¿½Î²ï¿½ï¿½
     snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
 	AT_HTTP_SEND(client, send_resp, buffer, strlen(buffer));
 
@@ -264,7 +274,7 @@ int at_http_upload_file_chunked(at_client_t client, const char *filename)
 	}
 
 
-	// 9. ¶ÁÈ¡·þÎñÆ÷ÏìÓ¦
+	// 9. ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦
     if (at_obj_exec_cmd(client,resp, "AT+QIRD=1") < 0) {
         LOG_E("Failed to read server response\n");
     } else {
@@ -315,20 +325,20 @@ err:
 
 
 static int creat_fs(char* filename, char *date) {
-    // ´ò¿ªÎÄ¼þ£¬Ê¹ÓÃ "w" Ä£Ê½±íÊ¾Ð´Èë£¨Èç¹ûÎÄ¼þ²»´æÔÚÔò´´½¨£¬´æÔÚÔòÇå¿Õ£©
+    // ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ "w" Ä£Ê½ï¿½ï¿½Ê¾Ð´ï¿½ë£¨ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò´´½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ£ï¿½
     FILE *file = fopen(filename, "w");
 	int i = 0;
     
-    // ¼ì²éÎÄ¼þÊÇ·ñ³É¹¦´ò¿ª
+    // ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ç·ï¿½É¹ï¿½ï¿½ï¿½
     if (file == NULL) {
         perror("Failed to open file");
         return 1;
     }
     
-    // ÒªÐ´ÈëµÄÄÚÈÝ
+    // ÒªÐ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     const char *content = date;
     
-    // Ê¹ÓÃ fwrite Ð´ÈëÄÚÈÝµ½ÎÄ¼þ
+    // Ê¹ï¿½ï¿½ fwrite Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½ï¿½Ä¼ï¿½
     size_t result = 0;
 	size_t count = 0;
 
@@ -345,14 +355,14 @@ static int creat_fs(char* filename, char *date) {
     
     result = fwrite("end", sizeof(char), 3, file);
     
-//    // ¼ì²éÊÇ·ñ³É¹¦Ð´Èë
+//    // ï¿½ï¿½ï¿½ï¿½Ç·ï¿½É¹ï¿½Ð´ï¿½ï¿½
 //    if (result < strlen(content)) {
 //        perror("Failed to write to file");
 //        fclose(file);
 //        return 1;
 //    }
     
-    // ¹Ø±ÕÎÄ¼þ
+    // ï¿½Ø±ï¿½ï¿½Ä¼ï¿½
     fclose(file);
     
     LOG_E("File 'felix.txt' created and content written successfully.\n");
@@ -363,21 +373,158 @@ static int creat_fs(char* filename, char *date) {
 
 int example_at_http(void)
 {
-    /* ³õÊ¼»¯¶à¸ö AT Client ÊµÀý */
+    /* ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ AT Client Êµï¿½ï¿½ */
 	creat_fs("felix.txt", "this is felix file test");
 
-    at_multi_client_init();
+    cat1_at_client_init();
 
-    /* »ñÈ¡¿Í»§¶ËÊµÀý */
+    /* ï¿½ï¿½È¡ï¿½Í»ï¿½ï¿½ï¿½Êµï¿½ï¿½ */
     at_client_t client1 = at_client_get("uart1");
 
-    /* ´«ÈëÒªÉÏ´«µÄÎÄ¼þÃû */
-    at_http_upload_file_chunked(client1, "felix.txt");
-	at_http_upload_file_chunked(client1, "felix.txt");
-	at_http_upload_file_chunked(client1, "felix.txt");
+    /* ï¿½ï¿½ï¿½ï¿½Òªï¿½Ï´ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ */
+    at_http_upload_file_chunked("felix.txt");
+	at_http_upload_file_chunked("felix.txt");
+	at_http_upload_file_chunked("felix.txt");
 
     return 0;
 }
 
 
+rt_err_t cat1_qpowd()
+{
+    // cat1 "uart1"
+    at_client_t client = RT_NULL;
+    rt_err_t result = RT_EOK;
 
+    at_response_t resp = at_create_resp(512, 0, rt_tick_from_millisecond(5000));
+    if (resp == RT_NULL) {
+        LOG_D("no enought mem for cat1 at resp");
+        return RT_ERROR;
+    }
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        at_client_init("uart1", 512, 512);
+        client = at_client_get("uart1");
+    }
+
+    result = at_obj_exec_cmd(client, resp, "AT+QPOWD");
+    LOG_D("at_obj_exec_cmd result: %d", result);
+	return result;
+}
+
+rt_err_t cat1_check_state()
+{
+    at_client_t client = RT_NULL;
+    rt_err_t result = RT_EOK;
+
+    at_response_t resp = at_create_resp(512, 0, rt_tick_from_millisecond(1000));
+    if (resp == RT_NULL) {
+        LOG_D("no enought mem for cat1 at resp");
+        return RT_ERROR;
+    }
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        at_client_init("uart1", 512, 512);
+        client = at_client_get("uart1");
+    }
+
+    for (int i=0; i < 10; i++) {
+        result = at_obj_exec_cmd(client, resp, "AT");
+        LOG_D("at_obj_exec_cmd result: %d", result);
+        if (result == RT_EOK) {
+            break;
+        }
+    }
+	return result;
+}
+
+rt_err_t cat1_set_cfun_mode(int mode)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_D("create resp failed.");
+        return RT_ERROR;
+    }
+
+    char s[20] = {0};
+    snprintf(s, 20, "AT+CFUN=%d", mode);
+    result = at_obj_exec_cmd(client, resp, s);
+    if (result != RT_EOK) {
+        LOG_E("nbiot cfun0 err: %d", result);
+    }
+
+    at_delete_resp(resp);
+    return result;
+}
+
+rt_err_t cat1_check_network(int retry_times)
+{
+    int n = -1;
+    int stat = -1;
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("cat1 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_D("create resp failed.");
+        return RT_ERROR;
+    }
+
+    for (int i=0; i < retry_times; i++) {
+        result = at_obj_exec_cmd(client, resp, "AT+CEREG?");
+        at_resp_parse_line_args(resp, 2, "+CEREG: %d,%d", &n, &stat);
+        LOG_D("cat1 check status, n: %d, stat: %d", n, stat);
+        if (stat == 1 || stat == 5) {
+            at_delete_resp(resp);
+            return RT_EOK;
+        }
+        rt_thread_mdelay(5000);
+    }
+
+    at_delete_resp(resp);
+    return RT_ERROR;
+}
+
+rt_err_t cat1_enable_echo(int enable)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("cat1 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_E("create resp failed.");
+        return RT_ERROR;
+    }
+
+    // disable at echo
+    result = at_obj_exec_cmd(client, resp, enable ? "ATE1" : "ATE0");
+    if (result != RT_EOK) {
+        LOG_E("cat1 disable at echo failed: %d", result);
+    }
+
+    at_delete_resp(resp);
+    return result;
+}
