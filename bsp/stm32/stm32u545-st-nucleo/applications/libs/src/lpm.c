@@ -66,10 +66,10 @@ rt_err_t cat1_power_on(void)
 {
     rt_err_t res;
     res = cat1_pwron_pin_enable(1);
-    if (res != RT_EOK)
-    {
-        return res;
-    }
+    // if (res != RT_EOK)
+    // {
+    //     return res;
+    // }
     res = cat1_pwrkey_stm_pin_enable(1);
     rt_thread_mdelay(1000);
     res = cat1_pwrkey_stm_pin_enable(0);

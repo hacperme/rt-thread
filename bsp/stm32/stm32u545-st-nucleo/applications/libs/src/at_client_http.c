@@ -229,7 +229,7 @@ int at_http_upload_file_chunked(const char *filename)
 
 	// 6. ���������� HTTP ����ͷ��
     snprintf(header, sizeof(header),
-             "POST /upload.php HTTP/1.1\r\n"
+            "POST /upload_sw.php HTTP/1.1\r\n"
              "Host: 112.31.84.164:8300\r\n"
              "Authorization: Basic dGVzdDp0ZXN0\r\n"
              "Content-Length: %d\r\n"
