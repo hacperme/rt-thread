@@ -13,7 +13,6 @@
 #include "rtthread.h"
 #include "rtdevice.h"
 #include "board.h"
-#include "board_pin.h"
 
 #define FDC1004_ADDR 0x50
 
@@ -71,7 +70,5 @@ rt_err_t fdc1004_meas_done(struct rt_i2c_bus_device *iic_dev, rt_uint8_t meas_id
 rt_err_t fdc1004_meas_read(struct rt_i2c_bus_device *iic_dev, rt_uint8_t reg, rt_uint16_t *value);
 rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value);
 rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev);
-
-static rt_err_t test_fdc1004(int argc, char **argv);
 
 #endif /* __FDC1004_H__ */

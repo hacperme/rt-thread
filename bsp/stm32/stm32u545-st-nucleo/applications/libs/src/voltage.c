@@ -73,6 +73,7 @@ rt_err_t vrefint_vol_read(rt_uint16_t *value)
     return res;
 }
 
+#ifdef RT_USING_MSH
 static void test_read_voltage(int argc, char *argv[])
 {
     rt_err_t res;
@@ -88,3 +89,4 @@ static void test_read_voltage(int argc, char *argv[])
 }
 
 MSH_CMD_EXPORT(test_read_voltage, TEST READ voltage);
+#endif

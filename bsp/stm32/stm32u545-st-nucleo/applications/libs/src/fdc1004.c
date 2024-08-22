@@ -307,6 +307,8 @@ rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev)
     return res;
 }
 
+#ifdef RT_USING_MSH
+#include "board_pin.h"
 static rt_err_t test_fdc1004(int argc, char **argv)
 {
     rt_err_t res = RT_ERROR;
@@ -347,3 +349,4 @@ static rt_err_t test_fdc1004(int argc, char **argv)
 }
 
 MSH_CMD_EXPORT(test_fdc1004, test fdc1004);
+#endif

@@ -6,39 +6,13 @@
  * @Date: 2024-08-14 10:03:03
  * @copyright : Copyright (c) 2024
  */
-#include "hdc3021.h"
 #include <stdio.h>
+#include "hdc3021.h"
+#include "tools.h"
 
 #define DBG_TAG "HDC3021"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
-
-rt_err_t hdc3021_crc_check(const rt_uint8_t *input, rt_size_t length, const rt_uint8_t *cmp_val)
-{
-    rt_err_t res = RT_ERROR;
-    rt_uint32_t crc_val = 0;
-    struct rt_hwcrypto_ctx *ctx;
-    struct hwcrypto_crc_cfg cfg = {
-        .last_val = 0xFF,
-        .poly = 0x31,
-        .width = 8,
-        .xorout = 0x00,
-        .flags = 0,
-    };
-    ctx = rt_hwcrypto_crc_create(rt_hwcrypto_dev_default(), HWCRYPTO_CRC_CRC8);
-    if (ctx == RT_NULL)
-    {
-        LOG_E("rt_hwcrypto_crc_create failed");
-        return res;
-    }
-    rt_hwcrypto_crc_cfg(ctx, &cfg);
-    crc_val = rt_hwcrypto_crc_update(ctx, input, length);
-    LOG_D("rt_hwcrypto_crc_update res=0x%02X", crc_val);
-    rt_hwcrypto_crc_destroy(ctx);
-
-    res = (rt_uint8_t)crc_val == *cmp_val ? RT_EOK : RT_ERROR;
-    return res;
-}
 
 rt_err_t hdc3021_soft_reset(struct rt_i2c_bus_device *iic_dev)
 {
@@ -80,9 +54,9 @@ rt_err_t hdc3021_read_temp_humi_by_tod(struct rt_i2c_bus_device *iic_dev, float 
             data_buf[0] = recv_buf[i];
             data_buf[1] = recv_buf[++i];
             crc_num = recv_buf[++i];
-            res = hdc3021_crc_check(data_buf, 2, &crc_num);
+            res = crc8_check(data_buf, 2, &crc_num);
             LOG_D(
-                "hdc3021_crc_check 0x%02X 0x%02X CRC=0x%02X %s",
+                "crc8_check 0x%02X 0x%02X CRC=0x%02X %s",
                 data_buf[0], data_buf[1], crc_num, res == RT_EOK ? "success" : "failed"
             );
             if (res != RT_EOK)
@@ -122,26 +96,28 @@ rt_err_t hdc3021_read_temp_humi(struct rt_i2c_bus_device *iic_dev, float *temp, 
     return res;
 }
 
-// static rt_err_t test_crc_check(void)
-// {
-//     rt_err_t res = RT_EOK;
-
-//     rt_uint8_t data[2] = {0xAB, 0xCD};
-//     rt_uint8_t cmp_val = 0x6F;
-//     rt_uint32_t ret;
-//     res = hdc3021_crc_check(data, 2, &cmp_val);
-//     LOG_D(
-//         "hdc3021_crc_check 0x%02X 0x%02X CRC=0x%02X %s",
-//         data[0], data[1], cmp_val, res == RT_EOK ? "success" : "failed"
-//     );
-//     return res;
-// }
-
-rt_err_t test_hdc3021(void)
+#ifdef RT_USING_MSH
+#include "board_pin.h"
+static rt_err_t test_crc_check(void)
 {
     rt_err_t res = RT_EOK;
 
-    // res = test_crc_check();
+    rt_uint8_t data[2] = {0xAB, 0xCD};
+    rt_uint8_t cmp_val = 0x6F;
+    rt_uint32_t ret;
+    res = crc8_check(data, 2, &cmp_val);
+    LOG_D(
+        "crc8_check 0x%02X 0x%02X CRC=0x%02X %s",
+        data[0], data[1], cmp_val, res == RT_EOK ? "success" : "failed"
+    );
+    return res;
+}
+
+static rt_err_t test_hdc3021(void)
+{
+    rt_err_t res = RT_EOK;
+
+    res = test_crc_check();
 
     char i2c_bus_name[] = "i2c1";
     static struct rt_i2c_bus_device *iic_dev;
@@ -175,3 +151,4 @@ rt_err_t test_hdc3021(void)
 }
 
 MSH_CMD_EXPORT(test_hdc3021, test hdc3021);
+#endif
