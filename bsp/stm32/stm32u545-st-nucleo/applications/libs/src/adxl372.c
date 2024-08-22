@@ -7,6 +7,7 @@
  * @copyright : Copyright (c) 2024
  */
 #include "adxl372.h"
+#include "tools.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -26,7 +27,6 @@
 #define ADXL372_INT1_Pin          GET_PIN(E, 8)
 #endif
 
-#define rt_tick_diff(a, b) (a <= b ? b - a : UINT32_MAX - a + b + 1)
 
 struct rt_spi_device *adxl372_dev;
 rt_sem_t adxl372_inact_sem = RT_NULL;
@@ -391,12 +391,12 @@ rt_err_t adxl372_check_xyz_ready(void)
     rt_uint8_t recv_buf;
     rt_tick_t sticks, eticks;
 
-    sticks = rt_tick_get();
+    sticks = rt_tick_get_millisecond();
     do {
         recv_buf = 0x00;
         res = adxl732_read(ADI_ADXL372_STATUS_1, &recv_buf, 1);
         // LOG_D("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
-        eticks = rt_tick_get();
+        eticks = rt_tick_get_millisecond();
     } while ((recv_buf & 0x01) == 0 && (eticks - sticks) < 1000);
 
     res = (recv_buf & 0x01) == 0 ? RT_ERROR : RT_EOK;
@@ -690,7 +690,7 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
     rt_int16_t *acc_xyz_int16 = (rt_int16_t *)acc_xyz_buff;
     rt_uint16_t i, j;
 
-    rt_tick_t stime = rt_tick_get();
+    rt_tick_t stime = rt_tick_get_millisecond();
     for (i = 0; i < size; i++)
     {
         res = adxl372_check_xyz_ready();
@@ -708,7 +708,7 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
         acc_xyz_int16[i * 6 + 4] = acc_xyz_int16[i * 6 + 2];
         acc_xyz_int16[i * 6 + 2] = acc_xyz_int16[i * 6 + 1];
     }
-    rt_tick_t etime = rt_tick_get();
+    rt_tick_t etime = rt_tick_get_millisecond();
     rt_tick_t rtime = rt_tick_diff(stime, etime);
     LOG_D("Start %d, End %d, Run %d", stime, etime, rtime);
 
@@ -728,14 +728,14 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
 }
 
 #ifdef RT_USING_MSH
-// #define TEST_ADXL372_MEASURE_FUN
+#define TEST_ADXL372_MEASURE_FUN
 #ifdef TEST_ADXL372_MEASURE_FUN
-static float ACC_XYZ_BUFF[1024][3] = {0};
+static float ACC_XYZ_BUFF[10][3] = {0};
 static void test_adxl372_measure(void)
 {
     rt_err_t res;
     char msg[64];
-    rt_uint16_t size = 1024;
+    rt_uint16_t size = 10;
     res = adxl372_measure_acc(ACC_XYZ_BUFF, size);
     LOG_D("adxl372_measure_acc %s", res == RT_EOK ? "success" : "failed");
     if (res == RT_EOK)
