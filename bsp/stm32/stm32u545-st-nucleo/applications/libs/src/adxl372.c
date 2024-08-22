@@ -6,10 +6,10 @@
  * @Date: 2024-08-05 19:11:21
  * @copyright : Copyright (c) 2024
  */
-#include "adxl372.h"
-#include "tools.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "adxl372.h"
+#include "tools.h"
 
 #define DBG_SECTION_NAME "ADXL372"
 #define DBG_LEVEL DBG_LOG
@@ -377,7 +377,7 @@ rt_err_t adxl372_query_dev_info(void)
         recv_buf = 0xFF;
         res = adxl732_read(regs[i], &recv_buf, 1);
         LOG_D(
-            "adxl732_read %s, reg=0x%02X, recv_buf=0x%02X",
+            "adxl372_query_dev_info %s, reg=0x%02X, recv_buf=0x%02X",
             res == RT_EOK ? "success" : "failed", regs[i], recv_buf
         );
     }
@@ -493,6 +493,7 @@ rt_err_t adxl372_set_measure(rt_uint8_t *val)
         "adxl372_set_measure reg=0x%02X val=0x%02X reread=0x%02X res=%d",
         ADI_ADXL372_MEASURE, *val, recv_buf, res
     );
+    res = (recv_buf == *val ? RT_EOK : RT_ERROR);
     return res;
 }
 
@@ -508,6 +509,7 @@ rt_err_t adxl372_set_power_ctl(rt_uint8_t *val)
         "adxl372_set_power_ctl reg=0x%02X val=0x%02X reread=0x%02X res=%d",
         ADI_ADXL372_POWER_CTL, *val, recv_buf, res
     );
+    res = (recv_buf == *val ? RT_EOK : RT_ERROR);
     return res;
 }
 
@@ -516,12 +518,14 @@ rt_err_t adxl372_set_odr(rt_uint8_t *val)
     rt_err_t res;
     res = adxl732_write(ADI_ADXL372_TIMING, val, 1);
     rt_thread_mdelay(100);
+
     rt_uint8_t recv_buf = 0xFF;
     res = adxl732_read(ADI_ADXL372_TIMING, &recv_buf, 1);
     LOG_D(
         "adxl372_set_odr reg=0x%02X val=0x%02X reread=0x%02X res=%d",
         ADI_ADXL372_TIMING, *val, recv_buf, res
     );
+    res = (recv_buf == *val ? RT_EOK : RT_ERROR);
     return res;
 }
 
@@ -561,17 +565,20 @@ rt_err_t adxl372_set_time_inact(rt_uint16_t *milliseconds)
             );
             return res;
         }
-    }
 
-    for (rt_uint8_t i = 0; i < send_buf_size; i += 2)
-    {
         recv_buf = 0xFF;
         res = adxl732_read(time_inact_send_buf[i], &recv_buf, 1);
         LOG_D(
-            "adxl372_set_time_inact reg=0x%02X val=0x%02X reread=0x%02X",
-            time_inact_send_buf[i], time_inact_send_buf[i + 1], recv_buf
+            "adxl372_set_time_inact reg=0x%02X val=0x%02X reread=0x%02X res=%d",
+            time_inact_send_buf[i], time_inact_send_buf[i + 1], recv_buf, res
         );
+        res = (recv_buf == time_inact_send_buf[i + 1] ? RT_EOK : RT_ERROR);
+        if (res != RT_EOK)
+        {
+            return res;
+        }
     }
+
     return res;
 }
 
@@ -591,6 +598,7 @@ rt_err_t adxl372_set_thresh_inact(rt_uint16_t *threshold)
         ADI_ADXL372_Z_THRESH_INACT_L, 0x00,
     };
     rt_uint8_t send_buf_size = sizeof(thresh_inact_send_buff) / sizeof(rt_uint8_t);
+    rt_uint8_t recv_buf = 0xFF;
 
     /* Set XYZ Inactive thredshold. */
     thresh_inact = ((*threshold & 0x7FF) << 5) | 0x03;
@@ -604,7 +612,14 @@ rt_err_t adxl372_set_thresh_inact(rt_uint16_t *threshold)
         }
         else
         {
-            thresh_inact_send_buff[i] = thresh_inact_l;
+            if (i == 3)
+            {
+                thresh_inact_send_buff[i] = thresh_inact_l;
+            }
+            else
+            {
+                thresh_inact_send_buff[i] = clr_bit(thresh_inact_l, 1);
+            }
         }
     }
 
@@ -617,19 +632,22 @@ rt_err_t adxl372_set_thresh_inact(rt_uint16_t *threshold)
                 "adxl372_set_thresh_inact reg=0x%02X val=0x%02X failed.",
                 thresh_inact_send_buff[i], thresh_inact_send_buff[i + 1]
             );
+            return res;
         }
+
+        recv_buf = 0xFF;
+        res = adxl732_read(thresh_inact_send_buff[i], &recv_buf, 1);
+        LOG_D(
+            "adxl372_set_thresh_inact reg=0x%02X val=0x%02X reread=0x%02X res=%d",
+            thresh_inact_send_buff[i], thresh_inact_send_buff[i + 1], recv_buf, res
+        );
+        // res = (recv_buf == thresh_inact_send_buff[i + 1] ? RT_EOK : RT_ERROR);
+        // if (res != RT_EOK)
+        // {
+        //     return res;
+        // }
     }
 
-    rt_uint8_t recv_buf = 0xFF;
-    for (rt_uint8_t i= 0; i < send_buf_size; i+=2)
-    {
-        recv_buf = 0xFF;
-        adxl732_read(thresh_inact_send_buff[i], &recv_buf, 1);
-        LOG_D(
-            "adxl372_set_thresh_inact reg=0x%02X val=0x%02X reread=0x%02X",
-            thresh_inact_send_buff[i], thresh_inact_send_buff[i + 1], recv_buf
-        );
-    }
     return res;
 }
 
@@ -643,8 +661,9 @@ rt_err_t adxl372_set_int1_map(rt_uint8_t *val)
         return res;
     }
     rt_uint8_t recv_buf = 0xFF;
-    adxl732_read(ADI_ADXL372_INT1_MAP, &recv_buf, 1);
-    LOG_D("adxl372_set_int1_map reg=0x%02X val=0x%02X reread=0x%02X", ADI_ADXL372_INT1_MAP, *val, recv_buf);
+    res = adxl732_read(ADI_ADXL372_INT1_MAP, &recv_buf, 1);
+    LOG_D("adxl372_set_int1_map reg=0x%02X val=0x%02X reread=0x%02X res=%d", ADI_ADXL372_INT1_MAP, *val, recv_buf, res);
+    res = (recv_buf == *val ? RT_EOK : RT_ERROR);
     return res;
 }
 
@@ -658,8 +677,9 @@ rt_err_t adxl372_set_hpf(rt_uint8_t *val)
         return res;
     }
     rt_uint8_t recv_buf = 0xFF;
-    adxl732_read(ADI_ADXL372_HPF, &recv_buf, 1);
-    LOG_D("adxl372_set_int1_map reg=0x%02X val=0x%02X reread=0x%02X", ADI_ADXL372_HPF, *val, recv_buf);
+    res = adxl732_read(ADI_ADXL372_HPF, &recv_buf, 1);
+    LOG_D("adxl372_set_hpf reg=0x%02X val=0x%02X reread=0x%02X res=%d", ADI_ADXL372_HPF, *val, recv_buf, res);
+    res = (recv_buf == *val ? RT_EOK : RT_ERROR);
     return res;
 }
 
@@ -669,6 +689,10 @@ rt_err_t adxl372_reset(void)
     rt_uint8_t val = 0x52;
     res = adxl732_write(ADI_ADXL372_TIMING, &val, 1);
     rt_thread_mdelay(1000);
+    rt_uint8_t recv_buf = 0xFF;
+    res = adxl732_read(ADI_ADXL372_TIMING, &recv_buf, 1);
+    LOG_D("adxl372_reset reg=0x%02X val=0x%02X reread=0x%02X, res=%d", ADI_ADXL372_TIMING, val, recv_buf, res);
+    res = (recv_buf == val ? RT_EOK : RT_ERROR);
     return res;
 }
 
@@ -785,11 +809,11 @@ static void test_adxl372(int argc, char **argv)
         "adxl372_set_measure_config(measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X) %s",
         measure_val, odr_val, hpf_val, res != RT_EOK ? "failed" : "success"
     );
-    // res = adxl372_enable_inactive_irq(&milliscond, &threshold);
-    // LOG_D(
-    //     "adxl372_enable_inactive_irq(milliscond=0x%02X, threshold=0x%02X) %s",
-    //     milliscond, threshold, res != RT_EOK ? "failed" : "success"
-    // );
+    res = adxl372_enable_inactive_irq(&milliscond, &threshold);
+    LOG_D(
+        "adxl372_enable_inactive_irq(milliscond=0x%02X, threshold=0x%02X) %s",
+        milliscond, threshold, res != RT_EOK ? "failed" : "success"
+    );
 
 #ifdef TEST_ADXL372_MEASURE_FUN
     test_adxl372_measure();
