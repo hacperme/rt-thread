@@ -754,12 +754,12 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
 #ifdef RT_USING_MSH
 // #define TEST_ADXL372_MEASURE_FUN
 #ifdef TEST_ADXL372_MEASURE_FUN
-static float ACC_XYZ_BUFF[10][3] = {0};
+static float ACC_XYZ_BUFF[1024][3] = {0};
 static void test_adxl372_measure(void)
 {
     rt_err_t res;
     char msg[64];
-    rt_uint16_t size = 10;
+    rt_uint16_t size = 1024;
     res = adxl372_measure_acc(ACC_XYZ_BUFF, size);
     LOG_D("adxl372_measure_acc %s", res == RT_EOK ? "success" : "failed");
     if (res == RT_EOK)
@@ -778,8 +778,6 @@ static void test_adxl372_measure(void)
 static void test_adxl372(int argc, char **argv)
 {
     rt_err_t res;
-    struct adxl372_xyz xyz = {0};
-    rt_uint8_t recv_buf;
 
     /* Config args init. */
     rt_uint16_t milliscond = 520;
@@ -795,10 +793,6 @@ static void test_adxl372(int argc, char **argv)
         odr_val = atoi(argv[4]);
         hpf_val = atoi(argv[5]);
     }
-    // LOG_D(
-    //     "adxl372_init milliscond=%d, threshold=%d, measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X",
-    //     milliscond, threshold, measure_val, odr_val, hpf_val
-    // );
 
     res = sensor_pwron_pin_enable(1);
     LOG_D("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
@@ -811,18 +805,21 @@ static void test_adxl372(int argc, char **argv)
     );
     res = adxl372_enable_inactive_irq(&milliscond, &threshold);
     LOG_D(
-        "adxl372_enable_inactive_irq(milliscond=0x%02X, threshold=0x%02X) %s",
+        "adxl372_enable_inactive_irq(milliscond=%d, threshold=%d) %s",
         milliscond, threshold, res != RT_EOK ? "failed" : "success"
     );
+
+    res = adxl372_query_dev_info();
 
 #ifdef TEST_ADXL372_MEASURE_FUN
     test_adxl372_measure();
     return;
 #endif
 
-    // res = adxl372_query_dev_info();
+    // rt_uint8_t recv_buf;
+    // struct adxl372_xyz xyz = {0};
+    // char msg[128];
 
-    // // char msg[128];
     // while (adxl372_recv_inact_exit == 0)
     // {
     //     res = adxl372_query_xyz(&xyz);
@@ -839,6 +836,7 @@ static void test_adxl372(int argc, char **argv)
     //     //     "ADI_ADXL372_STATUS_2 reg=0x%02X recv_buf=0x%02X",
     //     //     ADI_ADXL372_STATUS_2, recv_buf
     //     // );
+
     //     rt_thread_mdelay(1000);
     // }
 }
