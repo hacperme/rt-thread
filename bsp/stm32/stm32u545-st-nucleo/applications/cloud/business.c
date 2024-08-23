@@ -93,7 +93,7 @@ int external_devices_init()
 
     rt_uint16_t milliscond = 520;
     rt_uint16_t threshold = 10;  // 0.1 g
-    rt_uint8_t measure_val = 0x30;
+    rt_uint8_t measure_val = 0x03;
     rt_uint8_t odr_val = 0x60;
     rt_uint8_t hpf_val = 0x03;
 
@@ -452,7 +452,7 @@ enum cat1_network_status cat1_wait_network_ready()
 
     cat1_enable_echo(0);
     // wait network ready for cat1
-    if (cat1_check_network(6) != RT_EOK) {
+    if (cat1_check_network(10) != RT_EOK) {
         LOG_D("cat1 network not ready");
 
         if (! set_cat1_network_config_flag) {

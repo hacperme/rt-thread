@@ -782,7 +782,7 @@ static void test_adxl372(int argc, char **argv)
     /* Config args init. */
     rt_uint16_t milliscond = 520;
     rt_uint16_t threshold = 10;  // 0.1 g
-    rt_uint8_t measure_val = 0x30;
+    rt_uint8_t measure_val = 0x03;
     rt_uint8_t odr_val = 0x60;
     rt_uint8_t hpf_val = 0x03;
     if (argc >= 6)
