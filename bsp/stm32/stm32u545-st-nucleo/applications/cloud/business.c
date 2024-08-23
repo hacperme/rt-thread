@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "settings.h"
+#include <math.h>
 
 #define DBG_TAG "business"
 #define DBG_LVL DBG_LOG
@@ -595,11 +596,24 @@ void save_sensor_data()
     memset(sensor_data_buffer, 0, sizeof(sensor_data_buffer));
 
     LOG_D("read_acc_xyz_result: %d", read_acc_xyz_result);
+
     if (read_acc_xyz_result == RT_EOK)
     {
         snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer), "acceleration:\r\n");
         for (rt_uint16_t i = 0; i < 1024; i++)
         {   
+            if (abs(ACC_XYZ_BUFF[i][0]) > abs(sensor_data.acc_x)) {
+                sensor_data.acc_x = ACC_XYZ_BUFF[i][0];
+            }
+
+            if (abs(ACC_XYZ_BUFF[i][1]) > abs(sensor_data.acc_y)) {
+                sensor_data.acc_y = ACC_XYZ_BUFF[i][1];
+            }
+
+            if (abs(ACC_XYZ_BUFF[i][2]) > abs(sensor_data.acc_z)) {
+                sensor_data.acc_z = ACC_XYZ_BUFF[i][2];
+            }
+
             rt_memset(temp_buf, 0, 128);
             length = sprintf(temp_buf, "%0.2f,%0.2f,%0.2f\r\n", ACC_XYZ_BUFF[i][0], ACC_XYZ_BUFF[i][1], ACC_XYZ_BUFF[i][2]);
             // LOG_D("temp_buf: %s", temp_buf);
