@@ -74,7 +74,7 @@ rt_err_t adxl372_recv_inact_event_thd_start(void)
 
     if (!adxl372_inact_sem)
     {
-        adxl372_inact_sem = rt_sem_create("ginact", 1, RT_IPC_FLAG_PRIO);
+        adxl372_inact_sem = rt_sem_create("ginact", 0, RT_IPC_FLAG_PRIO);
     }
     do {
         res = rt_sem_take(adxl372_inact_sem, RT_WAITING_NO);
@@ -782,7 +782,7 @@ static void test_adxl372(int argc, char **argv)
     /* Config args init. */
     rt_uint16_t milliscond = 520;
     rt_uint16_t threshold = 10;  // 0.1 g
-    rt_uint8_t measure_val = 0x30;
+    rt_uint8_t measure_val = 0x03;
     rt_uint8_t odr_val = 0x60;
     rt_uint8_t hpf_val = 0x03;
     if (argc >= 6)
