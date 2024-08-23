@@ -143,9 +143,10 @@ rt_err_t cat1_init()
         LOG_D("cat1 power on failed");
         antenna_deinit();
         sim_deinit();
+        return RT_ERROR;
     }
 
-    LOG_D("cat1 power on success");
+    LOG_D("cat1 init success");
     return result;
 }
 
