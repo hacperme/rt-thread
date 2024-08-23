@@ -553,7 +553,7 @@ rt_err_t cat1_set_network_config()
         goto ERROR;
     }
 
-    result = at_obj_exec_cmd(client, resp, "AT+QEREG=2");
+    result = at_obj_exec_cmd(client, resp, "AT+CEREG=2");
     if (result != RT_EOK) {
         LOG_D("at_obj_exec_cmd AT+QEREG=2 failed");
         goto ERROR;
