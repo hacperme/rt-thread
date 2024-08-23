@@ -754,12 +754,12 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
 #ifdef RT_USING_MSH
 // #define TEST_ADXL372_MEASURE_FUN
 #ifdef TEST_ADXL372_MEASURE_FUN
-static float ACC_XYZ_BUFF[1024][3] = {0};
+static float ACC_XYZ_BUFF[100][3] = {0};
 static void test_adxl372_measure(void)
 {
     rt_err_t res;
     char msg[64];
-    rt_uint16_t size = 1024;
+    rt_uint16_t size = 100;
     res = adxl372_measure_acc(ACC_XYZ_BUFF, size);
     LOG_D("adxl372_measure_acc %s", res == RT_EOK ? "success" : "failed");
     if (res == RT_EOK)

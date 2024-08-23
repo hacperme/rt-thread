@@ -63,6 +63,8 @@ rt_err_t vbat_vol_read(rt_uint16_t *value)
     rt_err_t res = RT_EOK;
     res = adc_vol_read((rt_int8_t)VBAT_ADC_CHANNEL, value);
     *value *= 4;
+    // TODO: Delete test code.
+    *value = *value / 3 * 2;
     return res;
 }
 
