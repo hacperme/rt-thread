@@ -528,3 +528,59 @@ rt_err_t cat1_enable_echo(int enable)
     at_delete_resp(resp);
     return result;
 }
+
+rt_err_t cat1_set_network_config()
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("cat1 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_D("create resp failed.");
+        return RT_ERROR;
+    }
+
+    // 先检查下 AT+QGMR 确认模组上面的固件是可以上云的包含 QTH字样的固件
+    result = at_obj_exec_cmd(client, resp, "AT+QGMR");
+    if (result != RT_EOK) {
+        LOG_D("at_obj_exec_cmd AT+QEREG=2 failed");
+        goto ERROR;
+    }
+
+    result = at_obj_exec_cmd(client, resp, "AT+CEREG=2");
+    if (result != RT_EOK) {
+        LOG_D("at_obj_exec_cmd AT+QEREG=2 failed");
+        goto ERROR;
+    }
+  
+    result = at_obj_exec_cmd(client, resp, "AT+QICSGP=1,1,\"%s\",\"\",\"\",1", "LPWA.VODAFONE.IOT");
+    if (result != RT_EOK) {
+        LOG_E("set apn result: %d", result);
+        goto ERROR;
+    }
+    LOG_D("set apn success");
+
+    result = at_obj_exec_cmd(client, resp, "AT+QIACT?");
+    if (result != RT_EOK) {
+        LOG_E("at_obj_exec_cmd AT+QIACT?: %d", result);
+        goto ERROR;
+    }
+    LOG_D("set AT+QIACT? success");
+
+    result = at_obj_exec_cmd(client, resp, "AT+QIACT=1");
+    if (result != RT_EOK) {
+        LOG_E("at_obj_exec_cmd AT+QIACT=1: %d", result);
+        goto ERROR;
+    }
+    LOG_D("set AT+QIACT=1 success");
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}
