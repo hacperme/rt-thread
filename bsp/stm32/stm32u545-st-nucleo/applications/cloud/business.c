@@ -25,8 +25,8 @@
 static settings_t settings = {0};
 static settings_params_t *settings_params = NULL;
 
-static rt_tick_t start_tick_ms = 0;
-static rt_tick_t end_tick_ms = 0;
+static int start_tick_ms = 0;
+static int end_tick_ms = 0;
 
 struct FileSystem fs;
 
@@ -347,8 +347,10 @@ int nbiot_report_ctrl_data_to_server()
         LOG_D("server_ctrl_data.Cat1FileUpload: %d", server_ctrl_data.Cat1FileUpload);
         LOG_D("report ctrl data to server success, goto, report sensor data");
         settings_params_t p = {0};
-        p.collect_interval = server_ctrl_data.CollectInterval;
-        settings_update(&settings, &p);
+        if (server_ctrl_data.CollectInterval != 0) {
+            p.collect_interval = server_ctrl_data.CollectInterval;
+            settings_update(&settings, &p);
+        }
         return NBIOT_REPORT_CTRL_DATA_SUCCESS;
     }
     else {
@@ -495,23 +497,16 @@ int cat1_upload_file()
 
     char *file_name = NULL;
     // if(server_ctrl_data.Cat1FileUpload) {
-    if (1) {
-        file_name = get_oldest_file_name(&fs);
-        if (file_name != NULL) {
-            LOG_D("file name is: %s", file_name);
-            // 需要上报
-            if (at_http_upload_file_chunked(file_name) == -1) {
-                LOG_D("at http upload file failed");
-                return CAT1_UPLOAD_FILE_FAILED;
-            }
-            else {
-                delete_oldest_file(&fs);
-                LOG_D("at http upload file success");
-                return CAT1_UPLOAD_FILE_SUCCESS;
-            }
+    while (file_name = get_oldest_file_name(&fs)) {
+        LOG_D("file name is: %s", file_name);
+        // 需要上报
+        if (at_http_upload_file_chunked(file_name) == -1) {
+            LOG_D("at http upload file failed");
+            return CAT1_UPLOAD_FILE_FAILED;
         }
         else {
-            LOG_D("file name is NULL");
+            delete_oldest_file(&fs);
+            LOG_D("at http upload '%s' success", file_name);
         }
     }
 
@@ -534,12 +529,14 @@ void stm32_sleep()
     antenna_active_pin_enable(PIN_LOW);
 
     end_tick_ms = rt_tick_get_millisecond();
+    LOG_D("start tick ms: %d", start_tick_ms);
     LOG_D("end tick ms: %d", end_tick_ms);
+    LOG_D("settings_params->collect_interval: %d", settings_params->collect_interval);
 
     int remaining = 0;
     remaining = settings_params->collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
     LOG_D("remaining: %d", remaining);
-    rtc_set_wakeup(remaining > 0 ? remaining : DEFAULT_REMAINING_SECONDS);
+    rtc_set_wakeup(remaining > 0 ? remaining : 10);
     shut_down();
 }
 
@@ -704,11 +701,11 @@ void main_business_entry(void)
                 sm_set_status(NBIOT_WAIT_NETWORK_RDY);
                 break;
             case NBIOT_WAIT_NETWORK_RDY:
-                    nbiot_set_cfun_mode(0);
-                    LOG_D("nbiot_set_cfun_mode 0");
-                    rt_thread_mdelay(200);
-                    nbiot_set_cfun_mode(1);
-                    LOG_D("nbiot_set_cfun_mode 1");
+                nbiot_set_cfun_mode(0);
+                LOG_D("nbiot_set_cfun_mode 0");
+                rt_thread_mdelay(200);
+                nbiot_set_cfun_mode(1);
+                LOG_D("nbiot_set_cfun_mode 1");
                 rv = nbiot_wait_network_ready();
                 if (rv == NBIOT_NETWORK_NOT_RDY) {
                     nbiot_deinit();
