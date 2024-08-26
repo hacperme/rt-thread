@@ -697,7 +697,6 @@ void main_business_entry(void)
                 break;
             case COLLECT_SENSOR_DATA:
                 collect_sensor_data();
-                save_sensor_data();
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
@@ -713,6 +712,7 @@ void main_business_entry(void)
                 rv = nbiot_wait_network_ready();
                 if (rv == NBIOT_NETWORK_NOT_RDY) {
                     nbiot_deinit();
+                    save_sensor_data();
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_NETWORK_RETRY) {
@@ -724,6 +724,7 @@ void main_business_entry(void)
                     sm_set_status(NBIOT_WAIT_NETWORK_RDY);
                 }
                 else {
+                    save_sensor_data();
                     sm_set_status(NBIOT_WAIT_SERVER_CONNECT);
                 }
                 break;
