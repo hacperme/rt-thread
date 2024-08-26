@@ -201,5 +201,5 @@ static rt_err_t test_temp116(void)
     return res;
 }
 
-MSH_CMD_EXPORT(test_temp116, test temp116);
+// MSH_CMD_EXPORT(test_temp116, test temp116);
 #endif

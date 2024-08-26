@@ -368,5 +368,5 @@ static void test_all_pin_enable(int argc, char **argv)
     LOG_D("flash_pwron_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
 
 }
-MSH_CMD_EXPORT(test_all_pin_enable, test all pin enable);
+// MSH_CMD_EXPORT(test_all_pin_enable, test all pin enable);
 #endif

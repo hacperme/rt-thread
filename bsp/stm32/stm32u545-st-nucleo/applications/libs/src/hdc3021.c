@@ -150,5 +150,5 @@ static rt_err_t test_hdc3021(void)
     return res;
 }
 
-MSH_CMD_EXPORT(test_hdc3021, test hdc3021);
+// MSH_CMD_EXPORT(test_hdc3021, test hdc3021);
 #endif

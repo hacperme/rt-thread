@@ -348,5 +348,5 @@ static rt_err_t test_fdc1004(int argc, char **argv)
     LOG_D(msg);
 }
 
-MSH_CMD_EXPORT(test_fdc1004, test fdc1004);
+// MSH_CMD_EXPORT(test_fdc1004, test fdc1004);
 #endif

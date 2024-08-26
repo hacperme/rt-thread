@@ -90,5 +90,5 @@ static void test_read_voltage(int argc, char *argv[])
     // LOG_D("vrefint_vol_read %s, vrefint_vol %d", res == RT_EOK ? "success" : "failed", vrefint_vol);
 }
 
-MSH_CMD_EXPORT(test_read_voltage, TEST READ voltage);
+// MSH_CMD_EXPORT(test_read_voltage, TEST READ voltage);
 #endif

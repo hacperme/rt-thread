@@ -30,7 +30,7 @@ rt_err_t test_nbiot_send_at_cmd(int argc, char **argv)
 
     return result;
 }
-MSH_CMD_EXPORT(test_nbiot_send_at_cmd, test_nbiot_send_at_cmd);
+// MSH_CMD_EXPORT(test_nbiot_send_at_cmd, test_nbiot_send_at_cmd);
 
 
 void test_nbiot_report_model_data()
@@ -40,7 +40,7 @@ void test_nbiot_report_model_data()
     LOG_D("report result: %d", result);
 }
 
-MSH_CMD_EXPORT(test_nbiot_report_model_data, test_nbiot_report_model_data);
+// MSH_CMD_EXPORT(test_nbiot_report_model_data, test_nbiot_report_model_data);
 
 void test_nbiot_get_current_datetime()
 {
@@ -59,7 +59,7 @@ void test_nbiot_get_current_datetime()
     }
     
 }
-MSH_CMD_EXPORT(test_nbiot_get_current_datetime, test_nbiot_get_current_datetime);
+// MSH_CMD_EXPORT(test_nbiot_get_current_datetime, test_nbiot_get_current_datetime);
 
 void test_nbiot_set_lwm2m_config()
 {
@@ -77,7 +77,7 @@ void test_nbiot_set_lwm2m_config()
     LOG_D("nbiot_set_lwm2m_config result: %d", result);
 }
 
-MSH_CMD_EXPORT(test_nbiot_set_lwm2m_config, test_nbiot_set_lwm2m_config);
+// MSH_CMD_EXPORT(test_nbiot_set_lwm2m_config, test_nbiot_set_lwm2m_config);
 
 void test_nbiot_set_network_config()
 {
@@ -89,7 +89,7 @@ void test_nbiot_set_network_config()
     nbiot_set_network_config(&config);
 }
 
-MSH_CMD_EXPORT(test_nbiot_set_network_config, test_nbiot_set_network_config);
+// MSH_CMD_EXPORT(test_nbiot_set_network_config, test_nbiot_set_network_config);
 
 void test_nbiot_check_network()
 {
@@ -97,7 +97,7 @@ void test_nbiot_check_network()
     LOG_D("check network result: %d", result);
 }
 
-MSH_CMD_EXPORT(test_nbiot_check_network, test_nbiot_check_network);
+// MSH_CMD_EXPORT(test_nbiot_check_network, test_nbiot_check_network);
 
 void test_nbiot_recv_ctrl_data()
 {   
@@ -106,14 +106,14 @@ void test_nbiot_recv_ctrl_data()
     LOG_D("nbiot_recv_ctrl_data result: %d", result);
 }
 
-MSH_CMD_EXPORT(test_nbiot_recv_ctrl_data, test_nbiot_recv_ctrl_data);
+// MSH_CMD_EXPORT(test_nbiot_recv_ctrl_data, test_nbiot_recv_ctrl_data);
 
 
 void test_nbiot_set_qiotlocext()
 {
     nbiot_set_qiotlocext("$GPGGA,042523.0,3116.552,N,12138.7385,E,1,05,2.6,438.5,M,-28.0,M,,*78");
 }
-MSH_CMD_EXPORT(test_nbiot_set_qiotlocext, test_nbiot_set_qiotlocext);
+// MSH_CMD_EXPORT(test_nbiot_set_qiotlocext, test_nbiot_set_qiotlocext);
 
 
 #include "lpm.h"
@@ -144,7 +144,7 @@ void test_esp32_at_connection()
     esp32_en_off();
     esp32_power_off();
 }
-MSH_CMD_EXPORT(test_esp32_at_connection, test_esp32_at_connection);
+// MSH_CMD_EXPORT(test_esp32_at_connection, test_esp32_at_connection);
 
 void test_cat1_at_client_init()
 {
@@ -159,14 +159,14 @@ void test_cat1_at_client_init()
     }
 
 }
-MSH_CMD_EXPORT(test_cat1_at_client_init, test_cat1_at_client_init);
+// MSH_CMD_EXPORT(test_cat1_at_client_init, test_cat1_at_client_init);
 
 void test_cat1_power_on()
 {
     extern rt_err_t cat1_init();
     cat1_init();
 }
-MSH_CMD_EXPORT(test_cat1_power_on, test_cat1_power_on);
+// MSH_CMD_EXPORT(test_cat1_power_on, test_cat1_power_on);
 
 void test_cat1_power_off()
 {
@@ -174,7 +174,7 @@ void test_cat1_power_off()
     cat1_power_ctrl(0);
 
 }
-MSH_CMD_EXPORT(test_cat1_power_off, test_cat1_power_off);
+// MSH_CMD_EXPORT(test_cat1_power_off, test_cat1_power_off);
 
 void cat1_send_test_at()
 {
@@ -197,7 +197,7 @@ void cat1_send_test_at()
     result = at_obj_exec_cmd(client, resp, "ATI");
     LOG_D("at_obj_exec_cmd result: %d", result);
 }
-MSH_CMD_EXPORT(cat1_send_test_at, cat1_send_test_at);
+// MSH_CMD_EXPORT(cat1_send_test_at, cat1_send_test_at);
 
 rt_err_t test_cat1_send_at_cmd(int argc, char **argv)
 {
@@ -222,4 +222,4 @@ rt_err_t test_cat1_send_at_cmd(int argc, char **argv)
 
     return result;
 }
-MSH_CMD_EXPORT(test_cat1_send_at_cmd, test_cat1_send_at_cmd);
+// MSH_CMD_EXPORT(test_cat1_send_at_cmd, test_cat1_send_at_cmd);

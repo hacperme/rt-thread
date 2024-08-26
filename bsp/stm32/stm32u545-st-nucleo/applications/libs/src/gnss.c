@@ -586,5 +586,5 @@ static void test_gnss(int argc, char **argv)
     LOG_D("gnss_close %s", res == RT_EOK ? "success" : "failed");
 }
 
-MSH_CMD_EXPORT(test_gnss, gnss data show);
+// MSH_CMD_EXPORT(test_gnss, gnss data show);
 #endif
