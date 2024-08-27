@@ -228,7 +228,6 @@ rt_err_t fdc1004_meas_all_read(struct rt_i2c_bus_device *iic_dev, rt_uint8_t *me
     return res;
 }
 
-
 rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
 {
     rt_err_t res = RT_ERROR;

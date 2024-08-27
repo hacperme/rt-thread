@@ -66,6 +66,7 @@ rt_err_t cat1_power_on(void)
 {
     rt_err_t res;
     res = cat1_pwron_pin_enable(1);
+    // TODO: Enable this check.
     // if (res != RT_EOK)
     // {
     //     return res;
@@ -296,7 +297,7 @@ static void test_rtc(void)
     }
 }
 
-MSH_CMD_EXPORT(test_rtc, test rtc);
+// MSH_CMD_EXPORT(test_rtc, test rtc);
 
 static void test_show_wkup_status(void)
 {
@@ -309,7 +310,7 @@ static void test_show_wkup_status(void)
     LOG_D("is_rtc_wakeup res=%d", res);
 }
 
-MSH_CMD_EXPORT(test_show_wkup_status, test show reset status);
+// MSH_CMD_EXPORT(test_show_wkup_status, test show reset status);
 
 #include "gnss.h"
 static void test_rtc_wakeup(int argc, char **argv)
@@ -340,7 +341,7 @@ static void test_rtc_wakeup(int argc, char **argv)
     shut_down();
 }
 
-MSH_CMD_EXPORT(test_rtc_wakeup, test rtc wakeup);
+// MSH_CMD_EXPORT(test_rtc_wakeup, test rtc wakeup);
 
 static void test_all_pin_enable(int argc, char **argv)
 {

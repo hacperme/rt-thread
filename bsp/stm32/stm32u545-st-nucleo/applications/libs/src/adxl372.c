@@ -891,5 +891,5 @@ static void test_adxl372(int argc, char **argv)
     }
 }
 
-MSH_CMD_EXPORT(test_adxl372, test adxl372);
+// MSH_CMD_EXPORT(test_adxl372, test adxl372);
 #endif
