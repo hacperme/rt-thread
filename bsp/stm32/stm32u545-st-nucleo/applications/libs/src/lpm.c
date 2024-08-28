@@ -34,6 +34,15 @@ rt_err_t nbiot_power_off(void)
 rt_err_t esp32_power_on(void)
 {
     rt_err_t res;
+
+    res = esp32_download_pin_enable(1);
+    LOG_D("esp32_download_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+    rt_thread_mdelay(100);
+
     res = esp32_pwron_pin_enable(1);
     if (res != RT_EOK)
     {
@@ -51,16 +60,44 @@ rt_err_t esp32_power_off(void)
     return res;
 }
 
-/* TODO: Delete esp32_en_on/esp32_en_off. */
-rt_err_t esp32_en_on(void)
+rt_err_t esp32_start_download(void)
 {
-    return esp32_en_pin_enable(1);
+    rt_err_t res;
+    res = esp32_power_off();
+    LOG_D("esp32_power_off() %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+    rt_thread_mdelay(100);
+
+    res = esp32_download_pin_enable(0);
+    LOG_D("esp32_download_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+    rt_thread_mdelay(100);
+
+    res = esp32_pwron_pin_enable(1);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+    res = esp32_en_pin_enable(1);
+    return res;
 }
 
-rt_err_t esp32_en_off(void)
-{
-    return esp32_en_pin_enable(0);
-}
+/* TODO: Delete esp32_en_on/esp32_en_off. */
+// rt_err_t esp32_en_on(void)
+// {
+//     return esp32_en_pin_enable(1);
+// }
+
+// rt_err_t esp32_en_off(void)
+// {
+//     return esp32_en_pin_enable(0);
+// }
 
 rt_err_t cat1_power_on(void)
 {
@@ -332,9 +369,6 @@ static void test_rtc_wakeup(int argc, char **argv)
     res = esp32_power_off();
     LOG_D("esp32_power_off %s", res == RT_EOK ? "success" : "failed");
 
-    res = esp32_en_off();
-    LOG_D("esp32_en_off %s", res == RT_EOK ? "success" : "failed");
-
     res = flash_pwron_pin_enable(0);
     LOG_D("flash_pwron_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
 
@@ -362,12 +396,29 @@ static void test_all_pin_enable(int argc, char **argv)
     res = esp32_power_on();
     LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
 
-    res = esp32_en_on();
-    LOG_D("esp32_en_on %s", res == RT_EOK ? "success" : "failed");
-
     res = flash_pwron_pin_enable(1);
     LOG_D("flash_pwron_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
 
 }
 // MSH_CMD_EXPORT(test_all_pin_enable, test all pin enable);
+
+static void test_esp32_download(int argc, char **argv)
+{
+    rt_err_t res;
+    rt_uint8_t mode = 0;
+    if (argc >= 2)
+    {
+        mode = atoi(argv[1]);
+    }
+
+    res = esp32_download_pin_enable(mode);
+    LOG_D("esp32_download_pin_enable(%d) %s", mode, res == RT_EOK ? "success" : "failed");
+
+    rt_thread_mdelay(500);
+
+    res = esp32_power_on();
+    LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
+}
+
+// MSH_CMD_EXPORT(test_esp32_download, test esp32 donwload);
 #endif

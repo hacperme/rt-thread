@@ -21,6 +21,7 @@
 #define NBIOT_PWRON_PIN         GET_PIN(E, 2)
 #define ESP32_PWRON_PIN         GET_PIN(H, 1)
 #define ESP32_EN_PIN            GET_PIN(E, 5)
+#define ESP32_DOWNLOAD_PIN      GET_PIN(D, 6)
 #define SIM_SELECT_PIN          GET_PIN(C, 9)
 #define NB_CAT1_RF_PIN          GET_PIN(E, 3)
 #define INTN_EXT_ANT_PIN        GET_PIN(D, 7)
@@ -113,6 +114,17 @@ rt_err_t esp32_en_pin_enable(rt_uint8_t mode)
 {
     rt_pin_write(ESP32_EN_PIN, mode);
     return rt_pin_read(ESP32_EN_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void esp32_download_pin_init(void)
+{
+    rt_pin_mode(ESP32_DOWNLOAD_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t esp32_download_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(ESP32_DOWNLOAD_PIN, mode);
+    return rt_pin_read(ESP32_DOWNLOAD_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
 void sim_select_pin_init(void)
@@ -267,6 +279,7 @@ int board_pins_init(void)
     nbiot_pwron_pin_init();
     esp32_pwron_pin_init();
     esp32_en_pin_init();
+    esp32_download_pin_init();
     sim_select_pin_init();
     nb_cat1_rf_pin_init();
     intn_ext_ant_pin_init();
