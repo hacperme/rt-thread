@@ -12,32 +12,6 @@
 #define DBG_LEVEL DBG_LOG
 #include <rtdbg.h>
 
-#define SENSOR_PWRON_PIN        GET_PIN(D, 8)
-#ifdef SOC_STM32U545RE
-#define PWRCTRL_PWR_WKUP3       GET_PIN(B, 7)
-#else
-#define PWRCTRL_PWR_WKUP3       GET_PIN(E, 6)
-#endif
-#define NBIOT_PWRON_PIN         GET_PIN(E, 2)
-#define ESP32_PWRON_PIN         GET_PIN(H, 1)
-#define ESP32_EN_PIN            GET_PIN(E, 5)
-#define ESP32_DOWNLOAD_PIN      GET_PIN(D, 6)
-#define SIM_SELECT_PIN          GET_PIN(C, 9)
-#define NB_CAT1_RF_PIN          GET_PIN(E, 3)
-#define INTN_EXT_ANT_PIN        GET_PIN(D, 7)
-#define ANTENNA_ACTIVE_PIN      GET_PIN(E, 4)
-#define FLASH_PWRON_PIN         GET_PIN(D, 14)
-
-#define CAT1_PWRON_PIN          GET_PIN(A, 8)
-#define CAT1_BOOT_PIN           GET_PIN(C, 6)
-#define CAT1_STATUS_PIN         GET_PIN(D, 4)
-#define CAT1_RESET_STM_PIN      GET_PIN(C, 8)
-#define CAT1_PWRKEY_STM_PIN     GET_PIN(D, 1)
-#define CAT1_PSM_IND_STM_PIN    GET_PIN(C, 11)
-#define CAT1_PSM_INT_STM_PIN    GET_PIN(C, 10)
-
-#define NBIOT_BOOT_PIN          GET_PIN(B, 9)
-
 void sensor_pwron_pin_init(void)
 {
     rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);

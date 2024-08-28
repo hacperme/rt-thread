@@ -35,10 +35,6 @@ typedef struct
 } nmea_item;
 typedef nmea_item *nmea_item_t;
 
-#define GNSS_PWRON_PIN          GET_PIN(E, 0)
-#define GNSS_RST_PIN            GET_PIN(E, 1)
-#define EG915_GNSSEN_PIN        GET_PIN(B, 5)
-
 void gnss_pwron_pin_init(void);
 void gnss_rst_pin_init(void);
 void eg915_gnssen_pin_init(void);

@@ -18,16 +18,6 @@
 #define ADXL372_SPI_NAME "spi1"
 #define ADXL372_DEV_NAME "adxl372"
 
-#ifdef SOC_STM32U545RE
-#define ADXL372_CS_PIN            GET_PIN(C, 9)   // U545
-#define ADXL372_INT1_Pin          GET_PIN(B, 7)   // U545
-// #define ADXL372_INT1_Pin          GET_PIN(A, 8)   // U545
-#else
-#define ADXL372_CS_PIN            GET_PIN(E, 9)
-#define ADXL372_INT1_Pin          GET_PIN(E, 8)
-#endif
-
-
 struct rt_spi_device *adxl372_dev;
 rt_sem_t adxl372_inact_sem = RT_NULL;
 rt_thread_t adxl372_recv_inact_thd = RT_NULL;
@@ -804,7 +794,7 @@ static void test_adxl372(int argc, char **argv)
     rt_uint8_t measure_val = 0x00;
     rt_uint8_t odr_val = 0x60;
     rt_uint8_t hpf_val = 0x03;
-    rt_uint8_t run_always = 0;
+    rt_uint8_t run_always = 1;
     rt_uint8_t inact_enable = 0;
     rt_uint8_t set_config = 1;
     rt_uint8_t set_reset = 0;
