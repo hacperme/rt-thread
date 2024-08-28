@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 #define DBG_TAG "TMP116"
-#define DBG_LVL DBG_LOG
+#define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
 rt_err_t tmp116_read_device_id(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, rt_uint16_t *dev_id)
@@ -113,7 +113,7 @@ rt_err_t tmp116_measure_temperature(struct rt_i2c_bus_device *iic_dev, const rt_
         }
         cnt++;
         rt_thread_mdelay(5);
-    } while (ready != 1 && cnt < 20);
+    } while (ready != 1 && cnt < 200);
 
     if (ready != 1)
     {
@@ -171,11 +171,11 @@ static rt_err_t test_temp116(void)
     static struct rt_i2c_bus_device *iic_dev;
 
     res = sensor_pwron_pin_enable(1);
-    LOG_D("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+    LOG_I("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
 
     iic_dev = rt_i2c_bus_device_find(i2c_bus_name);
     res = !iic_dev ? RT_ERROR : RT_EOK;
-    LOG_D("rt_i2c_bus_device_find %s %s", i2c_bus_name, res != RT_EOK ? "failed" : "success");
+    LOG_I("rt_i2c_bus_device_find %s %s", i2c_bus_name, res != RT_EOK ? "failed" : "success");
     if (res != RT_EOK)
     {
         return res;
@@ -186,16 +186,21 @@ static rt_err_t test_temp116(void)
     float temp;
     char msg[256];
 
-    for (rt_uint8_t i = 0; i < 2; i ++)
-    {
-        dev_id = 0;
-        res = tmp116_read_device_id(iic_dev, addrs[i], &dev_id);
-        LOG_D("tmp116_read_device_id addr=0x%02X %s dev_id=0x%02X", addrs[i], res != RT_EOK ? "failed" : "success", dev_id);
+    dev_id = 0;
+    res = tmp116_read_device_id(iic_dev, addrs[i], &dev_id);
+    LOG_I("tmp116_read_device_id addr=0x%02X %s dev_id=0x%02X", addrs[i], res != RT_EOK ? "failed" : "success", dev_id);
 
-        temp = -999.0;
-        res = temp116_read_temperture(iic_dev, addrs[i], &temp);
-        sprintf(msg, "temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
-        LOG_D(msg);
+    while (1)
+    {
+        for (rt_uint8_t i = 0; i < 2; i ++)
+        {
+
+            temp = -999.0;
+            res = temp116_read_temperture(iic_dev, addrs[i], &temp);
+            sprintf(msg, "temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
+            LOG_I(msg);
+        }
+        rt_thread_mdelay(500);
     }
 
     return res;

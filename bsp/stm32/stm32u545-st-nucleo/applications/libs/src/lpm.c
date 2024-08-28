@@ -89,15 +89,15 @@ rt_err_t esp32_start_download(void)
 }
 
 /* TODO: Delete esp32_en_on/esp32_en_off. */
-// rt_err_t esp32_en_on(void)
-// {
-//     return esp32_en_pin_enable(1);
-// }
+rt_err_t esp32_en_on(void)
+{
+    return esp32_en_pin_enable(1);
+}
 
-// rt_err_t esp32_en_off(void)
-// {
-//     return esp32_en_pin_enable(0);
-// }
+rt_err_t esp32_en_off(void)
+{
+    return esp32_en_pin_enable(0);
+}
 
 rt_err_t cat1_power_on(void)
 {
