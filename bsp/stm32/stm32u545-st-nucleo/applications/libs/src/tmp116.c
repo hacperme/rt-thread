@@ -186,9 +186,12 @@ static rt_err_t test_temp116(void)
     float temp;
     char msg[256];
 
-    dev_id = 0;
-    res = tmp116_read_device_id(iic_dev, addrs[i], &dev_id);
-    LOG_I("tmp116_read_device_id addr=0x%02X %s dev_id=0x%02X", addrs[i], res != RT_EOK ? "failed" : "success", dev_id);
+    for (rt_uint8_t i = 0; i < 2; i ++)
+    {
+        dev_id = 0;
+        res = tmp116_read_device_id(iic_dev, addrs[i], &dev_id);
+        LOG_I("tmp116_read_device_id addr=0x%02X %s dev_id=0x%02X", addrs[i], res != RT_EOK ? "failed" : "success", dev_id);
+    }
 
     while (1)
     {
