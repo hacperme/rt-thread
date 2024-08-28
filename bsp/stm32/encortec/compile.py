@@ -4,6 +4,7 @@ import subprocess
 from tools.fw_merge import merge_bin_files
 from tools.export_api_addr import export_api_addr
 from tools.gen_rt_api_c import gen_rt_api_c
+from tools.flash import flash
 
 ENCORTEC_BL_MAP_NAME = "./bootloader/encortec-bootloader.map"
 ENCORTEC_BL_BIN_NAME = "./bootloader/encortec-bootloader.bin"
@@ -81,15 +82,25 @@ def clean_all():
     clean_api_addr_list()
     clean_rt_api_c_file()
 
+def flash_fw():
+    print("------ Flashing firmware to board...")
+    openocd_path = os.getenv("OPENOCD_PATH")
+    if openocd_path is None:
+        print("OPENOCD_PATH environment variable is not set!")
+        return
+    flash(openocd_path, ENCORTEC_FW_NAME)
+    print("------ Done!")
+
 def print_usage(with_error=False):
     print(("Invalid command. " if with_error else "") + "Please use one of the following commands:")
     print("1. python ./compile.py -a|--app [-c|--clean] # Compile App code")
     print("2. python ./compile.py -b|--bootloader [-c|--clean] # Compile Bootloader code")
     print("3. python ./compile.py [-A|--all] [-c|--clean] # Compile Bootloader and then App")
     print("4. python ./compile.py -m|--merge [-c|--clean] # Merge Bootloader and App firmware")
-    print("4. python ./compile.py -e|--export-api-addr [-c|--clean] # Export Bootloader API addresses")
-    print("5. python ./compile.py -g|--gen-api [-c|--clean] # Export Bootloader API addresses")
-    print("6. python ./compile.py -h|--help # Print this message")
+    print("5. python ./compile.py -f|--flash # Flash firmware")
+    print("6. python ./compile.py -e|--export-api-addr [-c|--clean] # Export Bootloader API addresses")
+    print("7. python ./compile.py -g|--gen-api [-c|--clean] # Export Bootloader API addresses")
+    print("8. python ./compile.py -h|--help # Print this message")
 
 
 """
@@ -102,6 +113,7 @@ python .\compile.py -b|--bootloader
 python .\compile.py -e|--export-api-addr
 python .\compile.py -g|--gen-api
 python .\compile.py -m|--merge
+python .\compile.py -f|--flash
 python .\compile.py -h|--help
 
 python .\compile.py -A|--all -c|--clean
@@ -129,6 +141,8 @@ if __name__ == "__main__":
             gen_rt_api_c_file()
         elif sys.argv[1] in ['-m', '--merge']:
             merge_fw()
+        elif sys.argv[1] in ['-f', '--flash']:
+            flash_fw()
         elif sys.argv[1] in ['-h', '--help']:
             print_usage()
         else:

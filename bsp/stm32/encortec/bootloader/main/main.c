@@ -26,8 +26,9 @@
 #include <rtdbg.h>
 
 /* defined the LED2 pin: PA5 */
-#define LED2_PIN    GET_PIN(A, 5)
-#define FLASH_PWR_CON    GET_PIN(D, 14)
+#define LED2_PIN            GET_PIN(A, 5)
+#define FLASH_PWR_CON_PIN   GET_PIN(D, 14)
+#define FLASH_SW_PIN        GET_PIN(D, 5)
 
 void led_toggle(void) {
     rt_pin_write(LED2_PIN, !rt_pin_read(LED2_PIN));
@@ -53,13 +54,13 @@ void ReadNANDExample(void) {
     uint32_t address = 0x000000; // NAND Flash 中的起始地址
 
     // 从 NAND Flash 中读取一页数据
-    NAND_Read(address, readData, PAGE_SIZE);
+    NAND_ReadPage(address, readData, PAGE_SIZE);
 
     // 打印读取的数据（或者在调试器中检查 readData 的内容）
     for (int i = 0; i < PAGE_SIZE; i++) {
-        LOG_I("0x%02X ", readData[i]);
+        rt_kprintf("0x%02X ", readData[i]);
         if ((i + 1) % 16 == 0) {
-            LOG_I("\n");
+            rt_kprintf("\r\n");
         }
     }
 
@@ -76,7 +77,7 @@ void WriteNANDExample(void) {
     }
 
     // 向 NAND Flash 写入一页数据
-    NAND_Write(address, writeData, PAGE_SIZE, false);
+    NAND_WritePage(address, writeData, PAGE_SIZE, false);
 
     // 写入后，可以检查 ECC 结果或处理坏块
 }
@@ -117,14 +118,22 @@ int main(void)
 
     /* set LED2 pin mode to output */
     // rt_pin_mode(LED2_PIN, PIN_MODE_OUTPUT);
-    rt_pin_mode(FLASH_PWR_CON, PIN_MODE_OUTPUT);
-    rt_pin_write(FLASH_PWR_CON, 1);
+    rt_pin_mode(FLASH_PWR_CON_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(FLASH_PWR_CON_PIN, 1);
+
+    rt_pin_mode(FLASH_SW_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(FLASH_SW_PIN, 0);
 
     // 初始化 QSPI 外设和 GPIO
     MX_OSPI_Init();
 
     // 启用 NAND Flash 的 ECC 功能
     NAND_EnableECC();
+
+    // 读取芯片ID
+    uint8_t nand_id[2];
+    NAND_ReadID(nand_id, 2);
+    LOG_I("NAND ID: 0x%02X 0x%02X", nand_id[0], nand_id[1]);
 
     // 运行示例操作
     ReadNANDExample();     // 读取数据示例
