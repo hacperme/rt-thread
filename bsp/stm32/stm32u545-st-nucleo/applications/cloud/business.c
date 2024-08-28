@@ -549,7 +549,7 @@ void save_sensor_data()
     
     snprintf(
         sensor_data_buffer + strlen(sensor_data_buffer), 
-        sizeof(sensor_data_buffer), 
+        sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), 
         "timestamp: %d/%02d/%02d %02d:%02d:%02d\r\n",
         current_time.year + 2000,
         current_time.month,
@@ -560,33 +560,33 @@ void save_sensor_data()
     );
 
     // temperature1: 25.0
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "temperature1: %0.2f\r\n", sensor_data.temp1);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "temperature1: %0.2f\r\n", sensor_data.temp1);
 
     // temperature2: 25.0
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "temperature2: %0.2f\r\n", sensor_data.temp2);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "temperature2: %0.2f\r\n", sensor_data.temp2);
 
     // temperature3: 25.0
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "temperature3: %0.2f\r\n", sensor_data.temp3);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "temperature3: %0.2f\r\n", sensor_data.temp3);
 
     // humidity: 56
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "humidity: %0.2f\r\n", sensor_data.humi);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "humidity: %0.2f\r\n", sensor_data.humi);
 
     // water_level: 2.0
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "water_level: %0.2f\r\n", sensor_data.water_level);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "water_level: %0.2f\r\n", sensor_data.water_level);
 
     // vbat: 3.6
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "vbat: %d\r\n", sensor_data.vbat_vol);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vbat: %d\r\n", sensor_data.vbat_vol);
 
     // vcur: 2.9
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "vcur: %d\r\n", sensor_data.cur_vol);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vcur: %d\r\n", sensor_data.cur_vol);
 
     // vcap: 3.3
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "vcap: %d\r\n", sensor_data.vcat_vol);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vcap: %d\r\n", sensor_data.vcat_vol);
 
     // GNSS: $GNGGA:,,,,,,GNSS:
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "GNSS: ");
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), nmea_buf);
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), strlen(sensor_data_buffer), "\r\n");
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "GNSS: ");
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), nmea_buf);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "\r\n");
 
     // LOG_D("sensor_data_buffer:\r\n%s", sensor_data_buffer);
     data_save_as_file(&fs, sensor_data_buffer, strlen(sensor_data_buffer), false);
@@ -596,7 +596,7 @@ void save_sensor_data()
 
     if (read_acc_xyz_result == RT_EOK)
     {
-        snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer), "acceleration:\r\n");
+        snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "acceleration:\r\n");
         for (rt_uint16_t i = 0; i < 1024; i++)
         {   
             if (fabs(ACC_XYZ_BUFF[i][0]) > fabs(sensor_data.acc_x)) {
@@ -622,14 +622,14 @@ void save_sensor_data()
                 if (data_save_as_file(&fs, sensor_data_buffer, strlen(sensor_data_buffer), false) == 0) {
                     LOG_D("Data saved successfully.");
                     rt_memset(sensor_data_buffer, 0, sizeof(sensor_data_buffer));
-                    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer), temp_buf);
+                    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), temp_buf);
                 } else {
                     LOG_E("Data saved failed.");
                     // 本次写入失败，重试写入，最多重试3次?
                 }
             }
             else {
-                snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer), temp_buf);
+                snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), temp_buf);
             }
         }
     }
