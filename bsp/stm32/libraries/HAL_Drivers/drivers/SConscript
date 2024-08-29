@@ -133,6 +133,9 @@ path += [os.path.join(cwd, 'config')]
 if GetDepend('BSP_USING_ON_CHIP_FLASH'):
     path += [os.path.join(cwd, 'drv_flash')]
 
+if GetDepend(['RT_USING_WDT']):
+    src += ['drv_wdt.c']
+
 group = DefineGroup('Drivers', src, depend = [''], CPPPATH = path)
 
 Return('group')

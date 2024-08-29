@@ -127,6 +127,7 @@
 #define RT_USING_RTC
 #define RT_USING_ALARM
 #define RT_USING_SPI
+#define RT_USING_WDT
 #define RT_USING_SENSOR
 #define RT_USING_SENSOR_V2
 #define RT_USING_SENSOR_CMD
