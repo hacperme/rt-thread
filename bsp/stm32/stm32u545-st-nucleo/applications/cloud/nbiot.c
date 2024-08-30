@@ -10,8 +10,8 @@ static struct rt_mutex qiot_event_mutex;
 static int QIOT_SUBSCRIBE_EVENT_CODE = -1;
 static int QIOT_CONNECT_EVENT_CODE = -1;
 static int QIOT_AUTH_EVENT_CODE = -1;
-static int QIOT_DATE_SEND_EVENT_CODE = -1;
-static int QIOT_DATE_RECV_EVENT_CODE = -1;
+static int QIOT_DATA_SEND_EVENT_CODE = -1;
+static int QIOT_DATA_RECV_EVENT_CODE = -1;
 static int QIOT_DISCONNECT_EVENT_CODE = -1;
 static int QIOT_OTA_EVENT_CODE = -1;
 static int QIOT_PLATFORM_EVENT_CODE = -1;
@@ -51,14 +51,14 @@ void nbiot_qiotevt_urc_handler(struct at_client *client, const char *data, rt_si
             break;
         case 4:
             rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-            QIOT_DATE_SEND_EVENT_CODE = event_code;
-            LOG_D("QIOT_DATE_SEND_EVENT_CODE: %d", QIOT_DATE_SEND_EVENT_CODE);
+            QIOT_DATA_SEND_EVENT_CODE = event_code;
+            LOG_D("QIOT_DATA_SEND_EVENT_CODE: %d", QIOT_DATA_SEND_EVENT_CODE);
             rt_mutex_release(&qiot_event_mutex);
             break;
         case 5:
             rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-            QIOT_DATE_RECV_EVENT_CODE = event_code;
-            LOG_D("QIOT_DATE_RECV_EVENT_CODE: %d", QIOT_DATE_RECV_EVENT_CODE);
+            QIOT_DATA_RECV_EVENT_CODE = event_code;
+            LOG_D("QIOT_DATA_RECV_EVENT_CODE: %d", QIOT_DATA_RECV_EVENT_CODE);
             rt_mutex_release(&qiot_event_mutex);
             break;
         case 6:
@@ -655,19 +655,19 @@ rt_err_t nbiot_report_model_data(const char *data, rt_size_t length)
     rt_thread_mdelay(500);  // After the > response, it is recommended for the MCU to wait for 500 ms before sending the data.
 
     rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-    QIOT_DATE_SEND_EVENT_CODE = -1;
+    QIOT_DATA_SEND_EVENT_CODE = -1;
     rt_mutex_release(&qiot_event_mutex);
     at_client_obj_send(client, data, length);
     at_client_obj_send(client, "\x1A", 1);
 
     for (int i=0; i < 30; i++) {
         rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-        if (QIOT_DATE_SEND_EVENT_CODE == -1) {
+        if (QIOT_DATA_SEND_EVENT_CODE == -1) {
             rt_mutex_release(&qiot_event_mutex);
             rt_thread_mdelay(1000);
             continue;
         }
-        if (QIOT_DATE_SEND_EVENT_CODE == 10210) {
+        if (QIOT_DATA_SEND_EVENT_CODE == 10210) {
             rt_mutex_release(&qiot_event_mutex);
             at_delete_resp(resp);
             return RT_EOK;
@@ -709,19 +709,19 @@ rt_err_t nbiot_report_ctrl_data(const char *data, rt_size_t length)
     rt_thread_mdelay(500);  // After the > response, it is recommended for the MCU to wait for 500 ms before sending the data.
 
     rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-    QIOT_DATE_RECV_EVENT_CODE = -1;
+    QIOT_DATA_RECV_EVENT_CODE = -1;
     rt_mutex_release(&qiot_event_mutex);
     at_client_obj_send(client, data, length);
     at_client_obj_send(client, "\x1A", 1);
 
     for (int i=0; i < 30; i++) {
         rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-        if (QIOT_DATE_RECV_EVENT_CODE == -1) {
+        if (QIOT_DATA_RECV_EVENT_CODE == -1) {
             rt_mutex_release(&qiot_event_mutex);
             rt_thread_mdelay(1000);
             continue;
         }
-        if (QIOT_DATE_RECV_EVENT_CODE == 10210) {
+        if (QIOT_DATA_RECV_EVENT_CODE == 10210) {
             rt_mutex_release(&qiot_event_mutex);
             at_delete_resp(resp);
             return RT_EOK;
@@ -865,7 +865,7 @@ rt_err_t nbiot_set_qiotlocext(char *nmea_string)
     }
 
     rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-    QIOT_DATE_RECV_EVENT_CODE = -1;
+    QIOT_DATA_RECV_EVENT_CODE = -1;
     rt_mutex_release(&qiot_event_mutex);
 
     result = at_obj_exec_cmd(client, resp, "AT+QIOTLOCEXT=\"%s\"", nmea_string);
@@ -873,12 +873,12 @@ rt_err_t nbiot_set_qiotlocext(char *nmea_string)
     if (result == RT_EOK) {
         for (int i=0; i < 30; i++) {
             rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-            if (QIOT_DATE_RECV_EVENT_CODE == -1) {
+            if (QIOT_DATA_RECV_EVENT_CODE == -1) {
                 rt_mutex_release(&qiot_event_mutex);
                 rt_thread_mdelay(1000);
                 continue;
             }
-            if (QIOT_DATE_RECV_EVENT_CODE == 10220) {
+            if (QIOT_DATA_RECV_EVENT_CODE == 10220) {
                 rt_mutex_release(&qiot_event_mutex);
                 at_delete_resp(resp);
                 return RT_EOK;

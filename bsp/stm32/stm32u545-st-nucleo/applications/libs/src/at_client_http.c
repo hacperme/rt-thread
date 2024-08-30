@@ -134,12 +134,12 @@ int at_http_upload_file_chunked(const char *filename)
 
 
     /* ���� AT Response ���� */
-    resp = at_create_resp(RESP_BUFFER_SIZE, 0, 10000);
+    resp = at_create_resp(RESP_BUFFER_SIZE, 0, 3000);
 	if (!resp) {
         LOG_E("Failed to create AT response object\n");
         return -1;
     }
-	send_resp = at_create_resp(RESP_BUFFER_SIZE, 1, 10000000);
+	send_resp = at_create_resp(RESP_BUFFER_SIZE, 1, 3000);
 	if (!send_resp) {
         LOG_E("Failed to create AT send response object\n");
         return -1;
@@ -191,7 +191,7 @@ int at_http_upload_file_chunked(const char *filename)
         goto err;
     }
 
-	if(rt_sem_take(_ql_at_sem._qiopen, 1000000) != RT_EOK)
+	if(rt_sem_take(_ql_at_sem._qiopen, 120000) != RT_EOK)
 	{
 		LOG_E("QIOPEN no urc, timeout\n");
 		goto err;
