@@ -133,7 +133,7 @@ static void test_feed_wdg_soft(void *args)
     {
         res = wdg_feed_soft(wdg_id);
         LOG_D("wdg_feed_soft(%d) %s.", wdg_id, RT_RES_MSG(res));
-        rt_thread_mdelay(3000);
+        rt_thread_mdelay(1500);
         cnt--;
     }
     res = wdg_destroy_soft(wdg_id);

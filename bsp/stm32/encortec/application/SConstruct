@@ -27,8 +27,16 @@ CPPPATH = [
     SDK_ROOT,
     os.path.join(RTT_ROOT, 'include'),
     os.path.join(RTT_ROOT, 'components', 'finsh'),
+    os.path.join(RTT_ROOT, 'components/drivers/include'),
+    os.path.join(RTT_ROOT, 'components/net/at/include'),
     os.path.join(SDK_ROOT, 'application', 'rt_api'),
-    os.path.join(SDK_ROOT, 'application', 'logging')]
+    os.path.join(SDK_ROOT, 'application', 'logging'),
+]
+
+driver_list = os.listdir(os.path.join(SDK_ROOT, 'application/board/driver'))
+driver_cpppath = [os.path.join(SDK_ROOT, 'application/board/driver', i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, 'application/board/driver', i))]
+CPPPATH.extend(driver_cpppath)
+
 env.Append(CPPPATH=CPPPATH)
 
 # Get all .c files in the application directory
@@ -39,6 +47,10 @@ rt_api/rt_api.c
 logging/logging.c
 '''
 )
+
+driver_c_files = [os.path.join('board/driver', i, "%s.c" % i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, 'application/board/driver', i))]
+
+app_c_files.extend(driver_c_files)
 
 # Build objects for your application's C files with output in the build directory
 app_objs = [env.Object(os.path.join(BUILD_OBJS_DIR, os.path.splitext(c)[0]) + '.o', c) for c in app_c_files]

@@ -1,0 +1,29 @@
+/*
+ * @FilePath: at_client_http.h
+ * @Author: Ye Jian
+ * @brief     : <Description>
+ * @version   : v1.0.0
+ * @Date: 2024-08-30 13:23:13
+ * @copyright : Copyright (c) 2024
+ */
+
+#ifndef __AIC_CLIENT_HTTP_H__
+#define __AIC_CLIENT_HTTP_H__
+
+#include "at.h"
+
+
+int at_http_upload_file_chunked(const char *filename);
+int example_at_http(void);
+
+void cat1_at_client_init(void);
+rt_err_t cat1_qpowd();
+rt_err_t cat1_set_cfun_mode(int mode);
+rt_err_t cat1_check_state();
+rt_err_t cat1_wait_rdy();
+rt_err_t cat1_check_network(int retry_times);
+rt_err_t cat1_enable_echo(int enable);
+rt_err_t cat1_set_network_config();
+
+
+#endif

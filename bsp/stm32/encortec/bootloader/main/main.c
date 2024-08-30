@@ -25,15 +25,6 @@
 // #define DBG_LEVEL DBG_ERROR
 #include <rtdbg.h>
 
-/* defined the LED2 pin: PA5 */
-#define LED2_PIN            GET_PIN(A, 5)
-#define FLASH_PWR_CON_PIN   GET_PIN(D, 14)
-#define FLASH_SW_PIN        GET_PIN(D, 5)
-
-void led_toggle(void) {
-    rt_pin_write(LED2_PIN, !rt_pin_read(LED2_PIN));
-}
-
 extern char __bootloader_rom_start[];
 extern char __bootloader_rom_end[];
 extern char __bootloader_rom_occupied_end[];
@@ -116,13 +107,11 @@ int main(void)
     LOG_I("__heap_start: %p", __heap_start);
     LOG_I("__heap_end: %p", __heap_end);
 
-    /* set LED2 pin mode to output */
-    // rt_pin_mode(LED2_PIN, PIN_MODE_OUTPUT);
-    rt_pin_mode(FLASH_PWR_CON_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(FLASH_PWR_CON_PIN, 1);
+    rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(FLASH_PWRON_PIN, 1);
 
-    rt_pin_mode(FLASH_SW_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(FLASH_SW_PIN, 0);
+    rt_pin_mode(QSPI_CPUN_ESP_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(QSPI_CPUN_ESP_PIN, 0);
 
     // 初始化 QSPI 外设和 GPIO
     MX_OSPI_Init();
@@ -156,12 +145,12 @@ int main(void)
         LOG_W("No application program.");
     }
 
-    while (1)
-    {
-        led_toggle();
-        LOG_D("hello, world!");
-        rt_thread_mdelay(500);
-    }
+    // while (1)
+    // {
+    //     led_toggle();
+    //     LOG_D("hello, world!");
+    //     rt_thread_mdelay(500);
+    // }
 
     return RT_EOK;
 }

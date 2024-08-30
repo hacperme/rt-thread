@@ -36,7 +36,7 @@ extern "C" {
 #define HAL_ADC_MODULE_ENABLED
 /*#define HAL_COMP_MODULE_ENABLED */
 /*#define HAL_CORDIC_MODULE_ENABLED */
-/*#define HAL_CRC_MODULE_ENABLED */
+#define HAL_CRC_MODULE_ENABLED
 /*#define HAL_CRYP_MODULE_ENABLED */
 /*#define HAL_DAC_MODULE_ENABLED */
 /*#define HAL_DCACHE_MODULE_ENABLED */
@@ -51,7 +51,7 @@ extern "C" {
 /*#define HAL_GTZC_MODULE_ENABLED */
 /*#define HAL_HASH_MODULE_ENABLED */
 /*#define HAL_HCD_MODULE_ENABLED */
-/*#define HAL_I2C_MODULE_ENABLED */
+#define HAL_I2C_MODULE_ENABLED
 #define HAL_ICACHE_MODULE_ENABLED
 /*#define HAL_IRDA_MODULE_ENABLED */
 /*#define HAL_IWDG_MODULE_ENABLED */
@@ -70,7 +70,7 @@ extern "C" {
 /*#define HAL_PSSI_MODULE_ENABLED */
 /*#define HAL_RAMCFG_MODULE_ENABLED */
 /*#define HAL_RNG_MODULE_ENABLED */
-/*#define HAL_RTC_MODULE_ENABLED */
+#define HAL_RTC_MODULE_ENABLED
 /*#define HAL_SAI_MODULE_ENABLED */
 /*#define HAL_SD_MODULE_ENABLED */
 /*#define HAL_SMARTCARD_MODULE_ENABLED */
@@ -81,7 +81,7 @@ extern "C" {
 /*#define HAL_TSC_MODULE_ENABLED */
 #define HAL_UART_MODULE_ENABLED
 /*#define HAL_USART_MODULE_ENABLED */
-/*#define HAL_WWDG_MODULE_ENABLED */
+#define HAL_WWDG_MODULE_ENABLED
 /*#define HAL_XSPI_MODULE_ENABLED */
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_EXTI_MODULE_ENABLED
@@ -223,7 +223,7 @@ vary depending on the variations in voltage and temperature.*/
 #define  USE_HAL_PKA_REGISTER_CALLBACKS        0U /* PKA register callback disabled       */
 #define  USE_HAL_RAMCFG_REGISTER_CALLBACKS     0U /* RAMCFG register callback disabled    */
 #define  USE_HAL_RNG_REGISTER_CALLBACKS        0U /* RNG register callback disabled       */
-#define  USE_HAL_RTC_REGISTER_CALLBACKS        0U /* RTC register callback disabled       */
+#define  USE_HAL_RTC_REGISTER_CALLBACKS        1U /* RTC register callback disabled       */
 #define  USE_HAL_SAI_REGISTER_CALLBACKS        0U /* SAI register callback disabled       */
 #define  USE_HAL_SD_REGISTER_CALLBACKS         0U /* SD register callback disabled        */
 #define  USE_HAL_SDRAM_REGISTER_CALLBACKS      0U /* SDRAM register callback disabled     */

@@ -1,8 +1,8 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-#define SOC_STM32U545RE
-#define BOARD_STM32U545_NUCLEO
+#define SOC_STM32U535RE
+#define BOARD_STM32U535_NUCLEO
 
 /* RT-Thread Kernel */
 
@@ -38,6 +38,7 @@
 #define RT_USING_SEMAPHORE
 #define RT_USING_MUTEX
 #define RT_USING_EVENT
+#define RT_USING_MAILBOX
 #define RT_USING_MESSAGEQUEUE
 #define RT_USING_SIGNALS
 /* end of Inter-Thread communication */
@@ -51,7 +52,7 @@
 /* end of Memory Management */
 #define RT_USING_DEVICE
 #define RT_USING_CONSOLE
-#define RT_CONSOLEBUF_SIZE 512
+#define RT_CONSOLEBUF_SIZE 2048
 #define RT_CONSOLE_DEVICE_NAME "lpuart1"
 #define RT_VER_NUM 0x50200
 #define RT_BACKTRACE_LEVEL_MAX_NR 32
@@ -96,7 +97,7 @@
 #define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
-#define RT_SERIAL_RB_BUFSZ 64
+#define RT_SERIAL_RB_BUFSZ 2048
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_ADC
@@ -110,6 +111,13 @@
 #define RT_USING_WDT
 #define RT_USING_SENSOR
 #define RT_USING_SENSOR_V2
+#define RT_USING_HWCRYPTO
+#define RT_HWCRYPTO_DEFAULT_NAME "hwcryto"
+#define RT_HWCRYPTO_IV_MAX_SIZE 16
+#define RT_HWCRYPTO_KEYBIT_MAX_SIZE 256
+#define RT_HWCRYPTO_USING_CRC
+#define RT_HWCRYPTO_USING_CRC_07
+#define RT_HWCRYPTO_USING_CRC_04C11DB7
 #define RT_USING_PIN
 /* end of Device Drivers */
 
@@ -136,14 +144,16 @@
 
 /* end of Interprocess Communication (IPC) */
 /* end of POSIX (Portable Operating System Interface) layer */
+#define RT_USING_CPLUSPLUS
 /* end of C/C++ and POSIX layer */
 
 /* Network */
 
 #define RT_USING_AT
 #define AT_USING_CLIENT
-#define AT_CLIENT_NUM_MAX 3
+#define AT_CLIENT_NUM_MAX 2
 #define AT_USING_CLI
+#define AT_PRINT_RAW_CMD
 #define AT_SW_VERSION_NUM 0x10301
 /* end of Network */
 
@@ -211,6 +221,8 @@
 
 /* JSON: JavaScript Object Notation, a lightweight data-interchange format */
 
+#define PKG_USING_CJSON
+#define PKG_USING_CJSON_V1717
 /* end of JSON: JavaScript Object Notation, a lightweight data-interchange format */
 
 /* XML: Extensible Markup Language */
@@ -299,6 +311,18 @@
 /* entertainment: terminal games and other interesting software packages */
 
 /* end of entertainment: terminal games and other interesting software packages */
+#define PKG_USING_LWGPS
+#define GPS_MODULE_BAUD_RATE 9600
+#define LWGPS_CFG_DOUBLE 0
+#define LWGPS_CFG_STATUS 0
+#define LWGPS_CFG_STATEMENT_GPGGA 1
+#define LWGPS_CFG_STATEMENT_GPGSA 1
+#define LWGPS_CFG_STATEMENT_GPRMC 1
+#define LWGPS_CFG_STATEMENT_GPGSV 1
+#define LWGPS_CFG_STATEMENT_GPGSV_SAT_DET 0
+#define LWGPS_CFG_STATEMENT_PUBX 0
+#define LWGPS_CFG_STATEMENT_PUBX_TIME 0
+#define PKG_USING_LWGPS_LATEST_VERSION
 /* end of miscellaneous packages */
 
 /* Arduino libraries */
@@ -366,6 +390,19 @@
 #define BSP_USING_UART5
 #define BSP_USING_LPUART1
 #define BSP_USING_ADC
+#define BSP_USING_ADC1
+#define BSP_USING_SPI
+#define BSP_USING_SPI1
+#define BSP_USING_I2C
+#define BSP_USING_I2C1
+
+/* Notice: PB8 --> 24; PB9 --> 25 */
+
+#define BSP_I2C1_SCL_PIN 24
+#define BSP_I2C1_SDA_PIN 19
+#define BSP_USING_ONCHIP_RTC
+#define BSP_RTC_USING_LSE
+#define BSP_USING_CRC
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */

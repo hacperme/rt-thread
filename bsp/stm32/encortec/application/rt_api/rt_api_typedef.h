@@ -3,6 +3,8 @@
 
 #include "rttypes.h"
 #include "rtthread.h"
+#include "rtdevice.h"
+#include "at.h"
 #include <stdarg.h>
 
 typedef rt_err_t (*rt_thread_init_api_ptr_t)(struct rt_thread *thread,
@@ -142,4 +144,202 @@ typedef void (*rt_memory_info_api_ptr_t)(rt_size_t *total,
                             rt_size_t *used,
                             rt_size_t *max_used);
 typedef int (*rt_vsnprintf_api_ptr_t)(char *buf, rt_size_t size, const char *fmt, va_list args);
+typedef rt_tick_t (*rt_tick_get_api_ptr_t)(void);
+typedef void (*rt_tick_set_api_ptr_t)(rt_tick_t tick);
+typedef void (*rt_tick_increase_api_ptr_t)(void);
+typedef rt_tick_t  (*rt_tick_from_millisecond_api_ptr_t)(rt_int32_t ms);
+typedef rt_tick_t (*rt_tick_get_millisecond_api_ptr_t)(void);
+typedef void (*rt_system_timer_init_api_ptr_t)(void);
+typedef void (*rt_system_timer_thread_init_api_ptr_t)(void);
+typedef void (*rt_timer_init_api_ptr_t)(rt_timer_t  timer,
+                   const char *name,
+                   void (*timeout)(void *parameter),
+                   void       *parameter,
+                   rt_tick_t   time,
+                   rt_uint8_t  flag);
+typedef rt_err_t (*rt_timer_detach_api_ptr_t)(rt_timer_t timer);
+typedef rt_timer_t (*rt_timer_create_api_ptr_t)(const char *name,
+                           void (*timeout)(void *parameter),
+                           void       *parameter,
+                           rt_tick_t   time,
+                           rt_uint8_t  flag);
+typedef rt_err_t (*rt_timer_delete_api_ptr_t)(rt_timer_t timer);
+typedef rt_err_t (*rt_timer_start_api_ptr_t)(rt_timer_t timer);
+typedef rt_err_t (*rt_timer_stop_api_ptr_t)(rt_timer_t timer);
+typedef rt_err_t (*rt_timer_control_api_ptr_t)(rt_timer_t timer, int cmd, void *arg);
+typedef rt_tick_t (*rt_timer_next_timeout_tick_api_ptr_t)(void);
+typedef void (*rt_timer_check_api_ptr_t)(void);
+typedef void (*rt_system_scheduler_init_api_ptr_t)(void);
+typedef void (*rt_system_scheduler_start_api_ptr_t)(void);
+typedef void (*rt_schedule_api_ptr_t)(void);
+typedef void (*rt_scheduler_do_irq_switch_api_ptr_t)(void *context);
+typedef void (*rt_signal_mask_api_ptr_t)(int signo);
+typedef void (*rt_signal_unmask_api_ptr_t)(int signo);
+typedef rt_sighandler_t (*rt_signal_install_api_ptr_t)(int signo, rt_sighandler_t handler);
+typedef int (*rt_signal_wait_api_ptr_t)(const rt_sigset_t *set, rt_siginfo_t *si, rt_int32_t timeout);
+typedef int (*rt_system_signal_init_api_ptr_t)(void);
+typedef void *(*rt_malloc_align_api_ptr_t)(rt_size_t size, rt_size_t align);
+typedef void (*rt_free_align_api_ptr_t)(void *ptr);
+typedef rt_err_t (*rt_mb_init_api_ptr_t)(rt_mailbox_t mb,
+                    const char  *name,
+                    void        *msgpool,
+                    rt_size_t    size,
+                    rt_uint8_t   flag);
+typedef rt_err_t (*rt_mb_detach_api_ptr_t)(rt_mailbox_t mb);
+typedef rt_mailbox_t (*rt_mb_create_api_ptr_t)(const char *name, rt_size_t size, rt_uint8_t flag);
+typedef rt_err_t (*rt_mb_delete_api_ptr_t)(rt_mailbox_t mb);
+typedef rt_err_t (*rt_mb_send_api_ptr_t)(rt_mailbox_t mb, rt_ubase_t value);
+typedef rt_err_t (*rt_mb_send_interruptible_api_ptr_t)(rt_mailbox_t mb, rt_ubase_t value);
+typedef rt_err_t (*rt_mb_send_killable_api_ptr_t)(rt_mailbox_t mb, rt_ubase_t value);
+typedef rt_err_t (*rt_mb_send_wait_api_ptr_t)(rt_mailbox_t mb,
+                         rt_ubase_t  value,
+                         rt_int32_t   timeout);
+typedef rt_err_t (*rt_mb_send_wait_interruptible_api_ptr_t)(rt_mailbox_t mb,
+                         rt_ubase_t  value,
+                         rt_int32_t   timeout);
+typedef rt_err_t (*rt_mb_send_wait_killable_api_ptr_t)(rt_mailbox_t mb,
+                         rt_ubase_t  value,
+                         rt_int32_t   timeout);
+typedef rt_err_t (*rt_mb_urgent_api_ptr_t)(rt_mailbox_t mb, rt_ubase_t value);
+typedef rt_err_t (*rt_mb_recv_api_ptr_t)(rt_mailbox_t mb, rt_ubase_t *value, rt_int32_t timeout);
+typedef rt_err_t (*rt_mb_recv_interruptible_api_ptr_t)(rt_mailbox_t mb, rt_ubase_t *value, rt_int32_t timeout);
+typedef rt_err_t (*rt_mb_recv_killable_api_ptr_t)(rt_mailbox_t mb, rt_ubase_t *value, rt_int32_t timeout);
+typedef rt_err_t (*rt_mb_control_api_ptr_t)(rt_mailbox_t mb, int cmd, void *arg);
+typedef rt_device_t (*rt_device_find_api_ptr_t)(const char *name);
+typedef rt_err_t (*rt_device_register_api_ptr_t)(rt_device_t dev,
+                            const char *name,
+                            rt_uint16_t flags);
+typedef rt_err_t (*rt_device_unregister_api_ptr_t)(rt_device_t dev);
+typedef rt_device_t (*rt_device_create_api_ptr_t)(int type, int attach_size);
+typedef void (*rt_device_destroy_api_ptr_t)(rt_device_t device);
+typedef rt_err_t (*rt_device_set_rx_indicate_api_ptr_t)(rt_device_t dev,
+                          rt_err_t (*rx_ind)(rt_device_t dev, rt_size_t size));
+typedef rt_err_t (*rt_device_set_tx_complete_api_ptr_t)(rt_device_t dev,
+                          rt_err_t (*tx_done)(rt_device_t dev, void *buffer));
+typedef rt_err_t  (*rt_device_init_api_ptr_t) (rt_device_t dev);
+typedef rt_err_t  (*rt_device_open_api_ptr_t) (rt_device_t dev, rt_uint16_t oflag);
+typedef rt_err_t  (*rt_device_close_api_ptr_t)(rt_device_t dev);
+typedef rt_ssize_t (*rt_device_read_api_ptr_t)(rt_device_t dev,
+                          rt_off_t    pos,
+                          void       *buffer,
+                          rt_size_t   size);
+typedef rt_ssize_t (*rt_device_write_api_ptr_t)(rt_device_t dev,
+                          rt_off_t    pos,
+                          const void *buffer,
+                          rt_size_t   size);
+typedef rt_err_t  (*rt_device_control_api_ptr_t)(rt_device_t dev, int cmd, void *arg);
+typedef rt_uint32_t (*rt_adc_read_api_ptr_t)(rt_adc_device_t dev, rt_int8_t channel);
+typedef rt_err_t (*rt_adc_enable_api_ptr_t)(rt_adc_device_t dev, rt_int8_t channel);
+typedef rt_err_t (*rt_adc_disable_api_ptr_t)(rt_adc_device_t dev, rt_int8_t channel);
+typedef rt_int16_t (*rt_adc_voltage_api_ptr_t)(rt_adc_device_t dev, rt_int8_t channel);
+typedef rt_alarm_t (*rt_alarm_create_api_ptr_t)(rt_alarm_callback_t    callback,
+                           struct rt_alarm_setup *setup);
+typedef rt_err_t (*rt_alarm_control_api_ptr_t)(rt_alarm_t alarm, int cmd, void *arg);
+typedef void (*rt_alarm_update_api_ptr_t)(rt_device_t dev, rt_uint32_t event);
+typedef rt_err_t (*rt_alarm_delete_api_ptr_t)(rt_alarm_t alarm);
+typedef rt_err_t (*rt_alarm_start_api_ptr_t)(rt_alarm_t alarm);
+typedef rt_err_t (*rt_alarm_stop_api_ptr_t)(rt_alarm_t alarm);
+typedef int (*rt_alarm_system_init_api_ptr_t)(void);
+typedef struct rt_hwcrypto_ctx *(*rt_hwcrypto_crc_create_api_ptr_t)(struct rt_hwcrypto_device *device,
+                                               hwcrypto_crc_mode mode);
+typedef void (*rt_hwcrypto_crc_destroy_api_ptr_t)(struct rt_hwcrypto_ctx *ctx);
+typedef rt_uint32_t (*rt_hwcrypto_crc_update_api_ptr_t)(struct rt_hwcrypto_ctx *ctx,
+                                   const rt_uint8_t *input, rt_size_t length);
+typedef void (*rt_hwcrypto_crc_cfg_api_ptr_t)(struct rt_hwcrypto_ctx *ctx,
+                         struct hwcrypto_crc_cfg *cfg);
+typedef rt_err_t (*rt_hw_adc_register_api_ptr_t)(rt_adc_device_t adc,const char *name, const struct rt_adc_ops *ops, const void *user_data);
+typedef rt_err_t (*rt_i2c_bus_device_register_api_ptr_t)(struct rt_i2c_bus_device *bus,
+                                    const char               *bus_name);
+typedef struct rt_i2c_bus_device *(*rt_i2c_bus_device_find_api_ptr_t)(const char *bus_name);
+typedef rt_ssize_t (*rt_i2c_transfer_api_ptr_t)(struct rt_i2c_bus_device *bus,
+                          struct rt_i2c_msg         msgs[],
+                          rt_uint32_t               num);
+typedef rt_err_t (*rt_i2c_control_api_ptr_t)(struct rt_i2c_bus_device *bus,
+                        int cmd,
+                        void *args);
+typedef rt_ssize_t (*rt_i2c_master_send_api_ptr_t)(struct rt_i2c_bus_device *bus,
+                             rt_uint16_t               addr,
+                             rt_uint16_t               flags,
+                             const rt_uint8_t         *buf,
+                             rt_uint32_t               count);
+typedef rt_ssize_t (*rt_i2c_master_recv_api_ptr_t)(struct rt_i2c_bus_device *bus,
+                             rt_uint16_t               addr,
+                             rt_uint16_t               flags,
+                             rt_uint8_t               *buf,
+                             rt_uint32_t               count);
+typedef int (*rt_device_pin_register_api_ptr_t)(const char *name, const struct rt_pin_ops *ops, void *user_data);
+typedef void (*rt_pin_mode_api_ptr_t)(rt_base_t pin, rt_uint8_t mode);
+typedef void (*rt_pin_write_api_ptr_t)(rt_base_t pin, rt_ssize_t value);
+typedef rt_ssize_t (*rt_pin_read_api_ptr_t)(rt_base_t pin);
+typedef rt_base_t (*rt_pin_get_api_ptr_t)(const char *name);
+typedef rt_err_t (*rt_pin_attach_irq_api_ptr_t)(rt_base_t pin, rt_uint8_t mode,
+                           void (*hdr)(void *args), void  *args);
+typedef rt_err_t (*rt_pin_detach_irq_api_ptr_t)(rt_base_t pin);
+typedef rt_err_t (*rt_pin_irq_enable_api_ptr_t)(rt_base_t pin, rt_uint8_t enabled);
+typedef rt_err_t (*set_date_api_ptr_t)(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day);
+typedef rt_err_t (*set_time_api_ptr_t)(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second);
+typedef rt_err_t (*set_timestamp_api_ptr_t)(time_t timestamp);
+typedef rt_err_t (*get_timestamp_api_ptr_t)(time_t *timestamp);
+typedef rt_err_t (*rt_spi_bus_register_api_ptr_t)(struct rt_spi_bus       *bus,
+                             const char              *name,
+                             const struct rt_spi_ops *ops);
+typedef rt_err_t (*rt_spi_bus_attach_device_api_ptr_t)(struct rt_spi_device *device,
+                                  const char           *name,
+                                  const char           *bus_name,
+                                  void                 *user_data);
+typedef rt_err_t (*rt_spi_bus_attach_device_cspin_api_ptr_t)(struct rt_spi_device *device,
+                                        const char           *name,
+                                        const char           *bus_name,
+                                        rt_base_t             cs_pin,
+                                        void                 *user_data);
+typedef rt_err_t (*rt_spi_bus_configure_api_ptr_t)(struct rt_spi_device *device);
+typedef rt_err_t (*rt_spi_take_bus_api_ptr_t)(struct rt_spi_device *device);
+typedef rt_err_t (*rt_spi_release_bus_api_ptr_t)(struct rt_spi_device *device);
+typedef rt_err_t (*rt_spi_take_api_ptr_t)(struct rt_spi_device *device);
+typedef rt_err_t (*rt_spi_release_api_ptr_t)(struct rt_spi_device *device);
+typedef rt_err_t (*rt_spi_configure_api_ptr_t)(struct rt_spi_device        *device,
+                          struct rt_spi_configuration *cfg);
+typedef rt_err_t (*rt_spi_send_then_recv_api_ptr_t)(struct rt_spi_device *device,
+                               const void           *send_buf,
+                               rt_size_t             send_length,
+                               void                 *recv_buf,
+                               rt_size_t             recv_length);
+typedef rt_err_t (*rt_spi_send_then_send_api_ptr_t)(struct rt_spi_device *device,
+                               const void           *send_buf1,
+                               rt_size_t             send_length1,
+                               const void           *send_buf2,
+                               rt_size_t             send_length2);
+typedef rt_ssize_t (*rt_spi_transfer_api_ptr_t)(struct rt_spi_device *device,
+                           const void           *send_buf,
+                           void                 *recv_buf,
+                           rt_size_t             length);
+typedef rt_err_t (*rt_spi_sendrecv8_api_ptr_t)(struct rt_spi_device *device,
+                          rt_uint8_t            senddata,
+                          rt_uint8_t           *recvdata);
+typedef rt_err_t (*rt_spi_sendrecv16_api_ptr_t)(struct rt_spi_device *device,
+                           rt_uint16_t           senddata,
+                           rt_uint16_t          *recvdata);
+typedef struct rt_spi_message *(*rt_spi_transfer_message_api_ptr_t)(struct rt_spi_device  *device,
+                                               struct rt_spi_message *message);
+typedef rt_err_t (*rt_qspi_configure_api_ptr_t)(struct rt_qspi_device *device, struct rt_qspi_configuration *cfg);
+typedef rt_err_t (*rt_qspi_bus_register_api_ptr_t)(struct rt_spi_bus *bus, const char *name, const struct rt_spi_ops *ops);
+typedef rt_size_t (*rt_qspi_transfer_message_api_ptr_t)(struct rt_qspi_device  *device, struct rt_qspi_message *message);
+typedef rt_err_t (*rt_qspi_send_then_recv_api_ptr_t)(struct rt_qspi_device *device, const void *send_buf, rt_size_t send_length,void *recv_buf, rt_size_t recv_length);
+typedef rt_err_t (*rt_qspi_send_api_ptr_t)(struct rt_qspi_device *device, const void *send_buf, rt_size_t length);
+typedef int (*at_client_init_api_ptr_t)(const char *dev_name, rt_size_t recv_bufsz, rt_size_t send_bufsz);
+typedef at_client_t (*at_client_get_api_ptr_t)(const char *dev_name);
+typedef at_client_t (*at_client_get_first_api_ptr_t)(void);
+typedef int (*at_client_obj_wait_connect_api_ptr_t)(at_client_t client, rt_uint32_t timeout);
+typedef rt_size_t (*at_client_obj_send_api_ptr_t)(at_client_t client, const char *buf, rt_size_t size);
+typedef rt_size_t (*at_client_obj_recv_api_ptr_t)(at_client_t client, char *buf, rt_size_t size, rt_int32_t timeout);
+typedef void (*at_obj_set_end_sign_api_ptr_t)(at_client_t client, char ch);
+typedef int (*at_obj_set_urc_table_api_ptr_t)(at_client_t client, const struct at_urc * table, rt_size_t size);
+typedef int (*at_obj_exec_cmd_api_ptr_t)(at_client_t client, at_response_t resp, const char *cmd_expr, ...);
+typedef at_response_t (*at_create_resp_api_ptr_t)(rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);
+typedef void (*at_delete_resp_api_ptr_t)(at_response_t resp);
+typedef at_response_t (*at_resp_set_info_api_ptr_t)(at_response_t resp, rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);
+typedef const char *(*at_resp_get_line_api_ptr_t)(at_response_t resp, rt_size_t resp_line);
+typedef const char *(*at_resp_get_line_by_kw_api_ptr_t)(at_response_t resp, const char *keyword);
+typedef int (*at_resp_parse_line_args_api_ptr_t)(at_response_t resp, rt_size_t resp_line, const char *resp_expr, ...);
+typedef int (*at_resp_parse_line_args_by_kw_api_ptr_t)(at_response_t resp, const char *keyword, const char *resp_expr, ...);
 #endif
