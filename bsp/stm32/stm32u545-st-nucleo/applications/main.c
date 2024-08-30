@@ -60,7 +60,7 @@ int main(void)
     LOG_I("rt_hw_fs_mount %s", res == RT_EOK ? "success" : "failed");
 
     extern void main_business_entry(void);
-    main_business_entry();
+    // main_business_entry();
 
     return RT_EOK;
 }
