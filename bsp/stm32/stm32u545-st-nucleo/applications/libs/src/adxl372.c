@@ -98,16 +98,16 @@ void adxl372_inactive_irq_callback(void *args)
 rt_err_t adxl372_int1_pin_irq_enable(void)
 {
     rt_err_t res;
-    res = rt_pin_attach_irq(ADXL372_INT1_Pin, PIN_IRQ_MODE_RISING, adxl372_inactive_irq_callback, RT_NULL);
+    res = rt_pin_attach_irq(ADXL372_INT1_PIN, PIN_IRQ_MODE_RISING, adxl372_inactive_irq_callback, RT_NULL);
     if (res != RT_EOK)
     {
-        LOG_E("ADXL372_INT1_Pin rt_pin_attach_irq falied. res=%d", res);
+        LOG_E("ADXL372_INT1_PIN rt_pin_attach_irq falied. res=%d", res);
         return res;
     }
-    res = rt_pin_irq_enable(ADXL372_INT1_Pin, PIN_IRQ_ENABLE);
+    res = rt_pin_irq_enable(ADXL372_INT1_PIN, PIN_IRQ_ENABLE);
     if (res != RT_EOK)
     {
-        LOG_E("ADXL372_INT1_Pin rt_pin_irq_enable falied. res=%d", res);
+        LOG_E("ADXL372_INT1_PIN rt_pin_irq_enable falied. res=%d", res);
     }
     return res;
 }
@@ -115,10 +115,10 @@ rt_err_t adxl372_int1_pin_irq_enable(void)
 rt_err_t adxl372_int1_pin_irq_disable(void)
 {
     rt_err_t res;
-    res = rt_pin_irq_enable(ADXL372_INT1_Pin, PIN_IRQ_DISABLE);
+    res = rt_pin_irq_enable(ADXL372_INT1_PIN, PIN_IRQ_DISABLE);
     if (res != RT_EOK)
     {
-        LOG_E("ADXL372_INT1_Pin rt_pin_irq_enable falied. res=%d", res);
+        LOG_E("ADXL372_INT1_PIN rt_pin_irq_enable falied. res=%d", res);
     }
     return res;
 }
@@ -267,7 +267,7 @@ rt_err_t adxl372_init(void)
     rt_err_t res = RT_ERROR;
 
     /* G-Sensor irq pin init. */
-    rt_pin_mode(ADXL372_INT1_Pin, PIN_MODE_INPUT_PULLDOWN);
+    rt_pin_mode(ADXL372_INT1_PIN, PIN_MODE_INPUT_PULLDOWN);
 
     res = adxl372_dev != RT_NULL ? RT_EOK : RT_ERROR;
     if (res == RT_EOK)
@@ -387,7 +387,11 @@ rt_err_t adxl372_check_xyz_ready(void)
         res = adxl732_read(ADI_ADXL372_STATUS_1, &recv_buf, 1);
         // LOG_D("adxl732_read reg 0x%02X recv_buf 0x%02X res %d", ADI_ADXL372_STATUS_1, recv_buf, res);
         eticks = rt_tick_get_millisecond();
-    } while ((recv_buf & 0x01) == 0 && (eticks - sticks) < 1000);
+        if (rt_tick_diff(sticks, eticks) % 100 == 0)
+        {
+            rt_thread_mdelay(10);
+        }
+    } while ((recv_buf & 0x01) == 0 && rt_tick_diff(sticks, eticks) < 1000);
 
     res = (recv_buf & 0x01) == 0 ? RT_ERROR : RT_EOK;
 }
@@ -722,11 +726,16 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
     rt_err_t res;
     rt_int16_t *acc_xyz_int16 = (rt_int16_t *)acc_xyz_buff;
     rt_uint16_t i, j;
+    rt_tick_t stime, etime, rtime;
+    rt_tick_t wstime, wetime, wrtime;
 
-    rt_tick_t stime = rt_tick_get_millisecond();
+    stime = rt_tick_get_millisecond();
     for (i = 0; i < size; i++)
     {
+        wstime = rt_tick_get_millisecond();
         res = adxl372_check_xyz_ready();
+        wetime = rt_tick_get_millisecond();
+        wrtime = rt_tick_diff(wstime, wetime);
         if (res != RT_EOK)
         {
             LOG_E("adxl372_check_xyz_ready acc is not ready.");
@@ -740,9 +749,15 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
         }
         acc_xyz_int16[i * 6 + 4] = acc_xyz_int16[i * 6 + 2];
         acc_xyz_int16[i * 6 + 2] = acc_xyz_int16[i * 6 + 1];
+        etime = rt_tick_get_millisecond();
+        rtime = rt_tick_diff(stime, etime);
+        if ((wrtime < 150) && rtime % 100 == 0)
+        {
+            rt_thread_mdelay(10);
+        }
     }
-    rt_tick_t etime = rt_tick_get_millisecond();
-    rt_tick_t rtime = rt_tick_diff(stime, etime);
+    etime = rt_tick_get_millisecond();
+    rtime = rt_tick_diff(stime, etime);
     LOG_D("Start %d, End %d, Run %d", stime, etime, rtime);
 
     // char msg[64];
