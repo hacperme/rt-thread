@@ -17,7 +17,7 @@ ENCORTEC_APP_API_C_NAME = "./application/rt_api/rt_api.c"
 
 def build_bootloader():
     print("------ Building Bootloader...")
-    subprocess.run("cd ./bootloader && scons -j8 && cd ..", shell=True)
+    subprocess.run("cd ./bootloader && scons && cd ..", shell=True)
     print("------ Done!")
 
 def clean_bootloader():
@@ -27,7 +27,7 @@ def clean_bootloader():
 
 def build_app():
     print("------ Building Application...")
-    subprocess.run("cd ./application && scons -j8 && cd ..", shell=True)
+    subprocess.run("cd ./application && scons && cd ..", shell=True)
     print("------ Done!")
 
 def clean_app():

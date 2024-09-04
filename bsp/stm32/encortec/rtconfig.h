@@ -40,6 +40,7 @@
 #define RT_USING_EVENT
 #define RT_USING_MAILBOX
 #define RT_USING_MESSAGEQUEUE
+#define RT_USING_MESSAGEQUEUE_PRIORITY
 #define RT_USING_SIGNALS
 /* end of Inter-Thread communication */
 

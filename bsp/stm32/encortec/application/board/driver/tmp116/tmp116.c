@@ -160,15 +160,18 @@ rt_err_t temp116_read_temperture(struct rt_i2c_bus_device *iic_dev, const rt_uin
 }
 
 #ifdef RT_USING_MSH
-#include "board_pin.h"
+// #include "board_pin.h"
 static rt_err_t test_temp116(void)
 {
     rt_err_t res = RT_EOK;
     char i2c_bus_name[] = "i2c1";
     static struct rt_i2c_bus_device *iic_dev;
 
-    res = sensor_pwron_pin_enable(1);
-    log_info("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+    // res = sensor_pwron_pin_enable(1);
+    // log_info("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+
+    rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(SENSOR_PWRON_PIN, 1);
 
     iic_dev = rt_i2c_bus_device_find(i2c_bus_name);
     res = !iic_dev ? RT_ERROR : RT_EOK;

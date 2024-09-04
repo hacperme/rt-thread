@@ -1,8 +1,9 @@
+# import sys
+# import glob
 import os
-import sys
-import rtconfig
 import shutil
-import glob
+import rtconfig
+from SCons.Script import *
 from rtconfig import TARGET_NAME
 from rtconfig import POST_ACTION
 from rtconfig import SDK_ROOT
@@ -10,56 +11,121 @@ from rtconfig import RTT_ROOT
 from rtconfig import BUILD_DIR
 from rtconfig import BUILD_OBJS_DIR
 
-TARGET = f'{TARGET_NAME}.{rtconfig.TARGET_EXT}'
+TARGET = f"{TARGET_NAME}.{rtconfig.TARGET_EXT}"
 
 DefaultEnvironment(tools=[])
-env = Environment(tools = ['mingw'],
-    AS = rtconfig.AS, ASFLAGS = rtconfig.AFLAGS,
-    CC = rtconfig.CC, CFLAGS = rtconfig.CFLAGS,
-    AR = rtconfig.AR, ARFLAGS = '-rc',
-    CXX = rtconfig.CXX, CXXFLAGS = rtconfig.CXXFLAGS,
-    LINK = rtconfig.LINK, LINKFLAGS = rtconfig.LFLAGS)
-env.PrependENVPath('PATH', rtconfig.EXEC_PATH)
+env = Environment(
+    tools=["mingw"],
+    AS=rtconfig.AS, ASFLAGS=rtconfig.AFLAGS,
+    CC=rtconfig.CC, CFLAGS=rtconfig.CFLAGS,
+    AR=rtconfig.AR, ARFLAGS="-rc",
+    CXX=rtconfig.CXX, CXXFLAGS=rtconfig.CXXFLAGS,
+    LINK=rtconfig.LINK, LINKFLAGS=rtconfig.LFLAGS
+)
+env.PrependENVPath("PATH", rtconfig.EXEC_PATH)
+
+cppdefines = ["STM32U535xx"]
+env.Append(CPPDEFINES=cppdefines)
 
 # Add include directories to the search path
 CPPPATH = [
-    os.path.join(SDK_ROOT, 'common'),
     SDK_ROOT,
-    os.path.join(RTT_ROOT, 'include'),
-    os.path.join(RTT_ROOT, 'components', 'finsh'),
-    os.path.join(RTT_ROOT, 'components/drivers/include'),
-    os.path.join(RTT_ROOT, 'components/net/at/include'),
-    os.path.join(SDK_ROOT, 'application', 'rt_api'),
-    os.path.join(SDK_ROOT, 'application', 'logging'),
+    os.path.join(SDK_ROOT, "common"),
+    os.path.join(RTT_ROOT, "include"),
+    os.path.join(RTT_ROOT, "components", "finsh"),
+    os.path.join(RTT_ROOT, "components/libc/compilers/common/include"),
+    os.path.join(RTT_ROOT, "components/libc/compilers/common/extension"),
+    os.path.join(RTT_ROOT, "components/drivers/hwcrypto"),
+    os.path.join(RTT_ROOT, "components/drivers/include"),
+    os.path.join(RTT_ROOT, "components/net/at/include"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/CMSIS/Include"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Include"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/STM32U5xx_HAL/STM32U5xx_HAL_Driver/Inc"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/drivers"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers"),
+    os.path.join(SDK_ROOT, "bootloader"),
+    os.path.join(SDK_ROOT, "bootloader/board"),
+    os.path.join(SDK_ROOT, "application", "rt_api"),
+    os.path.join(SDK_ROOT, "application", "logging"),
 ]
 
-driver_list = os.listdir(os.path.join(SDK_ROOT, 'application/board/driver'))
-driver_cpppath = [os.path.join(SDK_ROOT, 'application/board/driver', i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, 'application/board/driver', i))]
-CPPPATH.extend(driver_cpppath)
+# driver_list = os.listdir(os.path.join(SDK_ROOT, "application/board/driver"))
+# driver_cpppath = [os.path.join(SDK_ROOT, "application/board/driver", i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, "application/board/driver", i))]
+driver_cpppath = [
+    os.path.join(SDK_ROOT, "application/board/driver/adxl372"),
+    os.path.join(SDK_ROOT, "application/board/driver/at_client_http"),
+    os.path.join(SDK_ROOT, "application/board/driver/data_save_as_file"),
+    os.path.join(SDK_ROOT, "application/board/driver/fdc1004"),
+    os.path.join(SDK_ROOT, "application/board/driver/gnss"),
+    os.path.join(SDK_ROOT, "application/board/driver/hdc3021"),
+    os.path.join(SDK_ROOT, "application/board/driver/lpm"),
+    os.path.join(SDK_ROOT, "application/board/driver/tmp116"),
+    os.path.join(SDK_ROOT, "application/board/driver/tools"),
+    os.path.join(SDK_ROOT, "application/board/driver/voltage"),
+    os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
+]
+CPPPATH += driver_cpppath
+
+lwgps_cpp_path = [
+    os.path.join(SDK_ROOT, "application/packages/lwgps-latest"),
+    os.path.join(SDK_ROOT, "application/packages/lwgps-latest/lwgps/lwgps/src/include"),
+    os.path.join(SDK_ROOT, "application/packages/lwgps-latest/lwgps/lwgps/src/include/lwgps"),
+]
+lwgps_c_files = [
+    "lwgps-latest/*.c",
+    "lwgps-latest/lwgps/lwgps/src/lwgps/*.c",
+]
+CPPPATH += lwgps_cpp_path
+
+cjson_cpp_path = [os.path.join(SDK_ROOT, "application/packages/cJSON-v1.7.17")]
+cjson_c_files = ["cJSON-v1.7.17/*.c"]
+CPPPATH += cjson_cpp_path
+
+# littlefs_cpp_path = [os.path.join(SDK_ROOT, "application/packages/littlefs-latest")]
+# littlefs_c_files = ["littlefs-latest/*.c"]
+# CPPPATH += littlefs_cpp_path
 
 env.Append(CPPPATH=CPPPATH)
 
 # Get all .c files in the application directory
-# app_c_files = glob.glob(os.path.join('main', '*.c'))
-app_c_files = Split('''
+# app_c_files = glob.glob(os.path.join("main", "*.c"))
+app_c_files = Split("""
 main/main.c
 rt_api/rt_api.c
 logging/logging.c
-'''
+"""
 )
 
-driver_c_files = [os.path.join('board/driver', i, "%s.c" % i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, 'application/board/driver', i))]
+# driver_c_files = [os.path.join("board/driver", i, "%s.c" % i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, "application/board/driver", i))]
+driver_c_files = [
+    "board/driver/adxl372/adxl372.c",
+    "board/driver/at_client_http/at_client_http.c",
+    "board/driver/data_save_as_file/data_save_as_file.c",
+    "board/driver/fdc1004/fdc1004.c",
+    "board/driver/gnss/gnss.c",
+    "board/driver/hdc3021/hdc3021.c",
+    "board/driver/lpm/lpm.c",
+    "board/driver/tmp116/tmp116.c",
+    "board/driver/tools/tools.c",
+    "board/driver/voltage/voltage.c",
+    "board/driver/watch_dog/watch_dog.c",
+]
+app_c_files += driver_c_files
 
-app_c_files.extend(driver_c_files)
+app_c_files += lwgps_c_files
 
-# Build objects for your application's C files with output in the build directory
-app_objs = [env.Object(os.path.join(BUILD_OBJS_DIR, os.path.splitext(c)[0]) + '.o', c) for c in app_c_files]
+app_c_files += cjson_c_files
+
+# app_c_files += littlefs_c_files
+
+# Build objects for your application"s C files with output in the build directory
+app_objs = [env.Object(os.path.join(BUILD_OBJS_DIR, os.path.splitext(c)[0]) + ".o", c) for c in app_c_files]
 
 # Link the objects into an executable or library
 elf_file = env.Program(TARGET, app_objs)
 
 # Generate .bin file from the .elf file
-bin_file = env.Command(f'{TARGET_NAME}.bin',
+bin_file = env.Command(f"{TARGET_NAME}.bin",
                        elf_file,
                        action=POST_ACTION)
 
@@ -67,14 +133,14 @@ bin_file = env.Command(f'{TARGET_NAME}.bin',
 Default(elf_file, bin_file)
 
 # Check if we are in clean mode
-if GetOption('clean'):
+if GetOption("clean"):
     # Clean action to remove the entire build directory
     def clean_build_dir(target, source, env):
         if os.path.exists(BUILD_DIR):
             shutil.rmtree(BUILD_DIR)
 
     # Add the clean action to SCons
-    env.AddMethod(clean_build_dir, 'CleanBuildDir')
+    env.AddMethod(clean_build_dir, "CleanBuildDir")
 
     # Call the clean action when cleaning
     env.CleanBuildDir([], BUILD_DIR)

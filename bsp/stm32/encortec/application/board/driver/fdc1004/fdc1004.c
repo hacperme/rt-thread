@@ -304,15 +304,18 @@ rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev)
 }
 
 #ifdef RT_USING_MSH
-#include "board_pin.h"
+// #include "board_pin.h"
 static rt_err_t test_fdc1004(int argc, char **argv)
 {
     rt_err_t res = RT_ERROR;
     char i2c_bus_name[] = "i2c1";
     static struct rt_i2c_bus_device *iic_dev;
 
-    res = sensor_pwron_pin_enable(1);
-    log_debug("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+    // res = sensor_pwron_pin_enable(1);
+    // log_debug("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+
+    rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
+    rt_pin_write(SENSOR_PWRON_PIN, 1);
 
     iic_dev = rt_i2c_bus_device_find(i2c_bus_name);
     res = !iic_dev ? RT_ERROR : RT_EOK;

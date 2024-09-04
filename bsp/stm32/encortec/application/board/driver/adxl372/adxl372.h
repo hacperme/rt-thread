@@ -119,10 +119,6 @@ struct adxl372_xyz
 };
 typedef struct adxl372_xyz *adxl372_xyz_t;
 
-extern rt_err_t rt_hw_spi_device_attach(const char *bus_name, const char *device_name, rt_base_t cs_pin);
-
-__weak void adxl372_inact_event_handler(void);
-
 void adxl372_recv_inact_event(void *parameter);
 rt_err_t adxl372_recv_inact_event_thd_start(void);
 rt_err_t adxl372_recv_inact_event_thd_stop(void);

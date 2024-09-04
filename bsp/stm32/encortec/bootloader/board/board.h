@@ -100,10 +100,10 @@ void MX_ICACHE_Init(void);
 
 #ifdef SOC_STM32U545RE
 #define ADXL372_CS_PIN          GET_PIN(C, 9)
-#define ADXL372_INT1_Pin        GET_PIN(B, 7)
+#define ADXL372_INT1_PIN        GET_PIN(B, 7)
 #else
 #define ADXL372_CS_PIN          GET_PIN(E, 9)
-#define ADXL372_INT1_Pin        GET_PIN(E, 8)
+#define ADXL372_INT1_PIN        GET_PIN(E, 8)
 #endif
 
 #define GNSS_PWRON_PIN          GET_PIN(E, 0)

@@ -101,7 +101,6 @@ rt_timer_check
 rt_system_scheduler_init
 rt_system_scheduler_start
 rt_schedule
-rt_scheduler_do_irq_switch
 rt_signal_mask
 rt_signal_unmask
 rt_signal_install
@@ -186,11 +185,7 @@ rt_spi_transfer
 rt_spi_sendrecv8
 rt_spi_sendrecv16
 rt_spi_transfer_message
-rt_qspi_configure
-rt_qspi_bus_register
-rt_qspi_transfer_message
-rt_qspi_send_then_recv
-rt_qspi_send
+at_vprintfln
 at_client_init
 at_client_get
 at_client_get_first
