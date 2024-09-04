@@ -8,7 +8,7 @@
 #include "data_save_as_file.h"
 
 #define DBG_TAG "DATASAVE"
-#define DBG_LVL DBG_INFO
+#define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
 // 检查文件名是否符合时间戳格式
@@ -54,9 +54,10 @@ static long long string_to_long_long(const char *timestamp_str) {
 }
 
 // 生成时间戳文件名
-static void generate_timestamp_filename(char *filename) {
+static void generate_timestamp_filename(struct FileSystem *fs, char *filename) {
+    rt_strcpy(filename, fs->base_dir);
     time_t now = time(NULL);
-    strftime(filename, FILE_NAME_MAX_LEN, TIMESTAMP_FORMAT, localtime(&now));
+    strftime(filename + rt_strlen(fs->base_dir), FILE_NAME_MAX_LEN, TIMESTAMP_FORMAT, localtime(&now));
 }
 
 // 初始化文件系统
@@ -69,7 +70,7 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
     long long oldest_time = 0x0FFFFFFFFFFFFFFF;
     long long latest_time = 0;
 
-    if ((dir = opendir("/")) != NULL) {
+    if ((dir = opendir(fs->base_dir)) != NULL) {
         while ((ent = readdir(dir)) != NULL) {
             // 检查文件名是否符合时间戳格式
             if (is_valid_timestamp_filename(ent->d_name)) {
@@ -95,16 +96,27 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
 
     rt_memset(fs->oldest_file_name, 0, FILE_NAME_MAX_LEN);
     rt_memset(fs->latest_file_name, 0, FILE_NAME_MAX_LEN);
-    rt_strncpy(fs->oldest_file_name, oldest_file_name, rt_strlen(oldest_file_name));
-    rt_strncpy(fs->latest_file_name, latest_file_name, rt_strlen(latest_file_name));
+
+    if (rt_strlen(oldest_file_name) > 0) {
+        rt_strncpy(fs->oldest_file_name, fs->base_dir, FILE_NAME_MAX_LEN);
+        rt_strncpy(fs->oldest_file_name + rt_strlen(fs->base_dir), oldest_file_name, rt_strlen(oldest_file_name));
+    }
+
+    if (rt_strlen(latest_file_name) > 0) {
+        rt_strncpy(fs->latest_file_name, fs->base_dir, FILE_NAME_MAX_LEN);
+        rt_strncpy(fs->latest_file_name + rt_strlen(fs->base_dir), latest_file_name, rt_strlen(latest_file_name));
+    }
 }
 
-void data_save_as_file_init(struct FileSystem *fs, int single_file_size_limit) {
+void data_save_as_file_init(struct FileSystem *fs, int single_file_size_limit, char *base_dir) {
     data_save_as_file_info_refresh(fs);
     if(single_file_size_limit) {
         fs->single_file_size_limit = single_file_size_limit;
     } else {
         fs->single_file_size_limit = SINGLE_FILE_SIZE_LIMIT_DFT;
+    }
+    if (base_dir) {
+        rt_strncpy(fs->base_dir, base_dir, FILE_NAME_MAX_LEN);
     }
 }
 
@@ -167,9 +179,10 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
     if((latest_file_name = get_latest_file_name(fs))) {
         latest_file_size = get_file_size(latest_file_name);
     }
+    LOG_D("latest_file_name: %s", latest_file_name);
 
     // 检查是否有足够的空闲空间
-    int free_blocks = check_free_space("/");
+    int free_blocks = check_free_space(fs->base_dir);
     if (free_blocks <= MIN_FREE_BLOCKS) {
         delete_oldest_file(fs); // 删除最早的文件
     }
@@ -177,7 +190,7 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
     // 判断是否需要新建文件
     if (latest_file_name == NULL || (!disable_single_file_size_limit && (latest_file_size + length > fs->single_file_size_limit))) {
         char filename[FILE_NAME_MAX_LEN] = {0};
-        generate_timestamp_filename(filename);
+        generate_timestamp_filename(fs, filename);
 
         // 创建新文件
         LOG_D("++ Creating file: %s", filename);
@@ -253,7 +266,7 @@ static void del_files() {
 static void data_save_as_file_test() {
     struct FileSystem fs;
 
-    data_save_as_file_init(&fs, 0);
+    data_save_as_file_init(&fs, 0, "/log/");
     
     rt_memset(data_buffer, '1', 1024);
 
@@ -271,4 +284,4 @@ static void data_save_as_file_test() {
     }
 }
 
-// MSH_CMD_EXPORT(data_save_as_file_test, data save as file test);
+MSH_CMD_EXPORT(data_save_as_file_test, data save as file test);
