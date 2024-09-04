@@ -18,22 +18,26 @@
 #define CUR_ADC_CHANNEL 1
 #define VCAT_ADC_CHANNEL 2
 #define VBAT_ADC_CHANNEL RT_ADC_INTERN_CH_VBAT
+static rt_adc_device_t adc_dev;
+
 
 static rt_err_t adc_read_channel_vol(rt_int8_t channel, rt_uint32_t *value)
 {
     rt_err_t res;
-    rt_adc_device_t adc_dev;
 
-    adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
-    LOG_E("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
-    res = !adc_dev ? RT_ERROR : RT_EOK;
-    if (res != RT_EOK)
+    if (adc_dev == RT_NULL)
     {
-        return res;
+        adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
+        // LOG_E("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
+        res = !adc_dev ? RT_ERROR : RT_EOK;
+        if (res != RT_EOK)
+        {
+            return res;
+        }
     }
 
     res = rt_adc_enable(adc_dev, channel);
-    LOG_E("rt_adc_enable %s %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
+    // LOG_E("rt_adc_enable %s %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
     if (res != RT_EOK)
     {
         return res;
@@ -42,7 +46,7 @@ static rt_err_t adc_read_channel_vol(rt_int8_t channel, rt_uint32_t *value)
     *value = rt_adc_read(adc_dev, channel);
 
     res = rt_adc_disable(adc_dev, channel);
-    LOG_E("rt_adc_disable %s %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
+    // LOG_E("rt_adc_disable %s %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
 
     return res;
 }
@@ -66,8 +70,13 @@ static rt_err_t adc_read_vol(rt_int8_t channel, float *value)
         return res;
     }
 
-    LOG_D("VREFINT_CAL=%d Channel=%d Val=%d VREFINT_VAL=%d", VREFINT_CAL, channel, c_val, vrefint_val);
-    *value = 3.0 * VREFINT_CAL * c_val / (vrefint_val * ((1 << 14) - 1));
+    char msg[64];
+    float Vref_val = (3.0 * VREFINT_CAL / vrefint_val);
+    rt_sprintf(msg, "Calculate VREF+ 3.0 * %d / %d = %f", VREFINT_CAL, vrefint_val, Vref_val);
+    LOG_D(msg);
+
+    LOG_D("Channel=%d ADC Val=%d", channel, c_val);
+    *value = (3.0 * VREFINT_CAL / vrefint_val) * ((float)c_val / ((1 << 14) - 1));
 
     return res;
 }
@@ -152,16 +161,16 @@ static void test_adc_read(int argc, char *argv[])
     char msg[64];
 
     res = adc_read_vol(CUR_ADC_CHANNEL, &vol);
-    rt_sprintf(msg, "ADC READ CUR_ADC_CHANNEL=%d vol=%f", res, vol);
+    rt_sprintf(msg, "ADC READ CUR_ADC_CHANNEL %s vol=%f", res == RT_EOK ? "success" : "failed", res, vol);
     LOG_D(msg);
 
     res = adc_read_vol(VCAT_ADC_CHANNEL, &vol);
-    rt_sprintf(msg, "ADC READ VCAT_ADC_CHANNEL=%d vol=%f", res, vol);
+    rt_sprintf(msg, "ADC READ VCAT_ADC_CHANNEL %s vol=%f", res == RT_EOK ? "success" : "failed", res, vol);
     LOG_D(msg);
 
     res = adc_read_vol(VBAT_ADC_CHANNEL, &vol);
     vol *= 4;
-    rt_sprintf(msg, "ADC READ VBAT_ADC_CHANNEL=%d vol=%f", res, vol);
+    rt_sprintf(msg, "ADC READ VBAT_ADC_CHANNEL %s vol=%f", res == RT_EOK ? "success" : "failed", res, vol);
     LOG_D(msg);
 }
 // MSH_CMD_EXPORT(test_adc_read, test adc read);
