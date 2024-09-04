@@ -146,8 +146,8 @@ int collect_sensor_data()
         rt_uint16_t vbat_vol = 0;
         res = cur_vol_read(&cur_vol);
         LOG_D("cur_vol_read %s, cur_vol %dmv", res == RT_EOK ? "success" : "failed", cur_vol);
-        res = vcat_vol_read(&vcat_vol);
-        LOG_D("vcat_vol_read %s, vcat_vol %dmv", res == RT_EOK ? "success" : "failed", vcat_vol);
+        res = vcap_vol_read(&vcat_vol);
+        LOG_D("vcap_vol_read %s, vcat_vol %dmv", res == RT_EOK ? "success" : "failed", vcat_vol);
         res = vbat_vol_read(&vbat_vol);
         LOG_D("vbat_vol_read %s, vbat_vol %dmv", res == RT_EOK ? "success" : "failed", vbat_vol);
         sensor_data.cur_vol = cur_vol;

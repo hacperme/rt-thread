@@ -9,6 +9,7 @@
 
 #include "voltage.h"
 #include "board.h"
+#include "stm32u5xx_hal.h"
 
 #define DBG_SECTION_NAME "VOLTAGE"
 #define DBG_LEVEL DBG_LOG
@@ -16,9 +17,37 @@
 
 #define ADC_NAME "adc1"
 #define CUR_ADC_CHANNEL 1
-#define VCAT_ADC_CHANNEL 2
+#define VCAP_ADC_CHANNEL 2
 #define VBAT_ADC_CHANNEL RT_ADC_INTERN_CH_VBAT
 static rt_adc_device_t adc_dev;
+
+static rt_err_t verfbuf_config(void)
+{
+    rt_err_t res;
+    rt_tick_t stime, etime;
+    __HAL_RCC_VREF_CLK_ENABLE();
+    stime = rt_tick_get_millisecond();
+    HAL_SYSCFG_VREFBUF_VoltageScalingConfig(SYSCFG_VREFBUF_VOLTAGE_SCALE3);
+    HAL_SYSCFG_VREFBUF_HighImpedanceConfig(SYSCFG_VREFBUF_HIGH_IMPEDANCE_DISABLE);
+    rt_uint16_t cnt = 500;
+    HAL_StatusTypeDef ret;
+    do {
+        ret = HAL_SYSCFG_EnableVREFBUF();
+        cnt--;
+    } while (ret != HAL_OK && cnt > 0);
+    etime = rt_tick_get_millisecond();
+    
+    LOG_D("HAL_SYSCFG_EnableVREFBUF ret=%d", ret);
+    res = ret == HAL_OK ? RT_EOK : RT_ERROR;
+    if (res != RT_EOK)
+    {
+        HAL_SYSCFG_DisableVREFBUF();
+        HAL_SYSCFG_VREFBUF_VoltageScalingConfig(SYSCFG_VREFBUF_VOLTAGE_SCALE0);
+        HAL_SYSCFG_VREFBUF_HighImpedanceConfig(SYSCFG_VREFBUF_HIGH_IMPEDANCE_ENABLE);
+        __HAL_RCC_VREF_CLK_DISABLE();
+    }
+    return res;
+}
 
 
 static rt_err_t adc_read_channel_vol(rt_int8_t channel, rt_uint32_t *value)
@@ -110,31 +139,41 @@ static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint16_t *value)
 rt_err_t cur_vol_read(rt_uint16_t *value)
 {
     rt_err_t res = RT_EOK;
-    res = adc_vol_read((rt_int8_t)CUR_ADC_CHANNEL, value);
+    // res = adc_vol_read((rt_int8_t)CUR_ADC_CHANNEL, value);
+    float vol;
+    res = adc_read_vol(CUR_ADC_CHANNEL, &vol);
+    if (res == RT_EOK)
+    {
+        *value = (rt_uint16_t)(vol * 1000);
+    }
     return res;
 }
 
-rt_err_t vcat_vol_read(rt_uint16_t *value)
+rt_err_t vcap_vol_read(rt_uint16_t *value)
 {
     rt_err_t res = RT_EOK;
-    res = adc_vol_read((rt_int8_t)VCAT_ADC_CHANNEL, value);
+    // res = adc_vol_read((rt_int8_t)VCAP_ADC_CHANNEL, value);
+    float vol;
+    res = adc_read_vol(VCAP_ADC_CHANNEL, &vol);
+    if (res == RT_EOK)
+    {
+        *value = (rt_uint16_t)(vol * 1000);
+    }
     return res;
 }
 
 rt_err_t vbat_vol_read(rt_uint16_t *value)
 {
     rt_err_t res = RT_EOK;
-    res = adc_vol_read((rt_int8_t)VBAT_ADC_CHANNEL, value);
-    *value *= 4;
-    // TODO: Delete test code.
-    *value = *value / 3 * 2;
-    return res;
-}
+    // res = adc_vol_read((rt_int8_t)VBAT_ADC_CHANNEL, value);
+    // *value *= 4;
 
-rt_err_t vrefint_vol_read(rt_uint16_t *value)
-{
-    rt_err_t res = RT_EOK;
-    res = adc_vol_read((rt_int8_t)RT_ADC_INTERN_CH_VREF, value);
+    float vol;
+    res = adc_read_vol(VBAT_ADC_CHANNEL, &vol);
+    if (res == RT_EOK)
+    {
+        *value = (rt_uint16_t)(vol * 4 * 1000);
+    }
     return res;
 }
 
@@ -142,15 +181,18 @@ rt_err_t vrefint_vol_read(rt_uint16_t *value)
 static void test_read_voltage(int argc, char *argv[])
 {
     rt_err_t res;
-    rt_uint16_t cur_vol = 0, vcat_vol = 0, vbat_vol = 0, vrefint_vol = 0;
-    res = cur_vol_read(&cur_vol);
-    LOG_D("cur_vol_read %s, cur_vol %dmv", res == RT_EOK ? "success" : "failed", cur_vol);
-    res = vcat_vol_read(&vcat_vol);
-    LOG_D("vcat_vol_read %s, vcat_vol %dmv", res == RT_EOK ? "success" : "failed", vcat_vol);
-    res = vbat_vol_read(&vbat_vol);
-    LOG_D("vbat_vol_read %s, vbat_vol %dmv", res == RT_EOK ? "success" : "failed", vbat_vol);
-    // res = vrefint_vol_read(&vrefint_vol);
-    // LOG_D("vrefint_vol_read %s, vrefint_vol %d", res == RT_EOK ? "success" : "failed", vrefint_vol);
+    res = verfbuf_config();
+    LOG_D("verfbuf_config %s", res == RT_EOK ? "success" : "failed");
+    if (res == RT_EOK)
+    {
+        rt_uint16_t cur_vol = 0, vcap_vol = 0, vbat_vol = 0, vrefint_vol = 0;
+        res = cur_vol_read(&cur_vol);
+        LOG_D("cur_vol_read %s, cur_vol %dmv", res == RT_EOK ? "success" : "failed", cur_vol);
+        res = vcap_vol_read(&vcap_vol);
+        LOG_D("vcap_vol_read %s, vcap_vol %dmv", res == RT_EOK ? "success" : "failed", vcap_vol);
+        res = vbat_vol_read(&vbat_vol);
+        LOG_D("vbat_vol_read %s, vbat_vol %dmv", res == RT_EOK ? "success" : "failed", vbat_vol);
+    }
 }
 // MSH_CMD_EXPORT(test_read_voltage, TEST READ voltage);
 
@@ -164,8 +206,8 @@ static void test_adc_read(int argc, char *argv[])
     rt_sprintf(msg, "ADC READ CUR_ADC_CHANNEL %s vol=%f", res == RT_EOK ? "success" : "failed", res, vol);
     LOG_D(msg);
 
-    res = adc_read_vol(VCAT_ADC_CHANNEL, &vol);
-    rt_sprintf(msg, "ADC READ VCAT_ADC_CHANNEL %s vol=%f", res == RT_EOK ? "success" : "failed", res, vol);
+    res = adc_read_vol(VCAP_ADC_CHANNEL, &vol);
+    rt_sprintf(msg, "ADC READ VCAP_ADC_CHANNEL %s vol=%f", res == RT_EOK ? "success" : "failed", res, vol);
     LOG_D(msg);
 
     res = adc_read_vol(VBAT_ADC_CHANNEL, &vol);
