@@ -410,15 +410,17 @@ static void test_esp32_download(int argc, char **argv)
     {
         mode = atoi(argv[1]);
     }
-
-    res = esp32_download_pin_enable(mode);
-    LOG_D("esp32_download_pin_enable(%d) %s", mode, res == RT_EOK ? "success" : "failed");
-
-    rt_thread_mdelay(500);
-
-    res = esp32_power_on();
-    LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
+    if (mode == 0)
+    {
+        res = esp32_power_on();
+        LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
+    }
+    else
+    {
+        res = esp32_start_download();
+        LOG_D("esp32_start_download %s", res == RT_EOK ? "success" : "failed");
+    }
 }
 
-// MSH_CMD_EXPORT(test_esp32_download, test esp32 donwload);
+MSH_CMD_EXPORT(test_esp32_download, test esp32 donwload);
 #endif

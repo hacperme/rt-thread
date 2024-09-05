@@ -91,28 +91,22 @@ static void test_esp32(void)
     LOG_D("esp32_init res=%d", res);
     char send_buff[32] = "TEST ESP32 UART RW.";
 
-    rt_uint8_t mode = 1;
-    res = esp32_download_pin_enable(mode);
-    LOG_D("esp32_download_pin_enable(%d) %s", mode, res == RT_EOK ? "success" : "failed");
-
-    rt_thread_mdelay(500);
-
     res = esp32_power_on();
     LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
 
-    // if (res == RT_EOK)
-    // {
-    //     while (1)
-    //     {
-    //         ret = rt_device_write(ESP32_SERIAL, 0, send_buff, sizeof(send_buff));
-    //         res = ret == sizeof(send_buff) ? RT_EOK : RT_ERROR;
-    //         LOG_D("ESP32 Send Msg %s.", res == RT_EOK ? "success" : "failed");
-    //         rt_thread_mdelay(1000);
-    //     }
-    // }
+    if (res == RT_EOK)
+    {
+        while (1)
+        {
+            ret = rt_device_write(ESP32_SERIAL, 0, send_buff, sizeof(send_buff));
+            res = ret == sizeof(send_buff) ? RT_EOK : RT_ERROR;
+            LOG_D("ESP32 Send Msg %s.", res == RT_EOK ? "success" : "failed");
+            rt_thread_mdelay(1000);
+        }
+    }
 }
 
-// MSH_CMD_EXPORT(test_esp32, test esp32);
+MSH_CMD_EXPORT(test_esp32, test esp32);
 
 #define UART5_RX_PIN        GET_PIN(D, 2)
 #define UART5_TX_PIN        GET_PIN(C, 12)
