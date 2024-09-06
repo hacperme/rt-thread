@@ -24,6 +24,11 @@ static rt_device_t wdg_dev = RT_NULL;
 static struct rt_thread WDG_THD;
 static char WDG_THD_STACK[WDG_THD_STACK_SIZE];
 
+#define wdgq_pool_size 128
+#define wdgq_msg_size  8
+static struct rt_messagequeue wdgq;
+static char wdgq_pool[wdgq_pool_size] = {0};
+
 static void feed_rtwdg(void)
 {
     rt_err_t res = rt_device_control(wdg_dev, RT_DEVICE_CTRL_WDT_KEEPALIVE, RT_NULL);
@@ -117,24 +122,55 @@ static void test_show_rrc_flag(void)
     __HAL_RCC_CLEAR_RESET_FLAGS();
 }
 
+MSH_CMD_EXPORT(test_show_rrc_flag, test show rrc flag);
+
 #include "watch_dog.h"
 static void test_feed_wdg_soft(void *args)
 {
     wdg_error_code_e res;
     rt_uint8_t wdg_id;
     rt_uint8_t cnt = 10;
-    res = wdg_create_soft(&wdg_id, 2000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
-    LOG_D("wdg_create_soft %s wdg_id=%d.", RT_RES_MSG(res), wdg_id);
-    if (res != WDG_NO_ERROR)
+    rt_uint8_t *params = (rt_uint8_t *)args;
+    if (*params == 0)
     {
-        return;
+        res = wdg_create_soft(&wdg_id, 2000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
+        LOG_D("wdg_create_soft %s wdg_id=%d.", RT_RES_MSG(res), wdg_id);
+        if (res != WDG_NO_ERROR)
+        {
+            return;
+        }
+        while (cnt > 0)
+        {
+            res = wdg_feed_soft(wdg_id);
+            LOG_D("wdg_feed_soft(%d) %s.", wdg_id, RT_RES_MSG(res));
+            rt_thread_mdelay(1500);
+            cnt--;
+        }
     }
-    while (cnt > 0)
+    else if (*params == 1)
     {
-        res = wdg_feed_soft(wdg_id);
-        LOG_D("wdg_feed_soft(%d) %s.", wdg_id, RT_RES_MSG(res));
-        rt_thread_mdelay(1500);
-        cnt--;
+        res = wdg_create_soft(&wdg_id, 2000, BLOCK_TYPE_MSGQ, &wdgq);
+        // res = wdg_create_soft(&wdg_id, 2000, BLOCK_TYPE_MSGQ, RT_NULL);
+        LOG_D("wdg_create_soft %s wdg_id=%d.", RT_RES_MSG(res), wdg_id);
+        if (res != WDG_NO_ERROR)
+        {
+            return;
+        }
+        rt_ssize_t recv_size = 0;
+        char recv_msg[wdgq_msg_size] = {0};
+        while (cnt > 0)
+        {
+            rt_memset(recv_msg, 0, wdgq_msg_size);
+            recv_size = rt_mq_recv(&wdgq, recv_msg, wdgq_msg_size, 2500);
+            if (recv_size > 0)
+            {
+                LOG_D("rt_mq_recv msg_size=%d, msg=%s", recv_size, recv_msg);
+            }
+            res = wdg_feed_soft(wdg_id);
+            LOG_D("wdg_feed_soft(%d) %s.", wdg_id, RT_RES_MSG(res));
+            cnt--;
+        }
+        rt_mq_detach(&wdgq);
     }
     res = wdg_destroy_soft(wdg_id);
     LOG_D("wdg_destroy_soft(wdg_id) %s.", RT_RES_MSG(res));
@@ -143,6 +179,13 @@ static void test_feed_wdg_soft(void *args)
 static rt_err_t test_watch_dog(void)
 {
     rt_err_t res;
+
+    res = rt_mq_init(&wdgq, "wdgq", wdgq_pool, wdgq_msg_size, wdgq_pool_size, RT_IPC_FLAG_PRIO);
+    LOG_D("rt_mq_init wdgq %s", RT_RES_MSG(res));
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
     wdg_dev = rt_device_find(WDT_DEVICE_NAME);
     res = wdg_dev != RT_NULL ? RT_EOK : RT_ERROR;
@@ -159,7 +202,8 @@ static rt_err_t test_watch_dog(void)
     res = rt_device_control(wdg_dev, RT_DEVICE_CTRL_WDT_START, RT_NULL);
     LOG_D("RT_DEVICE_CTRL_WDT_START %s.", RT_RES_MSG(res));
 
-    rt_thread_t test_thd = rt_thread_create("testwdg", test_feed_wdg_soft, RT_NULL, 0x800, 10, 20);
+    rt_uint8_t args = 1;
+    rt_thread_t test_thd = rt_thread_create("testwdg", test_feed_wdg_soft, &args, 0x800, 10, 20);
     res = test_thd == RT_NULL ? RT_ERROR : RT_EOK;
     LOG_D("rt_thread_create testwdg %s.", RT_RES_MSG(res));
     if (res == RT_ERROR)
