@@ -71,7 +71,7 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
             // 检查文件名是否符合时间戳格式
             if (is_valid_timestamp_filename(ent->d_name)) {
                 rt_memset(tmp, 0, FILE_NAME_MAX_LEN);
-                rt_strncpy(tmp, ent->d_name, strlen(ent->d_name));
+                rt_strncpy(tmp, ent->d_name, rt_strlen(ent->d_name));
                 long long current_time = string_to_long_long(tmp);
 
                 if (current_time < oldest_time) {

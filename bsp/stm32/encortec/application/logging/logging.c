@@ -25,7 +25,7 @@ void app_log_deinit(void)
 {
     if(app_log_initilized) {
         rt_mutex_detach(&app_log_mutex);
-        memset(&app_log_mutex, 0, sizeof(app_log_mutex));
+        rt_memset(&app_log_mutex, 0, sizeof(app_log_mutex));
         app_log_initilized = 0;
     }
 }

@@ -41,6 +41,8 @@ LFLAGS = DEVICE + f' -Wl,--gc-sections,-Map={TARGET_NAME}.map,-cref,-u,main -T b
 CPATH = ''
 LPATH = ''
 
+CFLAGS += " -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc -Wl,--wrap=free"
+
 if BUILD == 'debug':
     CFLAGS += ' -O0 -gdwarf-2 -g'
     AFLAGS += ' -gdwarf-2'

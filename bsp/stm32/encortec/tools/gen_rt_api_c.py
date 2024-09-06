@@ -69,6 +69,7 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
 
             param_names_str = ', '.join(param_names)
 
+            return_type = return_type.strip()
             func_def = f'{return_type} {func_name}({params}) {{\n'
             if func_name == 'rt_kprintf':
                 func_impl = """#if APP_LOG_BUF_SIZE
@@ -122,7 +123,7 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
     client->last_cmd_len = at_vprintfln(client->device, client->send_buf, client->send_bufsz, cmd_expr, args);
     if (client->last_cmd_len > 2)
     {
-        client->last_cmd_len -= 2; /* "\r\n" */
+        client->last_cmd_len -= 2; /* \"\\r\\n\" */
     }
     va_end(args);
 
@@ -188,6 +189,26 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
     va_end(args);
 
     return resp_args_num;\n}\n
+"""
+            elif func_name == "rt_sprintf":
+                func_impl = """    rt_int32_t n = 0;
+    va_list arg_ptr;
+
+    va_start(arg_ptr, format);
+    n = rt_vsprintf(buf, format, arg_ptr);
+    va_end(arg_ptr);
+
+    return n;\n}\n
+"""
+            elif func_name == "rt_snprintf":
+                func_impl = """    rt_int32_t n = 0;
+    va_list args;
+
+    va_start(args, format);
+    n = rt_vsnprintf(buf, size, format, args);
+    va_end(args);
+
+    return n;\n}\n
 """
             else:
                 func_impl = f'    return (({func_type})({func_name}_addr))({param_names_str});\n}}\n\n'

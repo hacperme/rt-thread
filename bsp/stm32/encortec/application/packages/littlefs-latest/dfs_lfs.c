@@ -490,7 +490,7 @@ static int _dfs_lfs_unlink(struct dfs_filesystem* dfs, const char* path)
 
 static void _dfs_lfs_tostat(struct stat* st, struct lfs_info* info, time_t mtime)
 {
-    memset(st, 0, sizeof(struct stat));
+    rt_memset(st, 0, sizeof(struct stat));
 
     /* convert to dfs stat structure */
     st->st_dev = 0;

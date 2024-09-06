@@ -24,7 +24,17 @@ env = Environment(
 )
 env.PrependENVPath("PATH", rtconfig.EXEC_PATH)
 
-cppdefines = ["STM32U535xx"]
+cppdefines = [
+    "RT_USING_LIBC",
+    "RT_USING_NEWLIBC",
+    "STM32U535xx",
+    "USE_HAL_DRIVER",
+    "_POSIX_C_SOURCE",
+    "__RTTHREAD__",
+    "__RT_IPC_SOURCE__",
+    "__RT_KERNEL_SOURCE__",
+    "gcc",
+]
 env.Append(CPPDEFINES=cppdefines)
 
 # Add include directories to the search path
@@ -32,21 +42,34 @@ CPPPATH = [
     SDK_ROOT,
     os.path.join(SDK_ROOT, "common"),
     os.path.join(RTT_ROOT, "include"),
-    os.path.join(RTT_ROOT, "components", "finsh"),
-    os.path.join(RTT_ROOT, "components/libc/compilers/common/include"),
-    # os.path.join(RTT_ROOT, "components/libc/compilers/common/extension"),
-    os.path.join(RTT_ROOT, "components/drivers/hwcrypto"),
+    os.path.join(RTT_ROOT, "libcpu/arm/common"),
+    os.path.join(RTT_ROOT, "libcpu/arm/cortex-m33"),
     os.path.join(RTT_ROOT, "components/drivers/include"),
+    os.path.join(RTT_ROOT, "components/drivers/hwcrypto"),
+    os.path.join(RTT_ROOT, "components/drivers/spi"),
+    os.path.join(RTT_ROOT, "components/finsh"),
+    os.path.join(RTT_ROOT, "components/dfs/dfs_v1/include"),
+    os.path.join(RTT_ROOT, "components/libc/compilers/common/include"),
+    os.path.join(RTT_ROOT, "components/libc/compilers/newlib"),
+    os.path.join(RTT_ROOT, "components/libc/cplusplus"),
+    os.path.join(RTT_ROOT, "components/libc/posix/io/epoll"),
+    os.path.join(RTT_ROOT, "components/libc/posix/io/eventfd"),
+    os.path.join(RTT_ROOT, "components/libc/posix/io/poll"),
+    os.path.join(RTT_ROOT, "components/libc/posix/ipc"),
+    os.path.join(RTT_ROOT, "components/mprotect"),
     os.path.join(RTT_ROOT, "components/net/at/include"),
-    os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/CMSIS/Include"),
-    os.path.join(RTT_ROOT, "bsp/stm32/libraries/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Include"),
     os.path.join(RTT_ROOT, "bsp/stm32/libraries/STM32U5xx_HAL/STM32U5xx_HAL_Driver/Inc"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Include"),
     os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/drivers"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/drivers/config"),
     os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/CMSIS/Include"),
     os.path.join(SDK_ROOT, "bootloader"),
     os.path.join(SDK_ROOT, "bootloader/board"),
+    os.path.join(SDK_ROOT, "bootloader/board/CubeMX_Config/Inc"),
     os.path.join(SDK_ROOT, "application", "rt_api"),
     os.path.join(SDK_ROOT, "application", "logging"),
+    os.path.join(SDK_ROOT, "application", "memory"),
 ]
 
 # driver_list = os.listdir(os.path.join(SDK_ROOT, "application/board/driver"))
@@ -101,6 +124,7 @@ app_c_files = Split("""
 main/main.c
 rt_api/rt_api.c
 logging/logging.c
+memory/memory.c
 """
 )
 

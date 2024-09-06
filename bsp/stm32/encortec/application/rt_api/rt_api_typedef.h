@@ -209,4 +209,21 @@ typedef const char *(*at_resp_get_line_api_ptr_t)(at_response_t resp, rt_size_t 
 typedef const char *(*at_resp_get_line_by_kw_api_ptr_t)(at_response_t resp, const char *keyword);
 typedef int (*at_resp_parse_line_args_api_ptr_t)(at_response_t resp, rt_size_t resp_line, const char *resp_expr, ...);
 typedef int (*at_resp_parse_line_args_by_kw_api_ptr_t)(at_response_t resp, const char *keyword, const char *resp_expr, ...);
+typedef int (*rt_vsprintf_api_ptr_t)(char *dest, const char *format, va_list arg_ptr);
+typedef int (*rt_sprintf_api_ptr_t)(char *buf, const char *format, ...);
+typedef int (*rt_snprintf_api_ptr_t)(char *buf, rt_size_t size, const char *format, ...);
+typedef void *(*rt_memset_api_ptr_t)(void *src, int c, rt_ubase_t n);
+typedef void *(*rt_memcpy_api_ptr_t)(void *dest, const void *src, rt_ubase_t n);
+typedef void *(*rt_memmove_api_ptr_t)(void *dest, const void *src, rt_size_t n);
+typedef rt_int32_t (*rt_memcmp_api_ptr_t)(const void *cs, const void *ct, rt_size_t count);
+typedef char *(*rt_strdup_api_ptr_t)(const char *s);
+typedef rt_size_t (*rt_strnlen_api_ptr_t)(const char *s, rt_ubase_t maxlen);
+typedef char *(*rt_strstr_api_ptr_t)(const char *str1, const char *str2);
+typedef rt_int32_t (*rt_strcasecmp_api_ptr_t)(const char *a, const char *b);
+typedef char *(*rt_strcpy_api_ptr_t)(char *dst, const char *src);
+typedef char *(*rt_strncpy_api_ptr_t)(char *dest, const char *src, rt_size_t n);
+typedef rt_int32_t (*rt_strncmp_api_ptr_t)(const char *cs, const char *ct, rt_size_t count);
+typedef rt_int32_t (*rt_strcmp_api_ptr_t)(const char *cs, const char *ct);
+typedef rt_size_t (*rt_strlen_api_ptr_t)(const char *src);
+typedef int (*gettimeofday_api_ptr_t)(struct timeval *tv, struct timezone *tz);
 #endif

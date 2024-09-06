@@ -54,7 +54,7 @@ static void startup(app_startup_params_t *app_startup_params) {
     copy_data();
     bss_fill_zero();
     if(app_startup_params) {
-        memcpy(&sg_app_startup_params, app_startup_params, sizeof(app_startup_params_t));
+        rt_memcpy(&sg_app_startup_params, app_startup_params, sizeof(app_startup_params_t));
     }
 }
 

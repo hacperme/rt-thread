@@ -39,7 +39,7 @@ lwgps_example(int argc, char *argv[]) {
     lwgps_init(&hgps);
 
     /* Process all input data */
-    lwgps_process(&hgps, gps_rx_data, strlen(gps_rx_data));
+    lwgps_process(&hgps, gps_rx_data, rt_strlen(gps_rx_data));
 
     /* Print messages */
     rt_kprintf("Valid status: %d\r\n", hgps.is_valid);

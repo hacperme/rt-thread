@@ -24,7 +24,8 @@ static char wdg_thread_stack[wdg_thread_stack_size] = {0};
 
 wdg_feed_impl_t wdg_feed_impl = RT_NULL;
 
-wdg_msg_t wdg_msg = {(void*)"wdg", strlen("wdg")};
+wdg_msg_t wdg_msg;
+static char default_wdg_msg[] = "wdg";
 
 static rt_bool_t _wdg_should_feed(void)
 {
@@ -164,6 +165,9 @@ static void _wdg_feed_task(void *args)
 wdg_error_code_e wdg_init(rt_uint32_t feed_cycle, wdg_feed_impl_t feed_impl)
 {
     rt_err_t res;
+    wdg_msg.wdg_msg = (void *)default_wdg_msg;
+    wdg_msg.msg_len = rt_strlen(default_wdg_msg);
+
     if (wdf_init_over == RT_TRUE)
     {
         return WDG_NO_ERROR;

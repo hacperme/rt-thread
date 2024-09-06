@@ -75,7 +75,7 @@ lwgps_example_stat(int argc, char *argv[]) {
     lwgps_init(&hgps);
 
     /* Process all input data */
-    lwgps_process(&hgps, gps_rx_data, strlen(gps_rx_data), callback);
+    lwgps_process(&hgps, gps_rx_data, rt_strlen(gps_rx_data), callback);
     rt_kprintf("error count is %d\r\n", err_cnt);
 }
 

@@ -200,7 +200,7 @@ static rt_err_t test_temp116(void)
 
             temp = -999.0;
             res = temp116_read_temperture(iic_dev, addrs[i], &temp);
-            sprintf(msg, "temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
+            rt_sprintf(msg, "temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
             // log_info(msg);
         }
         rt_thread_mdelay(500);

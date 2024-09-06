@@ -11,7 +11,6 @@
 #include "adxl372.h"
 #include "tools.h"
 #include "logging.h"
-// #include "stm32u5xx_hal_def.h"
 
 #define ADXL372_SPI_NAME "spi1"
 #define ADXL372_DEV_NAME "adxl372"
@@ -767,7 +766,7 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size)
         {
             // log_debug("acc_xyz_int16[%d]=%d",(i * 3 + j) * 2, acc_xyz_int16[(i * 3 + j) * 2]);
             acc_xyz_buff[i][j] = (float)acc_xyz_int16[(i * 3 + j) * 2] * ADXL372_SCALEG;
-            // sprintf(msg, "*acc_xyz_buff[%d][%d]=%f", i, j, acc_xyz_buff[i][j]);
+            // rt_sprintf(msg, "*acc_xyz_buff[%d][%d]=%f", i, j, acc_xyz_buff[i][j]);
             // log_debug(msg);
         }
     }
@@ -791,7 +790,7 @@ static void test_adxl372_measure(void)
         for (rt_uint16_t i = 0; i < size; i++)
         {
             rt_memset(msg, 0, 64);
-            sprintf(msg, "X=%f, Y=%f, Z=%f", ACC_XYZ_BUFF[i][0], ACC_XYZ_BUFF[i][1], ACC_XYZ_BUFF[i][2]);
+            rt_sprintf(msg, "X=%f, Y=%f, Z=%f", ACC_XYZ_BUFF[i][0], ACC_XYZ_BUFF[i][1], ACC_XYZ_BUFF[i][2]);
             log_debug(msg);
         }
     }
@@ -871,7 +870,7 @@ static void test_adxl372(int argc, char **argv)
             res = adxl372_query_xyz(&xyz);
             if (res == RT_EOK)
             {
-                // sprintf(msg, "zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
+                // rt_sprintf(msg, "zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
                 log_debug("zyx.x %f, zyx.y %f, zyx.z %f", xyz.x, xyz.y, xyz.z);
             }
             else

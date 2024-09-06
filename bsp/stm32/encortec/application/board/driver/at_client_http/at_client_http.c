@@ -62,15 +62,15 @@ static struct at_urc urc_table[] = {
 static void urc_func(struct at_client *client ,const char *data, rt_size_t size)
 {
     log_error("urc data : %s, size:%d\n", data, size);
-	if(strncmp(data, "+QIOPEN", strlen("+QIOPEN")) == 0 && data[11] == '0')
+	if(rt_strncmp(data, "+QIOPEN", rt_strlen("+QIOPEN")) == 0 && data[11] == '0')
 	{
 		log_error("send _qiopen sem\n");
 		rt_sem_release(_ql_at_sem._qiopen);
-	} else if (strncmp(data, "+QIURC", strlen("+QIURC")) == 0)
+	} else if (rt_strncmp(data, "+QIURC", rt_strlen("+QIURC")) == 0)
 	{
 		log_error("send _qiurc sem\n");
 		rt_sem_release(_ql_at_sem._qiurc);
-	} else if (strncmp(data, "RDY", strlen("RDY")) == 0) {
+	} else if (rt_strncmp(data, "RDY", rt_strlen("RDY")) == 0) {
         log_error("send _rdy sem\n");
         rt_sem_release(_ql_at_sem._rdy);
     }
@@ -103,7 +103,7 @@ static bool at_http_send_data(at_client_t client, at_response_t resp, const void
 {
 	
 	char qisend_data[64] = {0};
-	snprintf((char*)&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, data_size);
+	rt_snprintf((char*)&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, data_size);
 
 	if (at_obj_exec_cmd(client,resp, qisend_data) < 0) {
 		 log_error("qisend failed\n");
@@ -225,7 +225,7 @@ int at_http_upload_file_chunked(const char *filename)
 	fseek(file, 0, SEEK_SET);
 	
 	
-	snprintf((char*)&content_data, sizeof(content_data), 
+	rt_snprintf((char*)&content_data, sizeof(content_data), 
 		"--%s\r\n"
 		"Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"
 		"Content-Type: text/plain\r\n"
@@ -236,7 +236,7 @@ int at_http_upload_file_chunked(const char *filename)
 	
 
 	// 6. ���������� HTTP ����ͷ��
-    snprintf(header, sizeof(header),
+    rt_snprintf(header, sizeof(header),
             "POST /upload_sw.php HTTP/1.1\r\n"
              "Host: 112.31.84.164:8300\r\n"
              "Authorization: Basic dGVzdDp0ZXN0\r\n"
@@ -247,17 +247,17 @@ int at_http_upload_file_chunked(const char *filename)
              "Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"
              "Content-Type: text/plain\r\n"
              "\r\n",
-             strlen(content_data)+file_length, boundary, boundary, filename);
+             rt_strlen(content_data)+file_length, boundary, boundary, filename);
 
-	memset(buffer, 0, BUFFER_CHUNK_SIZE);
-	snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
-	//snprintf(&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, strlen(header) + file_length + strlen(buffer));
-	snprintf((char*)&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, strlen(header));
+	rt_memset(buffer, 0, BUFFER_CHUNK_SIZE);
+	rt_snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
+	//rt_snprintf(&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, rt_strlen(header) + file_length + rt_strlen(buffer));
+	rt_snprintf((char*)&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, rt_strlen(header));
 
 	
-	log_info("send2 %d : %s\n", strlen(qisend_data), qisend_data);
+	log_info("send2 %d : %s\n", rt_strlen(qisend_data), qisend_data);
 
-	AT_HTTP_SEND(client, send_resp, header, strlen(header));
+	AT_HTTP_SEND(client, send_resp, header, rt_strlen(header));
 
 	
 	 // 7. �ְ���ȡ�ļ�������
@@ -272,8 +272,8 @@ int at_http_upload_file_chunked(const char *filename)
     }
 
 	// 8. ���ͽ����� boundary �� HTTP ����β��
-    snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
-	AT_HTTP_SEND(client, send_resp, buffer, strlen(buffer));
+    rt_snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
+	AT_HTTP_SEND(client, send_resp, buffer, rt_strlen(buffer));
 
 	if(rt_sem_take(_ql_at_sem._qiurc, 10000000) != RT_EOK)
 	{
@@ -290,7 +290,7 @@ int at_http_upload_file_chunked(const char *filename)
         if (at_resp_parse_line_args(resp, 3, "%[^\r\n]", response_line) > 0) {
             log_error("Server response: %s\n", response_line);
 
-			if(!strstr(response_line, "200 OK"))
+			if(!rt_strstr(response_line, "200 OK"))
 			{
 				log_error("response is failed\n");
 				goto err;
@@ -353,7 +353,7 @@ static int creat_fs(char* filename, char *date) {
 	result = fwrite("start", sizeof(char), 5, file);
 
 	do{
-		result = fwrite(content, sizeof(char), strlen(content), file);
+		result = fwrite(content, sizeof(char), rt_strlen(content), file);
 		count += result;
 		if(count > 10240)
 		{
@@ -364,7 +364,7 @@ static int creat_fs(char* filename, char *date) {
     result = fwrite("end", sizeof(char), 3, file);
     
 //    // ����Ƿ�ɹ�д��
-//    if (result < strlen(content)) {
+//    if (result < rt_strlen(content)) {
 //        perror("Failed to write to file");
 //        fclose(file);
 //        return 1;
@@ -466,7 +466,7 @@ rt_err_t cat1_set_cfun_mode(int mode)
     }
 
     char s[20] = {0};
-    snprintf(s, 20, "AT+CFUN=%d", mode);
+    rt_snprintf(s, 20, "AT+CFUN=%d", mode);
     result = at_obj_exec_cmd(client, resp, s);
     if (result != RT_EOK) {
         log_error("nbiot cfun0 err: %d", result);
