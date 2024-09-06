@@ -7,9 +7,10 @@
  * @copyright : Copyright (c) 2024
  */
 #include "lpm.h"
-#include "board_pin.h"
 #include "tools.h"
 #include "logging.h"
+#include "stm32u5xx_hal_pwr.h"
+#include "stm32u5xx_hal_rcc.h"
 
 rt_device_t rtc_dev;
 
@@ -21,7 +22,7 @@ static void rtc_wakeup_irq_enable(void)
 
 static void pwrctrl_pwr_wkup3_irq(void *args)
 {
-    LOG_D("pwrctrl_pwr_wkup3_irq");
+    log_debug("pwrctrl_pwr_wkup3_irq");
 }
 
 static rt_err_t pwrctrl_pwr_wkup3_irq_enable(void)
@@ -29,13 +30,13 @@ static rt_err_t pwrctrl_pwr_wkup3_irq_enable(void)
     rt_err_t res;
     rt_pin_mode(PWRCTRL_PWR_WKUP3, PIN_MODE_INPUT_PULLDOWN);
     res = rt_pin_attach_irq(PWRCTRL_PWR_WKUP3, PIN_IRQ_MODE_RISING_FALLING, pwrctrl_pwr_wkup3_irq, RT_NULL);
-    LOG_D("rt_pin_attach_irq PWRCTRL_PWR_WKUP3 PIN_IRQ_MODE_RISING_FALLING res=%d", res);
+    log_debug("rt_pin_attach_irq PWRCTRL_PWR_WKUP3 PIN_IRQ_MODE_RISING_FALLING res=%d", res);
     if (res != RT_EOK)
     {
         return res;
     }
     res = rt_pin_irq_enable(PWRCTRL_PWR_WKUP3, PIN_IRQ_ENABLE);
-    LOG_D("rt_pin_irq_enable PWRCTRL_PWR_WKUP3 PIN_IRQ_ENABLE res=%d", res);
+    log_debug("rt_pin_irq_enable PWRCTRL_PWR_WKUP3 PIN_IRQ_ENABLE res=%d", res);
     /* Power harvster/tracker monitor wakeup pin irq enable. */
     if (res != RT_EOK)
     {
@@ -236,7 +237,7 @@ rt_uint8_t get_reset_source(void)
         }
     }
     __HAL_RCC_CLEAR_RESET_FLAGS();
-    wakeup_source_clear = 1;
+    reset_source_clear = 1;
     // Is BORRST  -- (wakeup_source & (1 << 0)) >> 0 == 1
     // Is OBLRST  -- (wakeup_source & (1 << 1)) >> 1 == 1
     // Is PINRST  -- (wakeup_source & (1 << 2)) >> 2 == 1
@@ -244,7 +245,7 @@ rt_uint8_t get_reset_source(void)
     // Is IWDGRST -- (wakeup_source & (1 << 4)) >> 4 == 1
     // Is WWDGRST -- (wakeup_source & (1 << 5)) >> 5 == 1
     // Is LPWRRST -- (wakeup_source & (1 << 6)) >> 6 == 1
-    return wakeup_source;
+    return reset_source;
 }
 
 static rt_uint8_t wakeup_source = 0;

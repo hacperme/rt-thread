@@ -34,7 +34,7 @@ CPPPATH = [
     os.path.join(RTT_ROOT, "include"),
     os.path.join(RTT_ROOT, "components", "finsh"),
     os.path.join(RTT_ROOT, "components/libc/compilers/common/include"),
-    os.path.join(RTT_ROOT, "components/libc/compilers/common/extension"),
+    # os.path.join(RTT_ROOT, "components/libc/compilers/common/extension"),
     os.path.join(RTT_ROOT, "components/drivers/hwcrypto"),
     os.path.join(RTT_ROOT, "components/drivers/include"),
     os.path.join(RTT_ROOT, "components/net/at/include"),
@@ -52,6 +52,7 @@ CPPPATH = [
 # driver_list = os.listdir(os.path.join(SDK_ROOT, "application/board/driver"))
 # driver_cpppath = [os.path.join(SDK_ROOT, "application/board/driver", i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, "application/board/driver", i))]
 driver_cpppath = [
+    os.path.join(SDK_ROOT, "application/board/driver/tools"),
     os.path.join(SDK_ROOT, "application/board/driver/adxl372"),
     os.path.join(SDK_ROOT, "application/board/driver/at_client_http"),
     os.path.join(SDK_ROOT, "application/board/driver/data_save_as_file"),
@@ -60,7 +61,6 @@ driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/hdc3021"),
     os.path.join(SDK_ROOT, "application/board/driver/lpm"),
     os.path.join(SDK_ROOT, "application/board/driver/tmp116"),
-    os.path.join(SDK_ROOT, "application/board/driver/tools"),
     os.path.join(SDK_ROOT, "application/board/driver/voltage"),
     os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
 ]
@@ -72,17 +72,25 @@ lwgps_cpp_path = [
     os.path.join(SDK_ROOT, "application/packages/lwgps-latest/lwgps/lwgps/src/include/lwgps"),
 ]
 lwgps_c_files = [
-    "lwgps-latest/*.c",
-    "lwgps-latest/lwgps/lwgps/src/lwgps/*.c",
+    "packages/lwgps-latest/lwgps2rtt.c",
+    "packages/lwgps-latest/lwgps/lwgps/src/lwgps/lwgps.c"
 ]
 CPPPATH += lwgps_cpp_path
 
 cjson_cpp_path = [os.path.join(SDK_ROOT, "application/packages/cJSON-v1.7.17")]
-cjson_c_files = ["cJSON-v1.7.17/*.c"]
+cjson_c_files = [
+    "packages/cJSON-v1.7.17/cJSON_Utils.c",
+    "packages/cJSON-v1.7.17/cJSON.c"
+]
 CPPPATH += cjson_cpp_path
 
 # littlefs_cpp_path = [os.path.join(SDK_ROOT, "application/packages/littlefs-latest")]
-# littlefs_c_files = ["littlefs-latest/*.c"]
+# littlefs_c_files = [
+#     "packages/littlefs-latest/dfs_lfs.c",
+#     "packages/littlefs-latest/lfs_crc.c",
+#     "packages/littlefs-latest/lfs_util.c",
+#     "packages/littlefs-latest/lfs.c"
+# ]
 # CPPPATH += littlefs_cpp_path
 
 env.Append(CPPPATH=CPPPATH)
@@ -98,6 +106,7 @@ logging/logging.c
 
 # driver_c_files = [os.path.join("board/driver", i, "%s.c" % i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, "application/board/driver", i))]
 driver_c_files = [
+    "board/driver/tools/tools.c",
     "board/driver/adxl372/adxl372.c",
     "board/driver/at_client_http/at_client_http.c",
     "board/driver/data_save_as_file/data_save_as_file.c",
@@ -106,7 +115,6 @@ driver_c_files = [
     "board/driver/hdc3021/hdc3021.c",
     "board/driver/lpm/lpm.c",
     "board/driver/tmp116/tmp116.c",
-    "board/driver/tools/tools.c",
     "board/driver/voltage/voltage.c",
     "board/driver/watch_dog/watch_dog.c",
 ]
