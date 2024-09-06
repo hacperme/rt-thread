@@ -516,15 +516,15 @@ static rt_err_t test_show_nmea_data(lwgps_t *gnss_data)
     {
         sprintf(msg, "GNSS Date: %d-%d-%d %d:%d:%d", gnss_data->year, gnss_data->month, gnss_data->date, 
                 gnss_data->hours, gnss_data->minutes, gnss_data->seconds);
-        log_debug(msg);
+        // log_debug(msg);
         sprintf(msg, "Valid status: %d", gnss_data->is_valid);
-        log_debug(msg);
+        // log_debug(msg);
         sprintf(msg, "Latitude: %f degrees", (float)gnss_data->latitude);
-        log_debug(msg);
+        // log_debug(msg);
         sprintf(msg, "Longitude: %f degrees", (float)gnss_data->longitude);
-        log_debug(msg);
+        // log_debug(msg);
         sprintf(msg, "Altitude: %f meters", (float)gnss_data->altitude);
-        log_debug(msg);
+        // log_debug(msg);
     }
     return res;
 }

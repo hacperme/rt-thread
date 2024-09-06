@@ -143,7 +143,7 @@ static rt_err_t test_hdc3021(void)
         // log_debug("hdc3021_soft_reset %s.", res != RT_EOK ? "failed" : "success");
         res = hdc3021_read_temp_humi(iic_dev, &temp, &humi);
         sprintf(msg, "hdc3021_read_temp_humi %s. temp=%f, humi=%f", res != RT_EOK ? "failed" : "success", temp, humi);
-        log_debug(msg);
+        // log_debug(msg);
         rt_thread_mdelay(1000);
     }
 
