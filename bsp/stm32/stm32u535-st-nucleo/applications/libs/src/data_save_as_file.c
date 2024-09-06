@@ -8,7 +8,7 @@
 #include "data_save_as_file.h"
 
 #define DBG_TAG "DATASAVE"
-#define DBG_LVL DBG_LOG
+#define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
 // 检查文件名是否符合时间戳格式
