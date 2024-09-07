@@ -27,7 +27,7 @@ rt_uint8_t XYZ_REGS[3][2] = {
 
 extern rt_err_t rt_hw_spi_device_attach(const char *bus_name, const char *device_name, rt_base_t cs_pin);
 
-__attribute__((weak)) void adxl372_inact_event_handler(void)
+__weak void adxl372_inact_event_handler(void)
 {
     log_debug("adxl372_inact_event_handler");
     adxl372_int1_pin_irq_disable();

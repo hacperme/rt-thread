@@ -21,7 +21,15 @@
 #define VBAT_ADC_CHANNEL RT_ADC_INTERN_CH_VBAT
 static rt_adc_device_t adc_dev;
 
-static rt_err_t verfbuf_config(void)
+static void verfbuf_disable(void)
+{
+    HAL_SYSCFG_DisableVREFBUF();
+    HAL_SYSCFG_VREFBUF_VoltageScalingConfig(SYSCFG_VREFBUF_VOLTAGE_SCALE0);
+    HAL_SYSCFG_VREFBUF_HighImpedanceConfig(SYSCFG_VREFBUF_HIGH_IMPEDANCE_ENABLE);
+    __HAL_RCC_VREF_CLK_DISABLE();
+}
+
+static rt_err_t verfbuf_enable(void)
 {
     rt_err_t res;
     rt_tick_t stime, etime;
@@ -41,14 +49,10 @@ static rt_err_t verfbuf_config(void)
     res = ret == HAL_OK ? RT_EOK : RT_ERROR;
     if (res != RT_EOK)
     {
-        HAL_SYSCFG_DisableVREFBUF();
-        HAL_SYSCFG_VREFBUF_VoltageScalingConfig(SYSCFG_VREFBUF_VOLTAGE_SCALE0);
-        HAL_SYSCFG_VREFBUF_HighImpedanceConfig(SYSCFG_VREFBUF_HIGH_IMPEDANCE_ENABLE);
-        __HAL_RCC_VREF_CLK_DISABLE();
+        verfbuf_disable();
     }
     return res;
 }
-
 
 static rt_err_t adc_read_channel_vol(rt_int8_t channel, rt_uint32_t *value)
 {
@@ -181,8 +185,8 @@ rt_err_t vbat_vol_read(rt_uint16_t *value)
 static void test_read_voltage(int argc, char *argv[])
 {
     rt_err_t res;
-    res = verfbuf_config();
-    LOG_D("verfbuf_config %s", res == RT_EOK ? "success" : "failed");
+    res = verfbuf_enable();
+    LOG_D("verfbuf_enable %s", res == RT_EOK ? "success" : "failed");
     if (res == RT_EOK)
     {
         rt_uint16_t cur_vol = 0, vcap_vol = 0, vbat_vol = 0, vrefint_vol = 0;
