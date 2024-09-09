@@ -1,9 +1,6 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-#define SOC_STM32U535RE
-#define BOARD_STM32U535_NUCLEO
-
 /* RT-Thread Kernel */
 
 #define RT_NAME_MAX 8
@@ -410,7 +407,7 @@
 
 /* end of Hardware Drivers Config */
 
-/* Encorteec Application Config */
+/* Encortec Application Config */
 
 /* Logging configuration */
 
@@ -426,6 +423,12 @@
 #define APP_LOG_USING_TS
 #define APP_LOG_BUF_SIZE 512
 /* end of Logging configuration */
-/* end of Encorteec Application Config */
+
+/* STM32 Platform */
+
+#define SOC_STM32U535VE
+#define BOARD_STM32U535_NUCLEO
+/* end of STM32 Platform */
+/* end of Encortec Application Config */
 
 #endif

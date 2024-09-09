@@ -28,23 +28,23 @@ if GetDepend(['RT_USING_MTD_NAND']):
 startup_path_prefix = SDK_LIB
 
 if rtconfig.PLATFORM in ['gcc']:
-    if GetDepend(["SOC_STM32U535RE"]):
+    if GetDepend(["SOC_STM32U535VE"]):
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u535xx.s']
     else:
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u545xx.s']
 elif rtconfig.PLATFORM in ['armcc', 'armclang']:
-    if GetDepend(["SOC_STM32U535RE"]):
+    if GetDepend(["SOC_STM32U535VE"]):
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/arm/startup_stm32u535xx.s']
     else:
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/arm/startup_stm32u545xx.s']
 elif rtconfig.PLATFORM in ['iccarm']:
-    if GetDepend(["SOC_STM32U535RE"]):
+    if GetDepend(["SOC_STM32U535VE"]):
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/iar/startup_stm32u535xx.s']
     else:
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/iar/startup_stm32u545xx.s']
 
 # You can select chips from the list above
-if GetDepend(["SOC_STM32U535RE"]):
+if GetDepend(["SOC_STM32U535VE"]):
     CPPDEFINES = ['STM32U535xx']
 else:
     CPPDEFINES = ['STM32U545xx']

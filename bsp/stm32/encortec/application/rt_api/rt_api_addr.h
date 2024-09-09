@@ -219,12 +219,12 @@
 #define rt_system_timer_init_addr 0x0801849D
 #define rt_system_timer_thread_init_addr 0x080184D9
 #define at_vprintfln_addr 0x080292F5
-#define rt_system_scheduler_init_addr 0x0802BA15
-#define rt_system_scheduler_start_addr 0x0802BA5D
-#define rt_schedule_addr 0x0802BA99
-#define rt_exit_critical_safe_addr 0x0802BE39
-#define rt_enter_critical_addr 0x0802BE4D
-#define rt_exit_critical_addr 0x0802BE89
-#define rt_critical_level_addr 0x0802BEE1
+#define rt_system_scheduler_init_addr 0x0802BAB9
+#define rt_system_scheduler_start_addr 0x0802BB01
+#define rt_schedule_addr 0x0802BB3D
+#define rt_exit_critical_safe_addr 0x0802BEDD
+#define rt_enter_critical_addr 0x0802BEF1
+#define rt_exit_critical_addr 0x0802BF2D
+#define rt_critical_level_addr 0x0802BF85
 
 #endif /* __ENCORTEC_FUNCTION_ADDRESSES_H */
