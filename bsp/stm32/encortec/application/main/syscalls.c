@@ -8,6 +8,7 @@
  */
 
 #include "rtthread.h"
+#include <reent.h>
 
 void* __wrap_malloc(size_t size)
 {
@@ -27,4 +28,17 @@ void* __wrap_realloc(void *ptr, size_t size)
 void __wrap_free(void* ptr)
 {
     return rt_free(ptr);
+}
+
+int _gettimeofday_r (struct _reent *reent, struct timeval *__tp, void *__tzp)
+{
+    int result;
+
+    result = gettimeofday(__tp, (struct timezone *)__tzp);
+    if (result != 0)
+    {
+        reent->_errno = EINVAL;
+    }
+
+    return result;
 }
