@@ -10,6 +10,7 @@
 #include "rtthread.h"
 #include "rtdevice.h"
 #include "board.h"
+#include "lpm.h"
 
 #define DBG_SECTION_NAME "WDT"
 #define DBG_LEVEL DBG_LOG
@@ -173,6 +174,7 @@ static void test_feed_wdg_soft(void *args)
         rt_mq_detach(&wdgq);
     }
     res = wdg_destroy_soft(wdg_id);
+    shut_down();
     LOG_D("wdg_destroy_soft(wdg_id) %s.", RT_RES_MSG(res));
 }
 
