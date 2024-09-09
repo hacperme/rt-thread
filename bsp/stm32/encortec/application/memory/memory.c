@@ -6,42 +6,25 @@
  * @Date: 2024-09-06 17:19:38
  * @copyright : Copyright (c) 2024
  */
-#include "rtthread.h"
-#include "memory.h"
 
-void * malloc(rt_size_t size)
+#include "rtthread.h"
+
+void* __wrap_malloc(size_t size)
 {
     return rt_malloc(size);
 }
 
-void free(void *ptr) {
-    rt_free(ptr);
-}
-
-void * realloc(void *ptr, rt_size_t newsize) {
-    return rt_realloc(ptr, newsize);
-}
-
-void * calloc(rt_size_t count, rt_size_t size) {
-    return rt_calloc(count, size);
-}
-
-caddr_t _sbrk(int increment)
+void* __wrap_calloc(size_t nitems, size_t size)
 {
-    return (caddr_t)-1;
+    return rt_calloc(nitems, size);
+}
 
-    // extern char __heap_end[];
-    // extern char __heap_start[];
+void* __wrap_realloc(void *ptr, size_t size)
+{
+    return rt_realloc(ptr, size);
+}
 
-    // static char *s_pHeapEnd = RT_NULL;
-
-    // if (!s_pHeapEnd)
-    //     s_pHeapEnd = __heap_start;
-
-    // if (s_pHeapEnd + increment > __heap_end)
-    //     return (caddr_t)-1;
-
-    // char *pOldHeapEnd = s_pHeapEnd;
-    // s_pHeapEnd += increment;
-    // return (caddr_t)pOldHeapEnd;
+void __wrap_free(void* ptr)
+{
+    return rt_free(ptr);
 }

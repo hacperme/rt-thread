@@ -340,6 +340,22 @@ void * rt_calloc(rt_size_t count, rt_size_t size) {
     return ((rt_calloc_api_ptr_t)(rt_calloc_addr))(count, size);
 }
 
+void * _malloc_r(struct _reent *ptr, size_t size) {
+    return ((_malloc_r_api_ptr_t)(_malloc_r_addr))(ptr, size);
+}
+
+void * _realloc_r(struct _reent *ptr, void *old, size_t newlen) {
+    return ((_realloc_r_api_ptr_t)(_realloc_r_addr))(ptr, old, newlen);
+}
+
+void * _calloc_r(struct _reent *ptr, size_t size, size_t len) {
+    return ((_calloc_r_api_ptr_t)(_calloc_r_addr))(ptr, size, len);
+}
+
+void _free_r(struct _reent *ptr, void *addr) {
+    return ((_free_r_api_ptr_t)(_free_r_addr))(ptr, addr);
+}
+
 void rt_memory_info(rt_size_t *total, rt_size_t *used, rt_size_t *max_used) {
     return ((rt_memory_info_api_ptr_t)(rt_memory_info_addr))(total, used, max_used);
 }

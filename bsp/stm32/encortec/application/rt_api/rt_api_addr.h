@@ -64,6 +64,10 @@
 #define rt_hwcrypto_crc_update_addr 0x0800A68F
 #define rt_hwcrypto_crc_cfg_addr 0x0800A6CB
 #define gettimeofday_addr 0x0800E085
+#define _malloc_r_addr 0x0800E35F
+#define _realloc_r_addr 0x0800E387
+#define _calloc_r_addr 0x0800E3B3
+#define _free_r_addr 0x0800E3DF
 #define at_create_resp_addr 0x0800E851
 #define at_delete_resp_addr 0x0800E8ED
 #define at_resp_set_info_addr 0x0800E925

@@ -80,6 +80,10 @@ rt_malloc
 rt_free
 rt_realloc
 rt_calloc
+_malloc_r
+_realloc_r
+_calloc_r
+_free_r
 rt_memory_info
 rt_vsnprintf
 rt_tick_get
