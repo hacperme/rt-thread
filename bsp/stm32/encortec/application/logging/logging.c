@@ -46,9 +46,8 @@ static void app_log_print_to_file(const char *fmt, ...)
 }
 #endif
 
-char ts_buf[20];
 char *get_ts(void) {
-    // return "20240808";
+    static char ts_buf[20];
     time_t cur_time;
     struct tm *time_now;
     time(&cur_time);
