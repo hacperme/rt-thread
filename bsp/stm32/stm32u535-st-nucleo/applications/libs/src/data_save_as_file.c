@@ -8,7 +8,7 @@
 #include "data_save_as_file.h"
 
 #define DBG_TAG "DATASAVE"
-#define DBG_LVL DBG_INFO
+#define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
 // 检查文件名是否符合时间戳格式
@@ -54,7 +54,7 @@ static long long string_to_long_long(const char *timestamp_str) {
 }
 
 // 生成时间戳文件名
-static void generate_timestamp_filename(struct FileSystem *fs, char *filename) {
+static void generate_timestamp_filename(char *filename) {
     time_t now = time(NULL);
     strftime(filename, FILE_NAME_MAX_LEN, TIMESTAMP_FORMAT, localtime(&now));
 }
@@ -69,7 +69,7 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
     long long oldest_time = 0x0FFFFFFFFFFFFFFF;
     long long latest_time = 0;
 
-    if ((dir = opendir("/")) != NULL) {
+    if ((dir = opendir(fs->base_dir)) != NULL) {
         while ((ent = readdir(dir)) != NULL) {
             // 检查文件名是否符合时间戳格式
             if (is_valid_timestamp_filename(ent->d_name)) {
@@ -79,13 +79,15 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
 
                 if (current_time < oldest_time) {
                     rt_memset(oldest_file_name, 0, FILE_NAME_MAX_LEN);
-                    rt_strncpy(oldest_file_name, ent->d_name, rt_strlen(ent->d_name));
+                    rt_strncpy(oldest_file_name, fs->base_dir, strlen(fs->base_dir));
+                    rt_strncpy(oldest_file_name + strlen(fs->base_dir), ent->d_name, rt_strlen(ent->d_name));
                     oldest_time = current_time;
                 }
 
                 if (current_time > latest_time) {
                     rt_memset(latest_file_name, 0, FILE_NAME_MAX_LEN);
-                    rt_strncpy(latest_file_name, ent->d_name, rt_strlen(ent->d_name));
+                    rt_strncpy(latest_file_name, fs->base_dir, strlen(fs->base_dir));
+                    rt_strncpy(latest_file_name + strlen(fs->base_dir), ent->d_name, rt_strlen(ent->d_name));
                     latest_time = current_time;
                 }
             }
@@ -99,13 +101,16 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
     rt_strncpy(fs->latest_file_name, latest_file_name, rt_strlen(latest_file_name));
 }
 
-void data_save_as_file_init(struct FileSystem *fs, int single_file_size_limit) {
-    data_save_as_file_info_refresh(fs);
+void data_save_as_file_init(struct FileSystem *fs, int single_file_size_limit, char *base_dir) {
     if(single_file_size_limit) {
         fs->single_file_size_limit = single_file_size_limit;
     } else {
         fs->single_file_size_limit = SINGLE_FILE_SIZE_LIMIT_DFT;
     }
+    if(base_dir) {
+        rt_strncpy(fs->base_dir, base_dir, rt_strlen(base_dir));
+    }
+    data_save_as_file_info_refresh(fs);
 }
 
 char *get_oldest_file_name(struct FileSystem *fs) {
@@ -177,8 +182,12 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
 
     // 判断是否需要新建文件
     if (latest_file_name == NULL || (!disable_single_file_size_limit && (latest_file_size + length > fs->single_file_size_limit))) {
+        char temp_filename[FILE_NAME_MAX_LEN] = {0};
+        generate_timestamp_filename(temp_filename);
+
         char filename[FILE_NAME_MAX_LEN] = {0};
-        generate_timestamp_filename(fs, filename);
+        rt_strncpy(filename, fs->base_dir, strlen(fs->base_dir));
+        rt_strncpy(filename + strlen(fs->base_dir), temp_filename, strlen(temp_filename));
 
         // 创建新文件
         LOG_D("++ Creating file: %s", filename);
@@ -225,9 +234,14 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
 void list_files(const char *path) {
     DIR *dir;
     struct dirent *ent;
+    char temp[FILE_NAME_MAX_LEN] = {0};
+    rt_kprintf("dir \"%s\" files:\r\n", path);
     if ((dir = opendir(path)) != NULL) {
         while ((ent = readdir(dir)) != NULL) {
-            rt_kprintf("%s    %d Bytes\r\n", ent->d_name, get_file_size(ent->d_name));
+            rt_memset(temp, 0, FILE_NAME_MAX_LEN);
+            rt_strncpy(temp, path, strlen(path));
+            rt_strncpy(temp + strlen(path), ent->d_name, strlen(ent->d_name));
+            rt_kprintf("%s    %d Bytes\r\n", temp, get_file_size(temp));
         }
         closedir(dir);
     }
@@ -254,14 +268,14 @@ static void del_files() {
 static void data_save_as_file_test() {
     struct FileSystem fs;
 
-    data_save_as_file_init(&fs, 0);
+    data_save_as_file_init(&fs, 0, "/data/");
     
     rt_memset(data_buffer, '1', 1024);
 
     while (1)
     {
         LOG_I("<<<<<<<<<<<< Before written to file");
-        list_files("/");
+        list_files(fs.base_dir);
         if (data_save_as_file(&fs, data_buffer, 1024, false) == 0) {
             LOG_I("Data saved successfully.");
         } else {

@@ -680,7 +680,7 @@ void main_business_entry(void)
     LOG_D("start tick ms: %d", start_tick_ms);
 
     sm_init();
-    data_save_as_file_init(&fs, 24 * 1024);
+    data_save_as_file_init(&fs, 24 * 1024, "/data/");
 
     while (1)
     {
