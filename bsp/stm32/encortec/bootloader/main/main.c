@@ -58,5 +58,21 @@ int main(void)
     LOG_I("__heap_start: %p", __heap_start);
     LOG_I("__heap_end: %p", __heap_end);
 
+    /* Don't use api mapping method to let App call bootloader apis */
+    // rt_api_map_init();
+
+    if(memcmp(mbr->app_magic_number, MBR_APP_MAGIC_NUMBER, sizeof(mbr->app_magic_number)) == 0) {
+        LOG_I("app_magic_number: %s", mbr->app_magic_number);
+        LOG_I("app_startup_entry: %p", mbr->app_startup_entry);
+        LOG_I("app_main_entry: %p", mbr->app_main_entry);
+
+        /* Don't use api mapping method to let App call bootloader apis */
+        app_startup_params_t params = {NULL, NULL, NULL};
+        mbr->app_startup_entry(&params);
+        mbr->app_main_entry(0, NULL);
+    } else {
+        LOG_W("No application program.");
+    }
+
     return RT_EOK;
 }
