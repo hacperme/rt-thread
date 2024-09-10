@@ -163,6 +163,53 @@ void delete_oldest_file(struct FileSystem *fs) {
     }
 }
 
+int oldest_file_exists_over_30_days(struct FileSystem *fs)
+{
+    int year, month, day, hour, minute, second;
+    char *oldest_filename = get_oldest_file_name(fs);
+    if (fs->oldest_file_name[0] == '\0') {
+        return 0;
+    }
+
+    int offset = strlen(fs->base_dir);
+    
+    // 读取年份
+    year = (oldest_filename[offset + 0] - '0') * 10 + (oldest_filename[offset + 1] - '0');
+    // 读取月份
+    month = (oldest_filename[offset + 2] - '0') * 10 + (oldest_filename[offset + 3] - '0');
+    // 读取日期
+    day = (oldest_filename[offset + 4] - '0') * 10 + (oldest_filename[offset + 5] - '0');
+    // 读取小时
+    hour = (oldest_filename[offset + 6] - '0') * 10 + (oldest_filename[offset + 7] - '0');
+    // 读取分钟
+    minute = (oldest_filename[offset + 8] - '0') * 10 + (oldest_filename[offset + 9] - '0');
+    // 读取秒
+    second = (oldest_filename[offset + 10] - '0') * 10 + (oldest_filename[offset + 11] - '0');
+    
+    LOG_D("file create time:\r\n");
+    LOG_D("year: %d; month: %d; day: %d; hour: %d; minute: %d; second: %d\r\n", year + 2000, month, day, hour, minute, second);
+
+    struct tm file_create_time = {
+        .tm_year = year + 100,
+        .tm_mon = month - 1,
+        .tm_mday = day,
+        .tm_hour = hour,
+        .tm_min = minute,
+        .tm_sec = second,
+        .tm_isdst = -1,
+    };
+    time_t file_create_timestamp = mktime(&file_create_time);
+    LOG_D("file_create_time: %s, file_create_timestamp: %d\r\n", ctime(&file_create_timestamp), file_create_timestamp);
+
+    time_t now = time(NULL);
+    LOG_D("now: %s, stamp: %d", ctime(&now), now);
+
+    int remaining = now - file_create_timestamp;
+    LOG_D("%s exists %d seconds", oldest_filename, remaining);
+
+    return remaining >= 30 * 86400 ? 1 : 0;
+}
+
 // 追加或创建文件
 int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, bool disable_single_file_size_limit) {
     // 获取最新文件的大小
@@ -176,7 +223,7 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
 
     // 检查是否有足够的空闲空间
     int free_blocks = check_free_space("/");
-    if (free_blocks <= MIN_FREE_BLOCKS) {
+    if (free_blocks <= MIN_FREE_BLOCKS || oldest_file_exists_over_30_days(fs)) {
         delete_oldest_file(fs); // 删除最早的文件
     }
 
