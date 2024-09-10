@@ -167,7 +167,7 @@ int oldest_file_exists_over_30_days(struct FileSystem *fs)
 {
     int year, month, day, hour, minute, second;
     char *oldest_filename = get_oldest_file_name(fs);
-    if (fs->oldest_file_name[0] == '\0') {
+    if (!oldest_filename) {
         return 0;
     }
 
