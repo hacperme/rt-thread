@@ -152,6 +152,4 @@ rt_err_t adxl372_set_standby(void);
 rt_err_t adxl372_full_bandwidth_measurement_mode(void);
 rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size);
 
-static void test_adxl372(int argc, char **argv);
-
 #endif  // __ADXL372_H__

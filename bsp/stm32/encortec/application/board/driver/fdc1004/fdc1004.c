@@ -305,7 +305,7 @@ rt_err_t fdc1004_check_clevel0(struct rt_i2c_bus_device *iic_dev)
 
 #ifdef RT_USING_MSH
 // #include "board_pin.h"
-static rt_err_t test_fdc1004(int argc, char **argv)
+rt_err_t test_fdc1004(int argc, char **argv)
 {
     rt_err_t res = RT_ERROR;
     char i2c_bus_name[] = "i2c1";

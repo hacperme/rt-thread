@@ -124,6 +124,7 @@ main/main.c
 main/syscalls.c
 rt_api/rt_api.c
 logging/logging.c
+.test/test_example.c
 """
 )
 

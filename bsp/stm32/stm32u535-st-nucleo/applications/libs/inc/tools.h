@@ -6,8 +6,8 @@
  * @Date: 2024-08-22 14:07:45
  * @copyright : Copyright (c) 2024
  */
-#ifndef __LPM_H__
-#define __LPM_H__
+#ifndef __TOOLS_H__
+#define __TOOLS_H__
 
 #include "rtthread.h"
 #include "rtdevice.h"
@@ -18,4 +18,4 @@
 
 rt_err_t crc8_check(const rt_uint8_t *input, rt_size_t length, const rt_uint8_t *cmp_val);
 
-#endif  // __LPM_H__
+#endif  // __TOOLS_H__

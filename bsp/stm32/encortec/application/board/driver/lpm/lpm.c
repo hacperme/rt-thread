@@ -430,7 +430,7 @@ static rt_err_t rtc_get_datatime(void)
     return RT_EOK;
 }
 
-static void test_rtc(void)
+void test_rtc(void)
 {
     rt_err_t res;
 
@@ -450,7 +450,7 @@ static void test_rtc(void)
     }
 }
 
-// MSH_CMD_EXPORT(test_rtc, test rtc);
+MSH_CMD_EXPORT(test_rtc, test rtc);
 
 static void test_show_wkup_status(void)
 {

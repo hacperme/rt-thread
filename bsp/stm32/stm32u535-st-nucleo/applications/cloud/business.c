@@ -820,4 +820,4 @@ void main_business_entry(void)
         }
     }
 }
-MSH_CMD_EXPORT(main_business_entry, main_business_entry);
+// MSH_CMD_EXPORT(main_business_entry, main_business_entry);

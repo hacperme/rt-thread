@@ -177,7 +177,7 @@ rt_err_t vbat_vol_read(rt_uint16_t *value)
 }
 
 #ifdef RT_USING_MSH
-static void test_read_voltage(int argc, char *argv[])
+void test_read_voltage(int argc, char *argv[])
 {
     rt_err_t res;
     rt_uint16_t cur_vol = 0, vcap_vol = 0, vbat_vol = 0, vrefint_vol = 0;

@@ -25,8 +25,6 @@ rt_uint8_t XYZ_REGS[3][2] = {
     {ADI_ADXL372_Z_DATA_H, ADI_ADXL372_Z_DATA_L}
 };
 
-extern rt_err_t rt_hw_spi_device_attach(const char *bus_name, const char *device_name, rt_base_t cs_pin);
-
 __weak void adxl372_inact_event_handler(void)
 {
     log_debug("adxl372_inact_event_handler");
@@ -274,23 +272,17 @@ rt_err_t adxl372_init(void)
         return res;
     }
 
-    // rt_device_t spi_dev = rt_device_find(ADXL372_SPI_NAME);
-    // log_debug("find device %s %s.", ADXL372_SPI_NAME, spi_dev == RT_NULL ? "failed" : "success");
-    // if (spi_dev == RT_NULL)
-    // {
-    //     return res;
-    // }
-
-    res = rt_hw_spi_device_attach(ADXL372_SPI_NAME, ADXL372_DEV_NAME, ADXL372_CS_PIN);
-    log_debug("rt_hw_spi_device_attach bus name %s device name %s %s.", ADXL372_SPI_NAME, ADXL372_DEV_NAME, res == RT_EOK ? "success" : "failed");
+    adxl372_dev = (struct rt_spi_device *)rt_malloc(sizeof(struct rt_spi_device));
+    res = adxl372_dev != RT_NULL ? RT_EOK : RT_ERROR;
+    log_debug("rt_malloc adxl372_dev %s.", res == RT_EOK ? "success" : "failed");
     if (res != RT_EOK)
     {
         return res;
     }
 
-    adxl372_dev = (struct rt_spi_device *)rt_device_find(ADXL372_DEV_NAME);
-    log_debug("find device %s %s.", ADXL372_DEV_NAME, (adxl372_dev == RT_NULL ? "failed" : "success"));
-    if (adxl372_dev == RT_NULL)
+    res = rt_spi_bus_attach_device_cspin(adxl372_dev, ADXL372_DEV_NAME, ADXL372_SPI_NAME, ADXL372_CS_PIN, RT_NULL);
+    log_debug("rt_spi_bus_attach_device_cspin bus name %s device name %s %s.", ADXL372_SPI_NAME, ADXL372_DEV_NAME, res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
     {
         return res;
     }
@@ -797,7 +789,7 @@ static void test_adxl372_measure(void)
 }
 #endif
 
-static void test_adxl372(int argc, char **argv)
+void test_adxl372(int argc, char **argv)
 {
     rt_err_t res;
 

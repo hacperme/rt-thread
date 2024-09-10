@@ -110,7 +110,7 @@ static rt_err_t test_crc_check(void)
     return res;
 }
 
-static rt_err_t test_hdc3021(void)
+rt_err_t test_hdc3021(void)
 {
     rt_err_t res = RT_EOK;
 

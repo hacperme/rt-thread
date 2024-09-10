@@ -141,8 +141,8 @@ typedef rt_device_t (*rt_device_create_api_ptr_t)(int type, int attach_size);
 typedef void (*rt_device_destroy_api_ptr_t)(rt_device_t device);
 typedef rt_err_t (*rt_device_set_rx_indicate_api_ptr_t)(rt_device_t dev, rt_err_t (*rx_ind)(rt_device_t dev, rt_size_t size));
 typedef rt_err_t (*rt_device_set_tx_complete_api_ptr_t)(rt_device_t dev, rt_err_t (*tx_done)(rt_device_t dev, void *buffer));
-typedef rt_err_t (*rt_device_init_api_ptr_t) (rt_device_t dev);
-typedef rt_err_t (*rt_device_open_api_ptr_t) (rt_device_t dev, rt_uint16_t oflag);
+typedef rt_err_t (*rt_device_init_api_ptr_t)(rt_device_t dev);
+typedef rt_err_t (*rt_device_open_api_ptr_t)(rt_device_t dev, rt_uint16_t oflag);
 typedef rt_err_t (*rt_device_close_api_ptr_t)(rt_device_t dev);
 typedef rt_ssize_t (*rt_device_read_api_ptr_t)(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size);
 typedef rt_ssize_t (*rt_device_write_api_ptr_t)(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size);
@@ -162,6 +162,7 @@ typedef struct rt_hwcrypto_ctx *(*rt_hwcrypto_crc_create_api_ptr_t)(struct rt_hw
 typedef void (*rt_hwcrypto_crc_destroy_api_ptr_t)(struct rt_hwcrypto_ctx *ctx);
 typedef rt_uint32_t (*rt_hwcrypto_crc_update_api_ptr_t)(struct rt_hwcrypto_ctx *ctx, const rt_uint8_t *input, rt_size_t length);
 typedef void (*rt_hwcrypto_crc_cfg_api_ptr_t)(struct rt_hwcrypto_ctx *ctx, struct hwcrypto_crc_cfg *cfg);
+typedef struct rt_hwcrypto_device *(*rt_hwcrypto_dev_default_api_ptr_t)(void);
 typedef rt_err_t (*rt_hw_adc_register_api_ptr_t)(rt_adc_device_t adc,const char *name, const struct rt_adc_ops *ops, const void *user_data);
 typedef rt_err_t (*rt_i2c_bus_device_register_api_ptr_t)(struct rt_i2c_bus_device *bus, const char *bus_name);
 typedef struct rt_i2c_bus_device *(*rt_i2c_bus_device_find_api_ptr_t)(const char *bus_name);
@@ -230,4 +231,6 @@ typedef rt_int32_t (*rt_strncmp_api_ptr_t)(const char *cs, const char *ct, rt_si
 typedef rt_int32_t (*rt_strcmp_api_ptr_t)(const char *cs, const char *ct);
 typedef rt_size_t (*rt_strlen_api_ptr_t)(const char *src);
 typedef int (*gettimeofday_api_ptr_t)(struct timeval *tv, struct timezone *tz);
+typedef void (*HAL_PWR_EnableWakeUpPin_api_ptr_t)(uint32_t WakeUpPin);
+typedef void (*HAL_PWREx_EnterSHUTDOWNMode_api_ptr_t)(void);
 #endif

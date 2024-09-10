@@ -556,6 +556,14 @@ rt_err_t rt_device_set_tx_complete(rt_device_t dev, rt_err_t (*tx_done)(rt_devic
     return ((rt_device_set_tx_complete_api_ptr_t)(rt_device_set_tx_complete_addr))(dev, tx_done);
 }
 
+rt_err_t rt_device_init(rt_device_t dev) {
+    return ((rt_device_init_api_ptr_t)(rt_device_init_addr))(dev);
+}
+
+rt_err_t rt_device_open(rt_device_t dev, rt_uint16_t oflag) {
+    return ((rt_device_open_api_ptr_t)(rt_device_open_addr))(dev, oflag);
+}
+
 rt_err_t rt_device_close(rt_device_t dev) {
     return ((rt_device_close_api_ptr_t)(rt_device_close_addr))(dev);
 }
@@ -616,6 +624,10 @@ int rt_alarm_system_init(void) {
     return ((rt_alarm_system_init_api_ptr_t)(rt_alarm_system_init_addr))();
 }
 
+struct rt_hwcrypto_ctx * rt_hwcrypto_crc_create(struct rt_hwcrypto_device *device, hwcrypto_crc_mode mode) {
+    return ((rt_hwcrypto_crc_create_api_ptr_t)(rt_hwcrypto_crc_create_addr))(device, mode);
+}
+
 void rt_hwcrypto_crc_destroy(struct rt_hwcrypto_ctx *ctx) {
     return ((rt_hwcrypto_crc_destroy_api_ptr_t)(rt_hwcrypto_crc_destroy_addr))(ctx);
 }
@@ -628,12 +640,20 @@ void rt_hwcrypto_crc_cfg(struct rt_hwcrypto_ctx *ctx, struct hwcrypto_crc_cfg *c
     return ((rt_hwcrypto_crc_cfg_api_ptr_t)(rt_hwcrypto_crc_cfg_addr))(ctx, cfg);
 }
 
+struct rt_hwcrypto_device * rt_hwcrypto_dev_default(void) {
+    return ((rt_hwcrypto_dev_default_api_ptr_t)(rt_hwcrypto_dev_default_addr))();
+}
+
 rt_err_t rt_hw_adc_register(rt_adc_device_t adc,const char *name, const struct rt_adc_ops *ops, const void *user_data) {
     return ((rt_hw_adc_register_api_ptr_t)(rt_hw_adc_register_addr))(adc, name, ops, user_data);
 }
 
 rt_err_t rt_i2c_bus_device_register(struct rt_i2c_bus_device *bus, const char *bus_name) {
     return ((rt_i2c_bus_device_register_api_ptr_t)(rt_i2c_bus_device_register_addr))(bus, bus_name);
+}
+
+struct rt_i2c_bus_device * rt_i2c_bus_device_find(const char *bus_name) {
+    return ((rt_i2c_bus_device_find_api_ptr_t)(rt_i2c_bus_device_find_addr))(bus_name);
 }
 
 rt_ssize_t rt_i2c_transfer(struct rt_i2c_bus_device *bus, struct rt_i2c_msg msgs[], rt_uint32_t num) {
@@ -756,6 +776,10 @@ rt_err_t rt_spi_sendrecv16(struct rt_spi_device *device, rt_uint16_t senddata, r
     return ((rt_spi_sendrecv16_api_ptr_t)(rt_spi_sendrecv16_addr))(device, senddata, recvdata);
 }
 
+struct rt_spi_message * rt_spi_transfer_message(struct rt_spi_device *device, struct rt_spi_message *message) {
+    return ((rt_spi_transfer_message_api_ptr_t)(rt_spi_transfer_message_addr))(device, message);
+}
+
 rt_size_t at_vprintfln(rt_device_t device, char *send_buf, rt_size_t buf_size, const char *format, va_list args) {
     return ((at_vprintfln_api_ptr_t)(at_vprintfln_addr))(device, send_buf, buf_size, format, args);
 }
@@ -863,6 +887,14 @@ void at_delete_resp(at_response_t resp) {
 
 at_response_t at_resp_set_info(at_response_t resp, rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout) {
     return ((at_resp_set_info_api_ptr_t)(at_resp_set_info_addr))(resp, buf_size, line_num, timeout);
+}
+
+const char * at_resp_get_line(at_response_t resp, rt_size_t resp_line) {
+    return ((at_resp_get_line_api_ptr_t)(at_resp_get_line_addr))(resp, resp_line);
+}
+
+const char * at_resp_get_line_by_kw(at_response_t resp, const char *keyword) {
+    return ((at_resp_get_line_by_kw_api_ptr_t)(at_resp_get_line_by_kw_addr))(resp, keyword);
 }
 
 int at_resp_parse_line_args(at_response_t resp, rt_size_t resp_line, const char *resp_expr, ...) {
@@ -989,5 +1021,13 @@ rt_size_t rt_strlen(const char *src) {
 
 int gettimeofday(struct timeval *tv, struct timezone *tz) {
     return ((gettimeofday_api_ptr_t)(gettimeofday_addr))(tv, tz);
+}
+
+void HAL_PWR_EnableWakeUpPin(uint32_t WakeUpPin) {
+    return ((HAL_PWR_EnableWakeUpPin_api_ptr_t)(HAL_PWR_EnableWakeUpPin_addr))(WakeUpPin);
+}
+
+void HAL_PWREx_EnterSHUTDOWNMode(void) {
+    return ((HAL_PWREx_EnterSHUTDOWNMode_api_ptr_t)(HAL_PWREx_EnterSHUTDOWNMode_addr))();
 }
 

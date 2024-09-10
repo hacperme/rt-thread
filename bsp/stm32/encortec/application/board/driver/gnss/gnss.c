@@ -557,7 +557,7 @@ static rt_err_t test_show_nmea_item(nmea_item_t test_nmea_item)
     return res;
 }
 
-static void test_gnss(int argc, char **argv)
+void test_gnss(int argc, char **argv)
 {
     rt_err_t res;
     res = gnss_open();

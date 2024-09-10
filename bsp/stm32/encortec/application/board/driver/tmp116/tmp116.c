@@ -161,7 +161,7 @@ rt_err_t temp116_read_temperture(struct rt_i2c_bus_device *iic_dev, const rt_uin
 
 #ifdef RT_USING_MSH
 // #include "board_pin.h"
-static rt_err_t test_temp116(void)
+rt_err_t test_temp116(void)
 {
     rt_err_t res = RT_EOK;
     char i2c_bus_name[] = "i2c1";

@@ -58,6 +58,7 @@ SECTIONS
         KEEP(build\kernel\components\drivers\spi\spi_core.o(.text*))
         KEEP(build\kernel\components\drivers\watchdog\watchdog.o(.text*))
         KEEP(build\kernel\components\drivers\hwcrypto\hw_crc.o(.text*))
+        KEEP(build\kernel\components\drivers\hwcrypto\hwcrypto.o(.text*))
         KEEP(build\kernel\components\finsh\cmd.o(.text*))
         KEEP(build\kernel\components\finsh\msh.o(.text*))
         KEEP(build\kernel\components\finsh\msh_parse.o(.text*))
@@ -83,6 +84,8 @@ SECTIONS
         KEEP(build\kernel\src\signal.o(.text*))
         KEEP(build\kernel\src\thread.o(.text*))
         KEEP(build\kernel\src\timer.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr_ex.o(.text*))
         *(.text)                        /* remaining code */
         *(.text.*)                      /* remaining code */
         *(.rodata)                      /* read-only data (constants) */
