@@ -37,7 +37,7 @@ static inline void lfs_cache_drop(lfs_t *lfs, lfs_cache_t *rcache) {
 
 static inline void lfs_cache_zero(lfs_t *lfs, lfs_cache_t *pcache) {
     // zero to avoid information leak
-    rt_memset(pcache->buffer, 0xff, lfs->cfg->cache_size);
+    memset(pcache->buffer, 0xff, lfs->cfg->cache_size);
     pcache->block = LFS_BLOCK_NULL;
 }
 
@@ -59,7 +59,7 @@ static int lfs_bd_read(lfs_t *lfs,
             if (off >= pcache->off) {
                 // is already in pcache?
                 diff = lfs_min(diff, pcache->size - (off-pcache->off));
-                rt_memcpy(data, &pcache->buffer[off-pcache->off], diff);
+                memcpy(data, &pcache->buffer[off-pcache->off], diff);
 
                 data += diff;
                 off += diff;
@@ -76,7 +76,7 @@ static int lfs_bd_read(lfs_t *lfs,
             if (off >= rcache->off) {
                 // is already in rcache?
                 diff = lfs_min(diff, rcache->size - (off-rcache->off));
-                rt_memcpy(data, &rcache->buffer[off-rcache->off], diff);
+                memcpy(data, &rcache->buffer[off-rcache->off], diff);
 
                 data += diff;
                 off += diff;
@@ -142,7 +142,7 @@ static int lfs_bd_cmp(lfs_t *lfs,
             return res;
         }
 
-        res = rt_memcmp(dat, data + i, diff);
+        res = memcmp(dat, data + i, diff);
         if (res) {
             return res < 0 ? LFS_CMP_LT : LFS_CMP_GT;
         }
@@ -218,7 +218,7 @@ static int lfs_bd_prog(lfs_t *lfs,
             // already fits in pcache?
             lfs_size_t diff = lfs_min(size,
                     lfs->cfg->cache_size - (off-pcache->off));
-            rt_memcpy(&pcache->buffer[off-pcache->off], data, diff);
+            memcpy(&pcache->buffer[off-pcache->off], data, diff);
 
             data += diff;
             off += diff;
@@ -591,7 +591,7 @@ static int lfs_alloc(lfs_t *lfs, lfs_block_t *block) {
         lfs->free.i = 0;
 
         // find mask of free blocks from tree
-        rt_memset(lfs->free.buffer, 0, lfs->cfg->lookahead_size);
+        memset(lfs->free.buffer, 0, lfs->cfg->lookahead_size);
         int err = lfs_fs_rawtraverse(lfs, lfs_alloc_lookahead, lfs, true);
         if (err) {
             lfs_alloc_drop(lfs);
@@ -655,7 +655,7 @@ static lfs_stag_t lfs_dir_getslice(lfs_t *lfs, const lfs_mdir_t *dir,
                 return err;
             }
 
-            rt_memset((uint8_t*)gbuffer + diff, 0, gsize - diff);
+            memset((uint8_t*)gbuffer + diff, 0, gsize - diff);
 
             return tag + gdiff;
         }
@@ -688,7 +688,7 @@ static int lfs_dir_getread(lfs_t *lfs, const lfs_mdir_t *dir,
             if (off >= pcache->off) {
                 // is already in pcache?
                 diff = lfs_min(diff, pcache->size - (off-pcache->off));
-                rt_memcpy(data, &pcache->buffer[off-pcache->off], diff);
+                memcpy(data, &pcache->buffer[off-pcache->off], diff);
 
                 data += diff;
                 off += diff;
@@ -705,7 +705,7 @@ static int lfs_dir_getread(lfs_t *lfs, const lfs_mdir_t *dir,
             if (off >= rcache->off) {
                 // is already in rcache?
                 diff = lfs_min(diff, rcache->size - (off-rcache->off));
-                rt_memcpy(data, &rcache->buffer[off-rcache->off], diff);
+                memcpy(data, &rcache->buffer[off-rcache->off], diff);
 
                 data += diff;
                 off += diff;
@@ -1260,7 +1260,7 @@ static int lfs_dir_getinfo(lfs_t *lfs, lfs_mdir_t *dir,
         uint16_t id, struct lfs_info *info) {
     if (id == 0x3ff) {
         // special case for root
-        rt_strcpy(info->name, "/");
+        strcpy(info->name, "/");
         info->type = LFS_TYPE_DIR;
         return 0;
     }
@@ -1340,8 +1340,8 @@ nextname:
         lfs_size_t namelen = strcspn(name, "/");
 
         // skip '.' and root '..'
-        if ((namelen == 1 && rt_memcmp(name, ".", 1) == 0) ||
-            (namelen == 2 && rt_memcmp(name, "..", 2) == 0)) {
+        if ((namelen == 1 && memcmp(name, ".", 1) == 0) ||
+            (namelen == 2 && memcmp(name, "..", 2) == 0)) {
             name += namelen;
             goto nextname;
         }
@@ -1357,7 +1357,7 @@ nextname:
                 break;
             }
 
-            if (sufflen == 2 && rt_memcmp(suffix, "..", 2) == 0) {
+            if (sufflen == 2 && memcmp(suffix, "..", 2) == 0) {
                 depth -= 1;
                 if (depth == 0) {
                     name = suffix + sufflen;
@@ -2408,7 +2408,7 @@ static int lfs_rawmkdir(lfs_t *lfs, const char *path) {
     }
 
     // check that name fits
-    lfs_size_t nlen = rt_strlen(path);
+    lfs_size_t nlen = strlen(path);
     if (nlen > lfs->name_max) {
         return LFS_ERR_NAMETOOLONG;
     }
@@ -2540,17 +2540,17 @@ static int lfs_dir_rawclose(lfs_t *lfs, lfs_dir_t *dir) {
 }
 
 static int lfs_dir_rawread(lfs_t *lfs, lfs_dir_t *dir, struct lfs_info *info) {
-    rt_memset(info, 0, sizeof(*info));
+    memset(info, 0, sizeof(*info));
 
     // special offset for '.' and '..'
     if (dir->pos == 0) {
         info->type = LFS_TYPE_DIR;
-        rt_strcpy(info->name, ".");
+        strcpy(info->name, ".");
         dir->pos += 1;
         return true;
     } else if (dir->pos == 1) {
         info->type = LFS_TYPE_DIR;
-        rt_strcpy(info->name, "..");
+        strcpy(info->name, "..");
         dir->pos += 1;
         return true;
     }
@@ -2878,7 +2878,7 @@ static int lfs_file_rawopencfg(lfs_t *lfs, lfs_file_t *file,
         }
 
         // check that name fits
-        lfs_size_t nlen = rt_strlen(path);
+        lfs_size_t nlen = strlen(path);
         if (nlen > lfs->name_max) {
             err = LFS_ERR_NAMETOOLONG;
             goto cleanup;
@@ -3076,7 +3076,7 @@ static int lfs_file_relocate(lfs_t *lfs, lfs_file_t *file) {
         }
 
         // copy over new state of file
-        rt_memcpy(file->cache.buffer, lfs->pcache.buffer, lfs->cfg->cache_size);
+        memcpy(file->cache.buffer, lfs->pcache.buffer, lfs->cfg->cache_size);
         file->cache.block = lfs->pcache.block;
         file->cache.off = lfs->pcache.off;
         file->cache.size = lfs->pcache.size;
@@ -3723,7 +3723,7 @@ static int lfs_rawrename(lfs_t *lfs, const char *oldpath, const char *newpath) {
     prevdir.next = lfs->mlist;
     if (prevtag == LFS_ERR_NOENT) {
         // check that name fits
-        lfs_size_t nlen = rt_strlen(newpath);
+        lfs_size_t nlen = strlen(newpath);
         if (nlen > lfs->name_max) {
             return LFS_ERR_NAMETOOLONG;
         }
@@ -3781,7 +3781,7 @@ static int lfs_rawrename(lfs_t *lfs, const char *oldpath, const char *newpath) {
             {LFS_MKTAG_IF(prevtag != LFS_ERR_NOENT,
                 LFS_TYPE_DELETE, newid, 0), NULL},
             {LFS_MKTAG(LFS_TYPE_CREATE, newid, 0), NULL},
-            {LFS_MKTAG(lfs_tag_type3(oldtag), newid, rt_strlen(newpath)), newpath},
+            {LFS_MKTAG(lfs_tag_type3(oldtag), newid, strlen(newpath)), newpath},
             {LFS_MKTAG(LFS_FROM_MOVE, newid, lfs_tag_id(oldtag)), &oldcwd},
             {LFS_MKTAG_IF(samepair,
                 LFS_TYPE_DELETE, newoldid, 0), NULL}));
@@ -4039,7 +4039,7 @@ static int lfs_rawformat(lfs_t *lfs, const struct lfs_config *cfg) {
         }
 
         // create free lookahead
-        rt_memset(lfs->free.buffer, 0, lfs->cfg->lookahead_size);
+        memset(lfs->free.buffer, 0, lfs->cfg->lookahead_size);
         lfs->free.off = 0;
         lfs->free.size = lfs_min(8*lfs->cfg->lookahead_size,
                 lfs->cfg->block_count);
@@ -4981,7 +4981,7 @@ static int lfs1_moved(lfs_t *lfs, const void *e) {
             }
 
             if (!(0x80 & entry.d.type) &&
-                 rt_memcmp(&entry.d.u, e, sizeof(entry.d.u)) == 0) {
+                 memcmp(&entry.d.u, e, sizeof(entry.d.u)) == 0) {
                 return true;
             }
         }
@@ -5030,7 +5030,7 @@ static int lfs1_mount(lfs_t *lfs, struct lfs1 *lfs1,
             lfs->lfs1->root[1] = superblock.d.root[1];
         }
 
-        if (err || rt_memcmp(superblock.d.magic, "littlefs", 8) != 0) {
+        if (err || memcmp(superblock.d.magic, "littlefs", 8) != 0) {
             LFS_ERROR("Invalid superblock at {0x%"PRIx32", 0x%"PRIx32"}",
                     0, 1);
             err = LFS_ERR_CORRUPT;
@@ -5125,7 +5125,7 @@ static int lfs_rawmigrate(lfs_t *lfs, const struct lfs_config *cfg) {
 
                 // also fetch name
                 char name[LFS_NAME_MAX+1];
-                rt_memset(name, 0, sizeof(name));
+                memset(name, 0, sizeof(name));
                 err = lfs1_bd_read(lfs, dir1.pair[0],
                         entry1.off + 4+entry1.d.elen+entry1.d.alen,
                         name, entry1.d.nlen);
@@ -5469,7 +5469,7 @@ int lfs_removeattr(lfs_t *lfs, const char *path, uint8_t type) {
 }
 #endif
 
-#ifndef lfs_no_malloc
+#ifndef LFS_NO_MALLOC
 int lfs_file_open(lfs_t *lfs, lfs_file_t *file, const char *path, int flags) {
     int err = LFS_LOCK(lfs->cfg);
     if (err) {

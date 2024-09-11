@@ -6,6 +6,7 @@
 #include "rtdevice.h"
 #include "at.h"
 #include <stdarg.h>
+#include <sys/stat.h>
 
 typedef rt_err_t (*rt_thread_init_api_ptr_t)(struct rt_thread *thread, const char *name, void (*entry)(void *parameter), void *parameter, void *stack_start, rt_uint32_t stack_size, rt_uint8_t priority, rt_uint32_t tick);
 typedef rt_err_t (*rt_thread_detach_api_ptr_t)(rt_thread_t thread);
@@ -91,6 +92,26 @@ typedef void *(*_malloc_r_api_ptr_t)(struct _reent *ptr, size_t size);
 typedef void *(*_realloc_r_api_ptr_t)(struct _reent *ptr, void *old, size_t newlen);
 typedef void *(*_calloc_r_api_ptr_t)(struct _reent *ptr, size_t size, size_t len);
 typedef void (*_free_r_api_ptr_t)(struct _reent *ptr, void *addr);
+typedef int (*_getpid_r_api_ptr_t)(struct _reent *ptr);
+typedef int (*_close_r_api_ptr_t)(struct _reent *ptr, int fd);
+typedef int (*_execve_r_api_ptr_t)(struct _reent *ptr, const char * name, char *const *argv, char *const *env);
+typedef int (*_fcntl_r_api_ptr_t)(struct _reent *ptr, int fd, int cmd, int arg);
+typedef int (*_fork_r_api_ptr_t)(struct _reent *ptr);
+typedef int (*_fstat_r_api_ptr_t)(struct _reent *ptr, int fd, struct stat *pstat);
+typedef int (*_isatty_r_api_ptr_t)(struct _reent *ptr, int fd);
+typedef int (*_kill_r_api_ptr_t)(struct _reent *ptr, int pid, int sig);
+typedef int (*_link_r_api_ptr_t)(struct _reent *ptr, const char *old, const char *new);
+typedef int (*_wait_r_api_ptr_t)(struct _reent *ptr, int *status);
+typedef _off_t (*_lseek_r_api_ptr_t)(struct _reent *ptr, int fd, _off_t pos, int whence);
+typedef int (*_mkdir_r_api_ptr_t)(struct _reent *ptr, const char *name, int mode);
+typedef int (*_open_r_api_ptr_t)(struct _reent *ptr, const char *file, int flags, int mode);
+typedef _ssize_t (*_read_r_api_ptr_t)(struct _reent *ptr, int fd, void *buf, size_t nbytes);
+typedef int (*_rename_r_api_ptr_t)(struct _reent *ptr, const char *old, const char *new);
+typedef int (*_stat_r_api_ptr_t)(struct _reent *ptr, const char *file, struct stat *pstat);
+typedef int (*_unlink_r_api_ptr_t)(struct _reent *ptr, const char *file);
+typedef _ssize_t (*_write_r_api_ptr_t)(struct _reent *ptr, int fd, const void *buf, size_t nbytes);
+typedef __attribute__((noreturn)) void (*_exit_api_ptr_t)(int status);
+typedef rt_weak char *(*strtok_r_api_ptr_t)(char *str, const char *delim, char **saveptr);
 typedef void (*rt_memory_info_api_ptr_t)(rt_size_t *total, rt_size_t *used, rt_size_t *max_used);
 typedef int (*rt_vsnprintf_api_ptr_t)(char *buf, rt_size_t size, const char *fmt, va_list args);
 typedef rt_tick_t (*rt_tick_get_api_ptr_t)(void);

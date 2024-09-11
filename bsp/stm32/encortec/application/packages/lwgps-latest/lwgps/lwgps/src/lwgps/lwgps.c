@@ -34,7 +34,6 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-#include <rtthread.h>
 #include "lwgps/lwgps.h"
 
 #define FLT(x)              ((lwgps_float_t)(x))
@@ -132,23 +131,23 @@ prv_parse_term(lwgps_t* gh) {
     if (gh->p.term_num == 0) {                  /* Check string type */
         if (0) {
 #if LWGPS_CFG_STATEMENT_GPGGA
-        } else if (!rt_strncmp(gh->p.term_str, "$GPGGA", 6) || !rt_strncmp(gh->p.term_str, "$GNGGA", 6)) {
+        } else if (!strncmp(gh->p.term_str, "$GPGGA", 6) || !strncmp(gh->p.term_str, "$GNGGA", 6)) {
             gh->p.stat = STAT_GGA;
 #endif /* LWGPS_CFG_STATEMENT_GPGGA */
 #if LWGPS_CFG_STATEMENT_GPGSA
-        } else if (!rt_strncmp(gh->p.term_str, "$GPGSA", 6) || !rt_strncmp(gh->p.term_str, "$GNGSA", 6)) {
+        } else if (!strncmp(gh->p.term_str, "$GPGSA", 6) || !strncmp(gh->p.term_str, "$GNGSA", 6)) {
             gh->p.stat = STAT_GSA;
 #endif /* LWGPS_CFG_STATEMENT_GPGSA */
 #if LWGPS_CFG_STATEMENT_GPGSV
-        } else if (!rt_strncmp(gh->p.term_str, "$GPGSV", 6) || !rt_strncmp(gh->p.term_str, "$GNGSV", 6)) {
+        } else if (!strncmp(gh->p.term_str, "$GPGSV", 6) || !strncmp(gh->p.term_str, "$GNGSV", 6)) {
             gh->p.stat = STAT_GSV;
 #endif /* LWGPS_CFG_STATEMENT_GPGSV */
 #if LWGPS_CFG_STATEMENT_GPRMC
-        } else if (!rt_strncmp(gh->p.term_str, "$GPRMC", 6) || !rt_strncmp(gh->p.term_str, "$GNRMC", 6)) {
+        } else if (!strncmp(gh->p.term_str, "$GPRMC", 6) || !strncmp(gh->p.term_str, "$GNRMC", 6)) {
             gh->p.stat = STAT_RMC;
 #endif /* LWGPS_CFG_STATEMENT_GPRMC */
 #if LWGPS_CFG_STATEMENT_PUBX
-        } else if (!rt_strncmp(gh->p.term_str, "$PUBX", 5)) {
+        } else if (!strncmp(gh->p.term_str, "$PUBX", 5)) {
             gh->p.stat = STAT_UBX;
 #endif /* LWGPS_CFG_STATEMENT_PUBX */
         } else {
@@ -385,7 +384,7 @@ prv_copy_from_tmp_memory(lwgps_t* gh) {
         gh->dop_p = gh->p.data.gsa.dop_p;
         gh->dop_v = gh->p.data.gsa.dop_v;
         gh->fix_mode = gh->p.data.gsa.fix_mode;
-        rt_memcpy(gh->satellites_ids, gh->p.data.gsa.satellites_ids, sizeof(gh->satellites_ids));
+        memcpy(gh->satellites_ids, gh->p.data.gsa.satellites_ids, sizeof(gh->satellites_ids));
 #endif /* LWGPS_CFG_STATEMENT_GPGSA */
 #if LWGPS_CFG_STATEMENT_GPGSV
     } else if (gh->p.stat == STAT_GSV) {
@@ -427,7 +426,7 @@ prv_copy_from_tmp_memory(lwgps_t* gh) {
  */
 uint8_t
 lwgps_init(lwgps_t* gh) {
-    rt_memset(gh, 0x00, sizeof(*gh));              /* Reset structure */
+    memset(gh, 0x00, sizeof(*gh));              /* Reset structure */
     return 1;
 }
 
@@ -449,7 +448,7 @@ lwgps_process(lwgps_t* gh, const void* data, size_t len) {
 
     for (; len > 0; ++d, --len) {               /* Process all bytes */
         if (*d == '$') {                        /* Check for beginning of NMEA line */
-            rt_memset(&gh->p, 0x00, sizeof(gh->p));/* Reset private memory */
+            memset(&gh->p, 0x00, sizeof(gh->p));/* Reset private memory */
             TERM_ADD(gh, *d);                   /* Add character to term */
         } else if (*d == ',') {                 /* Term separator character */
             prv_parse_term(gh);                     /* Parse term we have currently in memory */

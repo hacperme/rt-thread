@@ -6,6 +6,7 @@
 #include "rttypes.h"
 #include "logging.h"
 #include <stddef.h>
+#include <sys/stat.h>
 
 rt_err_t rt_thread_init(struct rt_thread *thread, const char *name, void (*entry)(void *parameter), void *parameter, void *stack_start, rt_uint32_t stack_size, rt_uint8_t priority, rt_uint32_t tick) {
     return ((rt_thread_init_api_ptr_t)(rt_thread_init_addr))(thread, name, entry, parameter, stack_start, stack_size, priority, tick);
@@ -354,6 +355,86 @@ void * _calloc_r(struct _reent *ptr, size_t size, size_t len) {
 
 void _free_r(struct _reent *ptr, void *addr) {
     return ((_free_r_api_ptr_t)(_free_r_addr))(ptr, addr);
+}
+
+int _getpid_r(struct _reent *ptr) {
+    return ((_getpid_r_api_ptr_t)(_getpid_r_addr))(ptr);
+}
+
+int _close_r(struct _reent *ptr, int fd) {
+    return ((_close_r_api_ptr_t)(_close_r_addr))(ptr, fd);
+}
+
+int _execve_r(struct _reent *ptr, const char * name, char *const *argv, char *const *env) {
+    return ((_execve_r_api_ptr_t)(_execve_r_addr))(ptr, name, argv, env);
+}
+
+int _fcntl_r(struct _reent *ptr, int fd, int cmd, int arg) {
+    return ((_fcntl_r_api_ptr_t)(_fcntl_r_addr))(ptr, fd, cmd, arg);
+}
+
+int _fork_r(struct _reent *ptr) {
+    return ((_fork_r_api_ptr_t)(_fork_r_addr))(ptr);
+}
+
+int _fstat_r(struct _reent *ptr, int fd, struct stat *pstat) {
+    return ((_fstat_r_api_ptr_t)(_fstat_r_addr))(ptr, fd, pstat);
+}
+
+int _isatty_r(struct _reent *ptr, int fd) {
+    return ((_isatty_r_api_ptr_t)(_isatty_r_addr))(ptr, fd);
+}
+
+int _kill_r(struct _reent *ptr, int pid, int sig) {
+    return ((_kill_r_api_ptr_t)(_kill_r_addr))(ptr, pid, sig);
+}
+
+int _link_r(struct _reent *ptr, const char *old, const char *new) {
+    return ((_link_r_api_ptr_t)(_link_r_addr))(ptr, old, new);
+}
+
+int _wait_r(struct _reent *ptr, int *status) {
+    return ((_wait_r_api_ptr_t)(_wait_r_addr))(ptr, status);
+}
+
+_off_t _lseek_r(struct _reent *ptr, int fd, _off_t pos, int whence) {
+    return ((_lseek_r_api_ptr_t)(_lseek_r_addr))(ptr, fd, pos, whence);
+}
+
+int _mkdir_r(struct _reent *ptr, const char *name, int mode) {
+    return ((_mkdir_r_api_ptr_t)(_mkdir_r_addr))(ptr, name, mode);
+}
+
+int _open_r(struct _reent *ptr, const char *file, int flags, int mode) {
+    return ((_open_r_api_ptr_t)(_open_r_addr))(ptr, file, flags, mode);
+}
+
+_ssize_t _read_r(struct _reent *ptr, int fd, void *buf, size_t nbytes) {
+    return ((_read_r_api_ptr_t)(_read_r_addr))(ptr, fd, buf, nbytes);
+}
+
+int _rename_r(struct _reent *ptr, const char *old, const char *new) {
+    return ((_rename_r_api_ptr_t)(_rename_r_addr))(ptr, old, new);
+}
+
+int _stat_r(struct _reent *ptr, const char *file, struct stat *pstat) {
+    return ((_stat_r_api_ptr_t)(_stat_r_addr))(ptr, file, pstat);
+}
+
+int _unlink_r(struct _reent *ptr, const char *file) {
+    return ((_unlink_r_api_ptr_t)(_unlink_r_addr))(ptr, file);
+}
+
+_ssize_t _write_r(struct _reent *ptr, int fd, const void *buf, size_t nbytes) {
+    return ((_write_r_api_ptr_t)(_write_r_addr))(ptr, fd, buf, nbytes);
+}
+
+__attribute__((noreturn)) void _exit(int status) {
+    ((_exit_api_ptr_t)(_exit_addr))(status);
+}
+
+rt_weak char * strtok_r(char *str, const char *delim, char **saveptr) {
+    return ((strtok_r_api_ptr_t)(strtok_r_addr))(str, delim, saveptr);
 }
 
 void rt_memory_info(rt_size_t *total, rt_size_t *used, rt_size_t *max_used) {

@@ -343,7 +343,7 @@ rt_err_t test_fdc1004(int argc, char **argv)
     float value = 0.0;
     res = fdc1004_meas_data(iic_dev, &value);
     char msg[128];
-    // rt_sprintf(msg, "fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
+    // sprintf(msg, "fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
     log_debug("fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
 }
 

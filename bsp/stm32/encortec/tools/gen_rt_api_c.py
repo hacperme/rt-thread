@@ -32,7 +32,7 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
         content = file.read()
 
     # 使用 re.DOTALL 标志来匹配多行直到分号
-    pattern = r'typedef\s+(\w+\s*\w*\s*\**)\s*\(\*([a-zA-Z_][a-zA-Z0-9_]*_api_ptr_t)\)\((.*?)\);'
+    pattern = r'typedef\s+(\w+\(*\(*\w*\)*\)*\s*\w*\s*\**)\s*\(\*([a-zA-Z_][a-zA-Z0-9_]*_api_ptr_t)\)\((.*?)\);'
 
     # 使用 re.DOTALL 标志
     function_pointer_types = re.findall(pattern, content, re.DOTALL)
@@ -47,7 +47,8 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
         file.write('#include "rt_api_typedef.h"\n')
         file.write('#include "rttypes.h"\n')
         file.write('#include "logging.h"\n')
-        file.write('#include <stddef.h>\n\n')
+        file.write('#include <stddef.h>\n')
+        file.write('#include <sys/stat.h>\n\n')
 
         for return_type, func_type, params in function_pointer_types:
             # 构建函数实现
@@ -210,6 +211,8 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
 
     return n;\n}\n
 """
+            elif func_name == "_exit":
+                func_impl = f'    (({func_type})({func_name}_addr))({param_names_str});\n}}\n\n'
             else:
                 func_impl = f'    return (({func_type})({func_name}_addr))({param_names_str});\n}}\n\n'
             func_def += func_impl

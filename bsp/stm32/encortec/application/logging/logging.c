@@ -67,7 +67,7 @@ void app_log_print(const char *fmt, ...)
 
         rt_mutex_take(&app_log_mutex, RT_WAITING_FOREVER);
 
-        rt_vsnprintf(app_log_buf, sizeof(app_log_buf) - 1, fmt, args);
+        vsnprintf(app_log_buf, sizeof(app_log_buf) - 1, fmt, args);
 
         #ifdef APP_LOG_PRINT_TO_UART
         rt_kprintf("%s", app_log_buf);

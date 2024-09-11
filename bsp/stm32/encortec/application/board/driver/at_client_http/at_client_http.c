@@ -103,7 +103,7 @@ static bool at_http_send_data(at_client_t client, at_response_t resp, const void
 {
 	
 	char qisend_data[64] = {0};
-	rt_snprintf((char*)&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, data_size);
+	snprintf((char*)&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, data_size);
 
 	if (at_obj_exec_cmd(client,resp, qisend_data) < 0) {
 		 log_error("qisend failed\n");
@@ -225,7 +225,7 @@ int at_http_upload_file_chunked(const char *filename)
 	fseek(file, 0, SEEK_SET);
 	
 	
-	rt_snprintf((char*)&content_data, sizeof(content_data), 
+	snprintf((char*)&content_data, sizeof(content_data), 
 		"--%s\r\n"
 		"Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"
 		"Content-Type: text/plain\r\n"
@@ -236,7 +236,7 @@ int at_http_upload_file_chunked(const char *filename)
 	
 
 	// 6. ���������� HTTP ����ͷ��
-    rt_snprintf(header, sizeof(header),
+    snprintf(header, sizeof(header),
             "POST /upload_sw.php HTTP/1.1\r\n"
              "Host: 112.31.84.164:8300\r\n"
              "Authorization: Basic dGVzdDp0ZXN0\r\n"
@@ -250,9 +250,9 @@ int at_http_upload_file_chunked(const char *filename)
              rt_strlen(content_data)+file_length, boundary, boundary, filename);
 
 	rt_memset(buffer, 0, BUFFER_CHUNK_SIZE);
-	rt_snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
-	//rt_snprintf(&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, rt_strlen(header) + file_length + rt_strlen(buffer));
-	rt_snprintf((char*)&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, rt_strlen(header));
+	snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
+	//snprintf(&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, rt_strlen(header) + file_length + rt_strlen(buffer));
+	snprintf((char*)&qisend_data,sizeof(qisend_data), "AT+QISEND=%d,%d",1, rt_strlen(header));
 
 	
 	log_info("send2 %d : %s\n", rt_strlen(qisend_data), qisend_data);
@@ -272,7 +272,7 @@ int at_http_upload_file_chunked(const char *filename)
     }
 
 	// 8. ���ͽ����� boundary �� HTTP ����β��
-    rt_snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
+    snprintf(buffer, sizeof(buffer), "\r\n--%s--\r\n", boundary);
 	AT_HTTP_SEND(client, send_resp, buffer, rt_strlen(buffer));
 
 	if(rt_sem_take(_ql_at_sem._qiurc, 10000000) != RT_EOK)
@@ -466,7 +466,7 @@ rt_err_t cat1_set_cfun_mode(int mode)
     }
 
     char s[20] = {0};
-    rt_snprintf(s, 20, "AT+CFUN=%d", mode);
+    snprintf(s, 20, "AT+CFUN=%d", mode);
     result = at_obj_exec_cmd(client, resp, s);
     if (result != RT_EOK) {
         log_error("nbiot cfun0 err: %d", result);
