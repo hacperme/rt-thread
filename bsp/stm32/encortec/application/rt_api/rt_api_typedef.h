@@ -111,7 +111,6 @@ typedef int (*_stat_r_api_ptr_t)(struct _reent *ptr, const char *file, struct st
 typedef int (*_unlink_r_api_ptr_t)(struct _reent *ptr, const char *file);
 typedef _ssize_t (*_write_r_api_ptr_t)(struct _reent *ptr, int fd, const void *buf, size_t nbytes);
 typedef __attribute__((noreturn)) void (*_exit_api_ptr_t)(int status);
-typedef rt_weak char *(*strtok_r_api_ptr_t)(char *str, const char *delim, char **saveptr);
 typedef void (*rt_memory_info_api_ptr_t)(rt_size_t *total, rt_size_t *used, rt_size_t *max_used);
 typedef int (*rt_vsnprintf_api_ptr_t)(char *buf, rt_size_t size, const char *fmt, va_list args);
 typedef rt_tick_t (*rt_tick_get_api_ptr_t)(void);

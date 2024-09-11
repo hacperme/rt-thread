@@ -103,7 +103,6 @@ _stat_r
 _unlink_r
 _write_r
 _exit
-strtok_r
 rt_memory_info
 rt_vsnprintf
 rt_tick_get

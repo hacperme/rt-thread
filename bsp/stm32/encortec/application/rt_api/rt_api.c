@@ -433,10 +433,6 @@ __attribute__((noreturn)) void _exit(int status) {
     ((_exit_api_ptr_t)(_exit_addr))(status);
 }
 
-rt_weak char * strtok_r(char *str, const char *delim, char **saveptr) {
-    return ((strtok_r_api_ptr_t)(strtok_r_addr))(str, delim, saveptr);
-}
-
 void rt_memory_info(rt_size_t *total, rt_size_t *used, rt_size_t *max_used) {
     return ((rt_memory_info_api_ptr_t)(rt_memory_info_addr))(total, used, max_used);
 }

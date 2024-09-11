@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <sys/time.h>
+#include <stdio.h>
 
 #if defined APP_USING_LOG && defined APP_LOG_PRINT_CHANNEL
 
