@@ -64,7 +64,6 @@
 #define rt_hwcrypto_crc_update_addr 0x0800A68F
 #define rt_hwcrypto_crc_cfg_addr 0x0800A6CB
 #define rt_hwcrypto_dev_default_addr 0x0800A8A9
-#define strtok_r_addr 0x0800D587
 #define gettimeofday_addr 0x0800E395
 #define _malloc_r_addr 0x0800E66F
 #define _realloc_r_addr 0x0800E697

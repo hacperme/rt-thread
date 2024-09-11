@@ -211,9 +211,6 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
 
     return n;\n}\n
 """
-            elif func_name == "strtok_r":
-                func_def = f"rt_weak {func_def}"
-                func_impl = f'    return (({func_type})({func_name}_addr))({param_names_str});\n}}\n\n'
             elif func_name == "_exit":
                 func_impl = f'    (({func_type})({func_name}_addr))({param_names_str});\n}}\n\n'
             else:
