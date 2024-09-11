@@ -5,22 +5,25 @@
 BOOTLOADER_ROM_SIZE = 256K;
 APP_ROM_SIZE = 256K;
 
-BOOTLOADER_SRAM1_SIZE = 32K;
-APP_SRAM1_SIZE = 160K;
+BOOTLOADER_RAM_SIZE = 32K;
+APP_RAM_SIZE = 32K;
 
-HEAP_RAM2_SIZE = 64K;
+HEAP_RAM_SIZE = 192K;
 
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
 {
     ROM (rx) : ORIGIN = 0x08000000 + BOOTLOADER_ROM_SIZE, LENGTH = APP_ROM_SIZE
-    SRAM1 (rw) : ORIGIN = 0x20000000 + BOOTLOADER_SRAM1_SIZE, LENGTH =  APP_SRAM1_SIZE
+    SRAM (rw) : ORIGIN = 0x20000000 + BOOTLOADER_RAM_SIZE, LENGTH =  APP_RAM_SIZE
 }
 
 ENTRY(main)
 
 SECTIONS
 {
+    ASSERT(BOOTLOADER_ROM_SIZE + APP_ROM_SIZE <= 512K, "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
+    ASSERT(BOOTLOADER_RAM_SIZE + APP_RAM_SIZE + HEAP_RAM_SIZE <= 256K, "The combined RAM partitions of the Bootloader, App and heap exceed the total RAM size.")
+
     .text : AT(ORIGIN(ROM))
     {
         . = ALIGN(4);
@@ -98,7 +101,7 @@ SECTIONS
         . = ALIGN(4);
         /* This is used by the startup in order to initialize the .data secion */
         _edata = . ;
-    } > SRAM1
+    } > SRAM
 
     PROVIDE ( __app_data_load_start = LOADADDR(.data) );
     PROVIDE ( __app_data_load_end = LOADADDR(.data) + SIZEOF(.data) );
@@ -124,12 +127,12 @@ SECTIONS
         . = ALIGN(4);
         /* This is used by the startup in order to initialize the .bss secion */
         _ebss = . ;
-    } > SRAM1
+    } > SRAM
 
     __bss_end = .;
 
-    PROVIDE ( __app_ram_start = ORIGIN(SRAM1) );
-    PROVIDE ( __app_ram_end = ORIGIN(SRAM1) + LENGTH(SRAM1) );
+    PROVIDE ( __app_ram_start = ORIGIN(SRAM) );
+    PROVIDE ( __app_ram_end = ORIGIN(SRAM) + LENGTH(SRAM) );
 
     PROVIDE ( __app_ram_occupied_end = __bss_end );
 

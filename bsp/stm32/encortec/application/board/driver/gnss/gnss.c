@@ -127,7 +127,7 @@ static void gnss_parse_nmea_item(char *item)
 }
 
 #if 0
-void gnss_parse_nmea_bak(char *nmea)
+void gnss_parse_nmea(char *nmea)
 {
     char *result;
     char nmea_item[100];
@@ -145,7 +145,7 @@ void gnss_parse_nmea_bak(char *nmea)
             if (result)
             {
                 end_index = result - nmea;
-                rt_memset(nmea_item, '\0', 100);
+                rt_memset(nmea_item, 0, 100);
                 rt_strncpy(nmea_item, &nmea[start_index], (end_index - start_index));
                 // log_debug("end_index=%d", end_index);
                 gnss_parse_nmea_item(nmea_item);
@@ -168,8 +168,7 @@ void gnss_parse_nmea_bak(char *nmea)
         }
     }
 }
-#endif
-
+#else
 static void gnss_parse_nmea(char *nmea)
 {
     char *nmea_item;
@@ -185,6 +184,7 @@ static void gnss_parse_nmea(char *nmea)
     }
 
 }
+#endif
 
 static void gnss_thread_entry(void *parameter)
 {

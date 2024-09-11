@@ -237,6 +237,10 @@ typedef int (*at_resp_parse_line_args_by_kw_api_ptr_t)(at_response_t resp, const
 typedef int (*rt_vsprintf_api_ptr_t)(char *dest, const char *format, va_list arg_ptr);
 typedef int (*rt_sprintf_api_ptr_t)(char *buf, const char *format, ...);
 typedef int (*rt_snprintf_api_ptr_t)(char *buf, rt_size_t size, const char *format, ...);
+typedef rt_err_t (*rt_get_errno_api_ptr_t)(void);
+typedef void (*rt_set_errno_api_ptr_t)(rt_err_t no);
+typedef int *(*_rt_errno_api_ptr_t)(void);
+typedef const char *(*rt_strerror_api_ptr_t)(rt_err_t error);
 typedef void *(*rt_memset_api_ptr_t)(void *src, int c, rt_ubase_t n);
 typedef void *(*rt_memcpy_api_ptr_t)(void *dest, const void *src, rt_ubase_t n);
 typedef void *(*rt_memmove_api_ptr_t)(void *dest, const void *src, rt_size_t n);
@@ -253,4 +257,17 @@ typedef rt_size_t (*rt_strlen_api_ptr_t)(const char *src);
 typedef int (*gettimeofday_api_ptr_t)(struct timeval *tv, struct timezone *tz);
 typedef void (*HAL_PWR_EnableWakeUpPin_api_ptr_t)(uint32_t WakeUpPin);
 typedef void (*HAL_PWREx_EnterSHUTDOWNMode_api_ptr_t)(void);
+typedef int (*stime_api_ptr_t)(const time_t *t);
+typedef time_t (*timegm_api_ptr_t)(struct tm * const t);
+typedef int (*settimeofday_api_ptr_t)(const struct timeval *tv, const struct timezone *tz);
+typedef struct tm *(*gmtime_r_api_ptr_t)(const time_t *timep, struct tm *r);
+typedef char *(*asctime_r_api_ptr_t)(const struct tm *t, char *buf);
+typedef char *(*ctime_r_api_ptr_t)(const time_t * tim_p, char * result);
+typedef struct tm* (*localtime_r_api_ptr_t)(const time_t* t, struct tm* r);
+typedef rt_uint8_t (*rt_interrupt_get_nest_api_ptr_t)(void);
+typedef struct tm *(*gmtime_api_ptr_t)(const time_t* t);
+typedef struct tm *(*localtime_api_ptr_t)(const time_t* t);
+typedef time_t (*mktime_api_ptr_t)(struct tm* const t);
+typedef char *(*ctime_api_ptr_t)(const time_t* tim_p);
+typedef time_t (*time_api_ptr_t)(time_t* t);
 #endif

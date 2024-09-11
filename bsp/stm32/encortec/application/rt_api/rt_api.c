@@ -1044,6 +1044,22 @@ int rt_snprintf(char *buf, rt_size_t size, const char *format, ...) {
     return n;
 }
 
+rt_err_t rt_get_errno(void) {
+    return ((rt_get_errno_api_ptr_t)(rt_get_errno_addr))();
+}
+
+void rt_set_errno(rt_err_t no) {
+    return ((rt_set_errno_api_ptr_t)(rt_set_errno_addr))(no);
+}
+
+int * _rt_errno(void) {
+    return ((_rt_errno_api_ptr_t)(_rt_errno_addr))();
+}
+
+const char * rt_strerror(rt_err_t error) {
+    return ((rt_strerror_api_ptr_t)(rt_strerror_addr))(error);
+}
+
 void * rt_memset(void *src, int c, rt_ubase_t n) {
     return ((rt_memset_api_ptr_t)(rt_memset_addr))(src, c, n);
 }
@@ -1106,5 +1122,57 @@ void HAL_PWR_EnableWakeUpPin(uint32_t WakeUpPin) {
 
 void HAL_PWREx_EnterSHUTDOWNMode(void) {
     return ((HAL_PWREx_EnterSHUTDOWNMode_api_ptr_t)(HAL_PWREx_EnterSHUTDOWNMode_addr))();
+}
+
+int stime(const time_t *t) {
+    return ((stime_api_ptr_t)(stime_addr))(t);
+}
+
+time_t timegm(struct tm * const t) {
+    return ((timegm_api_ptr_t)(timegm_addr))(t);
+}
+
+int settimeofday(const struct timeval *tv, const struct timezone *tz) {
+    return ((settimeofday_api_ptr_t)(settimeofday_addr))(tv, tz);
+}
+
+struct tm * gmtime_r(const time_t *timep, struct tm *r) {
+    return ((gmtime_r_api_ptr_t)(gmtime_r_addr))(timep, r);
+}
+
+char * asctime_r(const struct tm *t, char *buf) {
+    return ((asctime_r_api_ptr_t)(asctime_r_addr))(t, buf);
+}
+
+char * ctime_r(const time_t * tim_p, char * result) {
+    return ((ctime_r_api_ptr_t)(ctime_r_addr))(tim_p, result);
+}
+
+struct tm* localtime_r(const time_t* t, struct tm* r) {
+    return ((localtime_r_api_ptr_t)(localtime_r_addr))(t, r);
+}
+
+rt_uint8_t rt_interrupt_get_nest(void) {
+    return ((rt_interrupt_get_nest_api_ptr_t)(rt_interrupt_get_nest_addr))();
+}
+
+struct tm * gmtime(const time_t* t) {
+    return ((gmtime_api_ptr_t)(gmtime_addr))(t);
+}
+
+struct tm * localtime(const time_t* t) {
+    return ((localtime_api_ptr_t)(localtime_addr))(t);
+}
+
+time_t mktime(struct tm* const t) {
+    return ((mktime_api_ptr_t)(mktime_addr))(t);
+}
+
+char * ctime(const time_t* tim_p) {
+    return ((ctime_api_ptr_t)(ctime_addr))(tim_p);
+}
+
+time_t time(time_t* t) {
+    return ((time_api_ptr_t)(time_addr))(t);
 }
 
