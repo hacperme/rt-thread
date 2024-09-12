@@ -118,6 +118,14 @@ static void test_esp32_download(int argc, char **argv)
     }
     if (mode == 0)
     {
+        rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
+        rt_pin_write(FLASH_PWRON_PIN, PIN_HIGH);
+        res = rt_pin_read(FLASH_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+        LOG_D("FLASH_PWRON %s", res == RT_EOK ? "success" : "failed");
+        rt_pin_mode(QSPI_CPUN_ESP_PIN, PIN_MODE_OUTPUT);
+        rt_pin_write(QSPI_CPUN_ESP_PIN, PIN_HIGH);
+        res = rt_pin_read(QSPI_CPUN_ESP_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+        LOG_D("QSPI_CPUN_ESP %s", res == RT_EOK ? "success" : "failed");
         res = esp32_power_on();
         LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
     }
