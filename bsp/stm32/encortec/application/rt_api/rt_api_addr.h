@@ -79,9 +79,9 @@
 #define rt_thread_resume_addr 0x0801603D
 #define rt_thread_find_addr 0x080160D1
 #define rt_thread_get_name_addr 0x080160EB
-#define rt_exit_critical_safe_addr 0x080238BD
-#define rt_enter_critical_addr 0x080238D1
-#define rt_exit_critical_addr 0x0802390D
-#define rt_critical_level_addr 0x08023965
+#define rt_exit_critical_safe_addr 0x08022629
+#define rt_enter_critical_addr 0x0802263D
+#define rt_exit_critical_addr 0x08022679
+#define rt_critical_level_addr 0x080226D1
 
 #endif /* __ENCORTEC_FUNCTION_ADDRESSES_H */
