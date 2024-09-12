@@ -402,25 +402,4 @@ static void test_all_pin_enable(int argc, char **argv)
 }
 // MSH_CMD_EXPORT(test_all_pin_enable, test all pin enable);
 
-static void test_esp32_download(int argc, char **argv)
-{
-    rt_err_t res;
-    rt_uint8_t mode = 0;
-    if (argc >= 2)
-    {
-        mode = atoi(argv[1]);
-    }
-    if (mode == 0)
-    {
-        res = esp32_power_on();
-        LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
-    }
-    else
-    {
-        res = esp32_start_download();
-        LOG_D("esp32_start_download %s", res == RT_EOK ? "success" : "failed");
-    }
-}
-
-MSH_CMD_EXPORT(test_esp32_download, test esp32 donwload);
 #endif
