@@ -157,12 +157,6 @@
 
 /* Memory protection */
 
-#define RT_USING_MEM_PROTECTION
-#define RT_USING_HW_STACK_GUARD
-#define USE_MEM_PROTECTION_EXAMPLES
-#define NUM_MEM_REGIONS 8
-#define NUM_EXCLUSIVE_REGIONS 2
-#define NUM_CONFIGURABLE_REGIONS 3
 /* end of Memory protection */
 
 /* Utilities */

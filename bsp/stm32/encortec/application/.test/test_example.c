@@ -9,6 +9,7 @@
 #include "logging.h"
 #include "rtthread.h"
 
+#if 0
 int application_start(int argc, char *argv[]) {
     app_log_init();
 
@@ -36,3 +37,4 @@ int application_start(int argc, char *argv[]) {
 
     return 0;
 }
+#endif
