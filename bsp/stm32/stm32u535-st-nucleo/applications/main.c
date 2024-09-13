@@ -21,8 +21,10 @@
 // #define DBG_LEVEL DBG_WARNING
 // #define DBG_LEVEL DBG_ERROR
 #include <rtdbg.h>
+#if defined(BSP_USING_ON_CHIP_FLASH) && defined(RT_USING_DFS) && defined(PKG_USING_LITTLEFS)
 #include "dfs.h"
 #include "drv_dfs.h"
+#endif
 
 extern char __bootloader_rom_start[];
 extern char __bootloader_rom_end[];
@@ -56,8 +58,10 @@ int main(void)
     LOG_I("__heap_start: %p\r\n", __heap_start);
     LOG_I("__heap_end: %p\r\n", __heap_end);
 
+#if defined(BSP_USING_ON_CHIP_FLASH) && defined(RT_USING_DFS) && defined(PKG_USING_LITTLEFS)
     int res = rt_hw_fs_mount();
     LOG_I("rt_hw_fs_mount %s", res == RT_EOK ? "success" : "failed");
+#endif
 
     // extern void main_business_entry(void);
     // main_business_entry();
