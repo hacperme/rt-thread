@@ -47,16 +47,14 @@ static void app_log_print_to_file(const char *fmt, ...)
 }
 #endif
 
-static char ts_buf[20];
-static time_t cur_time;
-static struct tm time_now;
 char *get_ts(void) {
+    static char ts_buf[20];
+    time_t cur_time;
+    struct tm *time_now;
     time(&cur_time);
-    static struct tm *_time_now;
-    _time_now = localtime(&cur_time);
-    rt_memcpy(&time_now, _time_now, sizeof(*_time_now));
+    time_now = localtime(&cur_time);
     rt_memset(ts_buf, 0, 20);
-    strftime(ts_buf, sizeof(ts_buf), "%Y-%m-%d %H:%M:%S", &time_now);
+    strftime(ts_buf, sizeof(ts_buf), "%Y-%m-%d %H:%M:%S", time_now);
     return ts_buf;
 }
 
