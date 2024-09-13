@@ -3,7 +3,9 @@
 #include <rtthread.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef APP_LOG_USING_TS
 #include <sys/time.h>
+#endif
 #include <stdio.h>
 
 #if defined APP_USING_LOG && defined APP_LOG_PRINT_CHANNEL
@@ -47,6 +49,7 @@ static void app_log_print_to_file(const char *fmt, ...)
 }
 #endif
 
+#ifdef APP_LOG_USING_TS
 char *get_ts(void) {
     static char ts_buf[20];
     time_t cur_time;
@@ -57,6 +60,7 @@ char *get_ts(void) {
     strftime(ts_buf, sizeof(ts_buf), "%Y-%m-%d %H:%M:%S", time_now);
     return ts_buf;
 }
+#endif
 
 void app_log_print(const char *fmt, ...)
 {

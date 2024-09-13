@@ -108,6 +108,36 @@ static void test_esp32(void)
 
 MSH_CMD_EXPORT(test_esp32, test esp32);
 
+static void test_esp32_download(int argc, char **argv)
+{
+    rt_err_t res;
+    rt_uint8_t mode = 0;
+    if (argc >= 2)
+    {
+        mode = atoi(argv[1]);
+    }
+    if (mode == 0)
+    {
+        rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
+        rt_pin_write(FLASH_PWRON_PIN, PIN_HIGH);
+        res = rt_pin_read(FLASH_PWRON_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+        LOG_D("FLASH_PWRON %s", res == RT_EOK ? "success" : "failed");
+        rt_pin_mode(QSPI_CPUN_ESP_PIN, PIN_MODE_OUTPUT);
+        rt_pin_write(QSPI_CPUN_ESP_PIN, PIN_HIGH);
+        res = rt_pin_read(QSPI_CPUN_ESP_PIN) == PIN_HIGH ? RT_EOK : RT_ERROR;
+        LOG_D("QSPI_CPUN_ESP %s", res == RT_EOK ? "success" : "failed");
+        res = esp32_power_on();
+        LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
+    }
+    else
+    {
+        res = esp32_start_download();
+        LOG_D("esp32_start_download %s", res == RT_EOK ? "success" : "failed");
+    }
+}
+
+MSH_CMD_EXPORT(test_esp32_download, test esp32 donwload);
+
 #define UART5_RX_PIN        GET_PIN(D, 2)
 #define UART5_TX_PIN        GET_PIN(C, 12)
 
