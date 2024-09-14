@@ -564,7 +564,7 @@ void test_gnss(int argc, char **argv)
     log_debug("gnss_open %s", res == RT_EOK ? "success" : "failed");
     rt_thread_mdelay(100); //at least 300 ms
 
-    rt_uint8_t cnt = 5;
+    rt_uint8_t cnt = 60;
     lwgps_t gnss_data = {0};
     nmea_item test_nmea_item = {0};
 

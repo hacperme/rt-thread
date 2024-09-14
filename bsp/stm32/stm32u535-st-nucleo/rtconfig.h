@@ -1,9 +1,6 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-#define SOC_STM32U535RE
-#define BOARD_STM32U535_NUCLEO
-
 /* RT-Thread Kernel */
 
 #define RT_NAME_MAX 8
@@ -72,7 +69,7 @@
 
 #define RT_USING_COMPONENTS_INIT
 #define RT_USING_USER_MAIN
-#define RT_MAIN_THREAD_STACK_SIZE 8192
+#define RT_MAIN_THREAD_STACK_SIZE 2048
 #define RT_MAIN_THREAD_PRIORITY 10
 #define RT_USING_MSH
 #define RT_USING_FINSH
@@ -189,12 +186,6 @@
 
 /* Memory protection */
 
-#define RT_USING_MEM_PROTECTION
-#define RT_USING_HW_STACK_GUARD
-#define USE_MEM_PROTECTION_EXAMPLES
-#define NUM_MEM_REGIONS 8
-#define NUM_EXCLUSIVE_REGIONS 2
-#define NUM_CONFIGURABLE_REGIONS 3
 /* end of Memory protection */
 
 /* Utilities */
@@ -307,15 +298,6 @@
 /* end of Micrium: Micrium software products porting for RT-Thread */
 #define PKG_USING_PERF_COUNTER
 #define PKG_USING_PERF_COUNTER_V2241
-#define PKG_USING_LITTLEFS
-#define PKG_USING_LITTLEFS_LATEST_VERSION
-#define LFS_READ_SIZE 2048
-#define LFS_PROG_SIZE 2048
-#define LFS_BLOCK_SIZE 8192
-#define LFS_CACHE_SIZE 2048
-#define LFS_BLOCK_CYCLES 100
-#define LFS_THREADSAFE
-#define LFS_LOOKAHEAD_MAX 8
 /* end of system packages */
 
 /* peripheral libraries and drivers */
@@ -444,6 +426,9 @@
 
 /* Onboard Peripheral Drivers */
 
+#define SOC_STM32U535VE
+#define BOARD_STM32U535_NUCLEO
+#define BSP_USING_NAND_FLASH
 /* end of Onboard Peripheral Drivers */
 
 /* On-chip Peripheral Drivers */
@@ -468,7 +453,6 @@
 #define BSP_I2C1_SDA_PIN 19
 #define BSP_USING_ONCHIP_RTC
 #define BSP_RTC_USING_LSE
-#define BSP_USING_CRC
 #define BSP_USING_ON_CHIP_FLASH
 /* end of On-chip Peripheral Drivers */
 

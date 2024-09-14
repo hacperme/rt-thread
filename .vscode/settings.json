@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.py": "python",
         "functional": "c",
         "array": "cpp",
         "string_view": "cpp",
@@ -10,6 +11,7 @@
         "rtthread.h": "c",
         "rtdbg.h": "c",
         "reent.h": "c",
-        "rtconfig.h": "c"
+        "rtconfig.h": "c",
+        "rtdevice.h": "c"
     }
 }

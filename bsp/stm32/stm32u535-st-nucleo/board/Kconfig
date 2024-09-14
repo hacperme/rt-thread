@@ -2,50 +2,35 @@ menu "Hardware Drivers Config"
 
 menu "Onboard Peripheral Drivers"
 
-    config BSP_USING_ARDUINO
-        bool "Compatible with Arduino Ecosystem (RTduino)"
-        select PKG_USING_RTDUINO
-        select BSP_USING_GPIO
-        select BSP_USING_ADC
-        select BSP_USING_ADC1
-        select BSP_USING_PWM
-        select BSP_USING_PWM1
-        select BSP_USING_PWM1_CH1
-        select BSP_USING_PWM1_CH2
-        select BSP_USING_PWM1_CH3
-        select BSP_USING_PWM4
-        select BSP_USING_PWM4_CH4
-        select BSP_USING_I2C
-        select BSP_USING_I2C1
-        select BSP_USING_SPI
-        select BSP_USING_SPI1
-        select BSP_SPI1_TX_USING_DMA
-        select BSP_SPI1_RX_USING_DMA
-        select RTDUINO_USING_WIRE
-        select RTDUINO_USING_SPI
-        imply RTDUINO_USING_SERVO
+    menuconfig SOC_STM32U545RE
+        bool "SOC_STM32U545RE"
+        select SOC_SERIES_STM32U5
+        select RT_USING_COMPONENTS_INIT
+        select RT_USING_USER_MAIN
+        default y
+        if SOC_STM32U545RE
+            config BOARD_STM32U545_NUCLEO
+                bool "BOARD_STM32U545_NUCLEO"
+                select BOARD_SERIES_STM32_NUCLEO_64
+                default y
+        endif
+    
+    menuconfig SOC_STM32U535VE
+        bool "SOC_STM32U535VE"
+        select SOC_SERIES_STM32U5
+        select RT_USING_COMPONENTS_INIT
+        select RT_USING_USER_MAIN
         default n
+        if SOC_STM32U535VE
+            config BOARD_STM32U535_NUCLEO
+                bool "BOARD_STM32U535_NUCLEO"
+                select BOARD_SERIES_STM32_NUCLEO_64
+                default n
+        endif
 
-    config BSP_USING_KEY
-        bool "Enable onboard keys"
-        select RT_USING_PIN
-        select RT_USING_TIMER_SOFT
-        select PKG_USING_FLEXIBLE_BUTTON
-        default n
-
-    config BSP_USING_MPU6XXX
-        bool "Enable mpu6xxx (i2c2)"
-        select BSP_USING_I2C
-        select BSP_USING_I2C2
-        select PKG_USING_SENSORS_DRIVERS
-        select PKG_USING_MPU6XXX
-        select PKG_USING_MPU6XXX_LATEST_VERSION
-        default n
-
-    config BSP_USING_SPI_FLASH
-        bool "Enable SPI FLASH"
-        select BSP_USING_SPI
-        select RT_USING_SFUD
+    config  BSP_USING_NAND_FLASH
+        bool "Enable Nand Falsh"
+        select RT_USING_MTD_NAND
         default n
 
 endmenu

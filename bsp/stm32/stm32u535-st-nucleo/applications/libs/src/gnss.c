@@ -335,7 +335,7 @@ rt_err_t gnss_open(void)
         return res;
     }
 
-#ifdef SOC_STM32U535RE
+#ifdef SOC_STM32U535VE
     res = gnss_power_on();
     LOG_D("gnss_power_on %s", res == RT_EOK ? "success" : "failed");
     if (res != RT_EOK)
@@ -421,7 +421,7 @@ rt_err_t gnss_close(void)
     res = gnss_deinit();
     LOG_D("gnss_deinit %s", res == RT_EOK ? "success" : "failed");
 
-#ifdef SOC_STM32U535RE
+#ifdef SOC_STM32U535VE
     res = gnss_power_off();
 #endif
 
