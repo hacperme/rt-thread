@@ -41,7 +41,7 @@ LFLAGS = DEVICE + f' -Wl,--gc-sections,-Map={TARGET_NAME}.map,-cref,-u,main -T b
 CPATH = ''
 LPATH = ''
 
-CFLAGS += " -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc -Wl,--wrap=free"
+# CFLAGS += " -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc -Wl,--wrap=free"
 
 CFLAGS += f" --include={SDK_ROOT}/rtconfig.h"
 

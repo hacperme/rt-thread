@@ -10,23 +10,24 @@
 #include "rtthread.h"
 #include <reent.h>
 #include <string.h>
+#include "logging.h"
 
-void* __wrap_malloc(size_t size)
+void* malloc(size_t size)
 {
     return rt_malloc(size);
 }
 
-void* __wrap_calloc(size_t nitems, size_t size)
+void* calloc(size_t nitems, size_t size)
 {
     return rt_calloc(nitems, size);
 }
 
-void* __wrap_realloc(void *ptr, size_t size)
+void* realloc(void *ptr, size_t size)
 {
     return rt_realloc(ptr, size);
 }
 
-void __wrap_free(void* ptr)
+void free(void* ptr)
 {
     return rt_free(ptr);
 }
