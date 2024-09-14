@@ -48,6 +48,6 @@ lwgps_example(int argc, char *argv[]) {
     rt_kprintf("Altitude: %f meters\r\n", hgps.altitude);
 }
 
-MSH_CMD_EXPORT(lwgps_example, lwgps simple example);
+// MSH_CMD_EXPORT(lwgps_example, lwgps simple example);
 #endif
 #endif

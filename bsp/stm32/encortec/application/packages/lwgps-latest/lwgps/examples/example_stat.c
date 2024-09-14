@@ -79,6 +79,6 @@ lwgps_example_stat(int argc, char *argv[]) {
     rt_kprintf("error count is %d\r\n", err_cnt);
 }
 
-MSH_CMD_EXPORT(lwgps_example_stat, lwgps example use callback functionality of lwgps_process());
+// MSH_CMD_EXPORT(lwgps_example_stat, lwgps example use callback functionality of lwgps_process());
 #endif
 #endif

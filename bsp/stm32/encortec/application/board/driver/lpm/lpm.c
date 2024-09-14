@@ -450,7 +450,7 @@ void test_rtc(void)
     }
 }
 
-MSH_CMD_EXPORT(test_rtc, test rtc);
+// MSH_CMD_EXPORT(test_rtc, test rtc);
 
 static void test_show_wkup_status(void)
 {
