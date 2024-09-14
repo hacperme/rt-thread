@@ -38,11 +38,12 @@ extern int Image$$RW_IRAM1$$ZI$$Limit;
 #pragma section="CSTACK"
 #define HEAP_BEGIN      (__segment_end("CSTACK"))
 #else
-extern int __bss_end;
-#define HEAP_BEGIN      ((void *)&__bss_end)
+extern char __heap_start[];
+#define HEAP_BEGIN      ((void *)&__heap_start)
 #endif
 
-#define HEAP_END                       STM32_SRAM1_END
+extern char __heap_end[];
+#define HEAP_END         ((void *)&__heap_end)
 
 #ifdef RT_USING_MEM_PROTECTION
 #define NUM_STATIC_REGIONS 1
