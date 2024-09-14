@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "functional": "c",
+        "array": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "ranges": "cpp",
+        "utility": "cpp",
+        "thread": "cpp",
+        "rtthread.h": "c",
+        "rtdbg.h": "c",
+        "reent.h": "c",
+        "rtconfig.h": "c"
+    }
+}
