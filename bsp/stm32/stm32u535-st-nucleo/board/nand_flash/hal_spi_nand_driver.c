@@ -13,7 +13,7 @@
 /********************* 全局变量 硬件&FLASH本身的操作句柄 *******************/
 /*************************************************************************/
 
-OSPI_HandleTypeDef hal_nand_ospi;
+static OSPI_HandleTypeDef hal_nand_ospi;
 
 HAL_NAND_Device_t hal_nand_device =
 {
@@ -110,7 +110,7 @@ static inline void encore_nand_power_switch(encore_nand_poweron_e poweron)
     rt_pin_write(FLASH_PWRON_PIN, poweron);
 }
 
-void MX_OSPI_Init(void) {
+void MX_OSPI_Init(OSPI_HandleTypeDef *hal_nand_ospi) {
 
     encore_nand_power_switch(NAND_POWERON);
     encore_nand_direction_switch(NAND_STM32_DIRECTION);
@@ -118,31 +118,31 @@ void MX_OSPI_Init(void) {
     // 启用 OSPI 外设的时钟
     __HAL_RCC_OSPI1_CLK_ENABLE();
 
-    hal_nand_ospi.Instance = OCTOSPI1;
-    hal_nand_ospi.Init.FifoThreshold = 4;
-    hal_nand_ospi.Init.DualQuad = HAL_OSPI_DUALQUAD_DISABLE;
-    hal_nand_ospi.Init.MemoryType = HAL_OSPI_MEMTYPE_MICRON;
-    hal_nand_ospi.Init.DeviceSize = 32;
-    hal_nand_ospi.Init.ChipSelectHighTime = 1;
-    hal_nand_ospi.Init.FreeRunningClock = HAL_OSPI_FREERUNCLK_DISABLE;
-    hal_nand_ospi.Init.ClockMode = HAL_OSPI_CLOCK_MODE_0;
-    hal_nand_ospi.Init.WrapSize = HAL_OSPI_WRAP_NOT_SUPPORTED;
-    hal_nand_ospi.Init.ClockPrescaler = 32;
-    hal_nand_ospi.Init.SampleShifting = HAL_OSPI_SAMPLE_SHIFTING_HALFCYCLE; //可能会存在信号延迟
-    hal_nand_ospi.Init.ChipSelectBoundary = 0;
-    hal_nand_ospi.Init.DelayHoldQuarterCycle = HAL_OSPI_DHQC_DISABLE; //可能会存在信号延迟
-    hal_nand_ospi.Init.DelayBlockBypass = HAL_OSPI_DELAY_BLOCK_BYPASSED; //可能会存在信号延迟
-    hal_nand_ospi.Init.MaxTran = 0;
-    hal_nand_ospi.Init.Refresh = 0;
+    hal_nand_ospi->Instance = OCTOSPI1;
+    hal_nand_ospi->Init.FifoThreshold = 4;
+    hal_nand_ospi->Init.DualQuad = HAL_OSPI_DUALQUAD_DISABLE;
+    hal_nand_ospi->Init.MemoryType = HAL_OSPI_MEMTYPE_MICRON;
+    hal_nand_ospi->Init.DeviceSize = 32;
+    hal_nand_ospi->Init.ChipSelectHighTime = 1;
+    hal_nand_ospi->Init.FreeRunningClock = HAL_OSPI_FREERUNCLK_DISABLE;
+    hal_nand_ospi->Init.ClockMode = HAL_OSPI_CLOCK_MODE_0;
+    hal_nand_ospi->Init.WrapSize = HAL_OSPI_WRAP_NOT_SUPPORTED;
+    hal_nand_ospi->Init.ClockPrescaler = 32;
+    hal_nand_ospi->Init.SampleShifting = HAL_OSPI_SAMPLE_SHIFTING_HALFCYCLE; //可能会存在信号延迟
+    hal_nand_ospi->Init.ChipSelectBoundary = 0;
+    hal_nand_ospi->Init.DelayHoldQuarterCycle = HAL_OSPI_DHQC_DISABLE; //可能会存在信号延迟
+    hal_nand_ospi->Init.DelayBlockBypass = HAL_OSPI_DELAY_BLOCK_BYPASSED; //可能会存在信号延迟
+    hal_nand_ospi->Init.MaxTran = 0;
+    hal_nand_ospi->Init.Refresh = 0;
 
-    if (HAL_OSPI_Init(&hal_nand_ospi) != HAL_OK) {
+    if (HAL_OSPI_Init(hal_nand_ospi) != HAL_OK) {
         Error_Handler();
     }else{
         LOG_D("OSPI Success");
     }
 
     // 检查 NAND Flash 初始化是否成功
-    if (HAL_OSPI_GetState(&hal_nand_ospi) != HAL_OSPI_STATE_READY) {
+    if (HAL_OSPI_GetState(hal_nand_ospi) != HAL_OSPI_STATE_READY) {
         Error_Handler(); // 如果初始化失败，进入错误处理
     }else{
         LOG_D("OSPI ready");
@@ -214,9 +214,9 @@ void HAL_OSPI_MspInit(OSPI_HandleTypeDef* hospi)
 /**
  * @brief HAL_NAND_BSP_Init BSP初始化函数
  */
-static void HAL_NAND_BSP_Init()
+static void HAL_NAND_BSP_Init(HAL_NAND_Device_t *nand_device)
 {
-    MX_OSPI_Init();
+    MX_OSPI_Init((OSPI_HandleTypeDef *)nand_device->spi_device);
 }
 
 /***********************************************************************/
@@ -235,9 +235,9 @@ static void HAL_NAND_BSP_Init()
  * @param  xfer_mode        spi_xfer_mode_e类型，暂时未使用，保留作为控制SPI发送方式的参数（即选择FIFO发送还是DMA发送）
  * @return int 成功为0，失败时可以根据平台特性编制<0的错误码
  */
-static int HAL_SPI_NAND_xfer(HAL_NAND_Device_t nand_device, uint8_t cmd, uint32_t addr, uint8_t *din, uint8_t *dout, uint32_t len, spi_xfer_mode_e xfer_mode)
+static int HAL_SPI_NAND_xfer(HAL_NAND_Device_t *nand_device, uint8_t cmd, uint32_t addr, uint8_t *din, uint8_t *dout, uint32_t len, spi_xfer_mode_e xfer_mode)
 {
-    OSPI_HandleTypeDef *hospi = (OSPI_HandleTypeDef *)(nand_device.spi_device);
+    OSPI_HandleTypeDef *hospi = (OSPI_HandleTypeDef *)(nand_device->spi_device);
     OSPI_RegularCmdTypeDef sCommand =
     {
         .OperationType = HAL_OSPI_OPTYPE_COMMON_CFG,
@@ -245,13 +245,13 @@ static int HAL_SPI_NAND_xfer(HAL_NAND_Device_t nand_device, uint8_t cmd, uint32_
         .DQSMode = HAL_OSPI_DQS_DISABLE,
         .SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD
     };
-    // LOG_D("Model %s", nand_device.nand_flash_info->model);
-    NAND_cmd_t *cmd_list = nand_device.nand_flash_info->cmd_list;
+    // LOG_D("Model %s", nand_device->nand_flash_info->model);
+    NAND_cmd_t *cmd_list = nand_device->nand_flash_info->cmd_list;
     uint8_t cmd_index = 0;
 
-    //LOG_D("array size %d ", nand_device.nand_flash_info->cmd_index_max);
+    //LOG_D("array size %d ", nand_device->nand_flash_info->cmd_index_max);
 
-    for(cmd_index = 0; cmd_index < nand_device.nand_flash_info->cmd_index_max; cmd_index++)
+    for(cmd_index = 0; cmd_index < nand_device->nand_flash_info->cmd_index_max; cmd_index++)
     {
         //LOG_D("find CMD %02X", cmd_list[cmd_index].cmd);
         if(cmd == cmd_list[cmd_index].cmd)
@@ -260,7 +260,7 @@ static int HAL_SPI_NAND_xfer(HAL_NAND_Device_t nand_device, uint8_t cmd, uint32_
         }
     }
 
-    if(cmd_index >= nand_device.nand_flash_info->cmd_index_max)
+    if(cmd_index >= nand_device->nand_flash_info->cmd_index_max)
     {
         LOG_E("cmd not found");
         return -1;
@@ -336,23 +336,30 @@ static inline void mdelay(unsigned int ms)
  * @return true 成功
  * @return false 失败
  */
-bool HAL_SPI_NAND_Init(HAL_NAND_Device_t hal_nand_device)
+bool HAL_SPI_NAND_Init(HAL_NAND_Device_t *hal_nand_device)
 {
-    char nand_jedec_id[3] = {0};
+    uint8_t nand_jedec_id[2] = {0};
     //uint8_t addr = 0x00;
 
-    HAL_NAND_BSP_Init();
+    HAL_NAND_BSP_Init(hal_nand_device);
 
     mdelay(100);
-    HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_RESET, 0, NULL, NULL, 0, SPI_FIFO);
+    if (HAL_SPI_NAND_Reset(hal_nand_device) != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Reset failed.");
+        return false;
+    }
     mdelay(100);
 
-    HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_READ_ID, 0x00, nand_jedec_id, NULL, 2, SPI_FIFO);
+    if (HAL_SPI_NAND_Read_ID(hal_nand_device, nand_jedec_id) != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Read_ID failed.");
+        return false;
+    }
 
-    LOG_D("MFR ID: %02X  DEV ID: %02X", nand_jedec_id[0], nand_jedec_id[1]);
-
-    if(hal_nand_device.nand_flash_info->manufacturer_id != nand_jedec_id[0] ||\
-    hal_nand_device.nand_flash_info->device_id != nand_jedec_id[1])
+    LOG_D("MFR ID: 0x%02X  DEV ID: 0x%02X", nand_jedec_id[0], nand_jedec_id[1]);
+    if(hal_nand_device->nand_flash_info->manufacturer_id != nand_jedec_id[0] ||\
+       hal_nand_device->nand_flash_info->device_id != nand_jedec_id[1])
     {
         LOG_E("nand id not match");
         return false;
@@ -361,13 +368,18 @@ bool HAL_SPI_NAND_Init(HAL_NAND_Device_t hal_nand_device)
     return true;
 }
 
+int HAL_SPI_NAND_Reset(HAL_NAND_Device_t *hal_nand_device)
+{
+    return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_RESET, 0, NULL, NULL, 0, SPI_FIFO);
+}
+
 /**
  * @brief HAL_SPI_NAND_Read_ID 读取ID
  * @param  hal_nand_device  HAL_NAND_Device_t类型，绑定NAND FLASH设备和SPI通信函数
  * @param  din_id           uint8_t*类型，ID接收地址
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Read_ID(HAL_NAND_Device_t hal_nand_device, uint8_t *din_id)
+int HAL_SPI_NAND_Read_ID(HAL_NAND_Device_t *hal_nand_device, uint8_t *din_id)
 {
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_READ_ID, 0x00, din_id, NULL, 2, SPI_FIFO);
 }
@@ -379,7 +391,7 @@ int HAL_SPI_NAND_Read_ID(HAL_NAND_Device_t hal_nand_device, uint8_t *din_id)
  * @param  din_feature      接收寄存器值的地址，一个uint8_t即可
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Get_Feature(HAL_NAND_Device_t hal_nand_device, uint32_t addr, uint8_t *din_feature)
+int HAL_SPI_NAND_Get_Feature(HAL_NAND_Device_t *hal_nand_device, uint32_t addr, uint8_t *din_feature)
 {
 
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_GET_FEATURE, addr, din_feature, NULL, 1, SPI_FIFO);
@@ -392,7 +404,7 @@ int HAL_SPI_NAND_Get_Feature(HAL_NAND_Device_t hal_nand_device, uint32_t addr, u
  * @param  dout_feature     写入寄存器值的地址，一个uint8_t即可
  * @return int 通信函数的返回值
  */ 
-int HAL_SPI_NAND_Set_Feature(HAL_NAND_Device_t hal_nand_device, uint32_t addr, uint8_t *dout_feature)
+int HAL_SPI_NAND_Set_Feature(HAL_NAND_Device_t *hal_nand_device, uint32_t addr, uint8_t *dout_feature)
 {
 
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_SET_FEATURE, addr, NULL, dout_feature, 1, SPI_FIFO);
@@ -404,7 +416,7 @@ int HAL_SPI_NAND_Set_Feature(HAL_NAND_Device_t hal_nand_device, uint32_t addr, u
  * @param  status           状态寄存器值，一个uint8_t即可
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Read_Status(HAL_NAND_Device_t hal_nand_device, uint8_t *status)
+int HAL_SPI_NAND_Read_Status(HAL_NAND_Device_t *hal_nand_device, uint8_t *status)
 {
     return HAL_SPI_NAND_Get_Feature(hal_nand_device, REG_STATUS, status);
 }
@@ -415,7 +427,7 @@ int HAL_SPI_NAND_Read_Status(HAL_NAND_Device_t hal_nand_device, uint8_t *status)
  * @param  cfg              配置寄存器的值，一个uint8_t即可
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Get_Cfg(HAL_NAND_Device_t hal_nand_device, uint8_t *cfg)
+int HAL_SPI_NAND_Get_Cfg(HAL_NAND_Device_t *hal_nand_device, uint8_t *cfg)
 {
     return HAL_SPI_NAND_Get_Feature(hal_nand_device, REG_CFG, cfg);
 }
@@ -426,7 +438,7 @@ int HAL_SPI_NAND_Get_Cfg(HAL_NAND_Device_t hal_nand_device, uint8_t *cfg)
  * @param  cfg              配置寄存器的值，一个uint8_t即可
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Set_Cfg(HAL_NAND_Device_t hal_nand_device, uint8_t *cfg)
+int HAL_SPI_NAND_Set_Cfg(HAL_NAND_Device_t *hal_nand_device, uint8_t *cfg)
 {
     return HAL_SPI_NAND_Set_Feature(hal_nand_device, REG_CFG, cfg);
 }
@@ -437,7 +449,7 @@ int HAL_SPI_NAND_Set_Cfg(HAL_NAND_Device_t hal_nand_device, uint8_t *cfg)
  * @param  lock            OTP寄存器的值，一个uint8_t即可，一般直接写为0，全片解锁即可
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Lock_Block(HAL_NAND_Device_t hal_nand_device, uint8_t *lock)
+int HAL_SPI_NAND_Lock_Block(HAL_NAND_Device_t *hal_nand_device, uint8_t *lock)
 {
     return HAL_SPI_NAND_Set_Feature(hal_nand_device, REG_BLOCK_LOCK, lock);
 }
@@ -448,7 +460,7 @@ int HAL_SPI_NAND_Lock_Block(HAL_NAND_Device_t hal_nand_device, uint8_t *lock)
  * @param  lock            OTP寄存器的值，一个uint8_t即可，上电默认为0x38，即全片锁定
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Get_Lock_Block(HAL_NAND_Device_t hal_nand_device, uint8_t *lock)
+int HAL_SPI_NAND_Get_Lock_Block(HAL_NAND_Device_t *hal_nand_device, uint8_t *lock)
 {
     return HAL_SPI_NAND_Get_Feature(hal_nand_device, REG_BLOCK_LOCK, lock);
 }
@@ -458,7 +470,7 @@ int HAL_SPI_NAND_Get_Lock_Block(HAL_NAND_Device_t hal_nand_device, uint8_t *lock
  * @param  hal_nand_device  NAND设备
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Enable_Ecc(HAL_NAND_Device_t hal_nand_device)
+int HAL_SPI_NAND_Enable_Ecc(HAL_NAND_Device_t *hal_nand_device)
 {
     uint8_t cfg = 0;
 
@@ -477,7 +489,7 @@ int HAL_SPI_NAND_Enable_Ecc(HAL_NAND_Device_t hal_nand_device)
  * @param  hal_nand_device  NAND设备
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Disable_Ecc(HAL_NAND_Device_t hal_nand_device)
+int HAL_SPI_NAND_Disable_Ecc(HAL_NAND_Device_t *hal_nand_device)
 {
     uint8_t cfg = 0;
 
@@ -519,7 +531,7 @@ void HAL_SPI_NAND_Check_Ecc_Status(uint32_t status, uint32_t *corrected, uint32_
  * @param  status           状态寄存器读取的值，可以判断BUSY结束瞬间，进行的操作是否成功
  * @return int              需要配置超时退出时，使用负值标记超时退出，否则恒为0
  */
-int HAL_SPI_NAND_Wait(HAL_NAND_Device_t hal_nand_device, uint8_t *s)
+int HAL_SPI_NAND_Wait(HAL_NAND_Device_t *hal_nand_device, uint8_t *s)
 {
     unsigned long long start = get_ticks();
     uint8_t status;
@@ -554,7 +566,7 @@ out:
  * @param  hal_nand_device  NAND设备
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Write_Enable(HAL_NAND_Device_t hal_nand_device)
+int HAL_SPI_NAND_Write_Enable(HAL_NAND_Device_t *hal_nand_device)
 {
     return  HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_WR_ENABLE, 0x00, NULL, NULL, 0, SPI_FIFO);
 }
@@ -564,7 +576,7 @@ int HAL_SPI_NAND_Write_Enable(HAL_NAND_Device_t hal_nand_device)
  * @param  hal_nand_device  NAND设备
  * @return int 通信函数的返回值
  */
-int HAL_SPI_NAND_Write_Disable(HAL_NAND_Device_t hal_nand_device)
+int HAL_SPI_NAND_Write_Disable(HAL_NAND_Device_t *hal_nand_device)
 {
     return  HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_WR_DISABLE, 0x00, NULL, NULL, 0, SPI_FIFO);
 }
@@ -575,7 +587,7 @@ int HAL_SPI_NAND_Write_Disable(HAL_NAND_Device_t hal_nand_device)
  * @param  page_addr        page 地址,假设一个block有64个page，那么page就是0~63（低六位），所属的block数就是后续的高位，发送固定为24个bit，不足的在低位补0（直接uint32表示即可）
  * @return int 通信函数的返回值 
  */
-int HAL_SPI_NAND_Read_Page_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr)
+int HAL_SPI_NAND_Read_Page_To_Cache(HAL_NAND_Device_t *hal_nand_device, uint32_t page_addr)
 {
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_PAGE_READ, page_addr, NULL, NULL, 0, SPI_FIFO);
 }
@@ -589,7 +601,7 @@ int HAL_SPI_NAND_Read_Page_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t 
  * @param  din_buf          数据buffer
  * @return int通信函数的返回值 
  */
-int HAL_SPI_NAND_Read_From_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *din_buf)
+int HAL_SPI_NAND_Read_From_Cache(HAL_NAND_Device_t *hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *din_buf)
 {
 
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_READ_FROM_CACHE, column, din_buf, NULL, len, SPI_FIFO);
@@ -605,7 +617,7 @@ int HAL_SPI_NAND_Read_From_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t pag
  * @param  clr_cache        是否清空缓存区，1为清空；0为不清空，但是改写cache对应位置的数据
  * @return int通信函数的返回值 
  */
-int HAL_SPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *dout_buf, bool clr_cache)
+int HAL_SPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t *hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *dout_buf, bool clr_cache)
 {
     uint8_t cmd = 0;
 
@@ -625,7 +637,7 @@ int HAL_SPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32
  * @param  page_addr        page 地址
  * @return int 
  */
-int HAL_SPI_NAND_Program_Execute(HAL_NAND_Device_t hal_nand_device , uint32_t page_addr)
+int HAL_SPI_NAND_Program_Execute(HAL_NAND_Device_t *hal_nand_device , uint32_t page_addr)
 {
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_PROG_EXC, page_addr, NULL, NULL, 0, SPI_FIFO);
 }
@@ -636,7 +648,7 @@ int HAL_SPI_NAND_Program_Execute(HAL_NAND_Device_t hal_nand_device , uint32_t pa
  * @param  block_addr       block地址，和page地址格式一样的，只是处理时会忽略page地址，只按block操作
  * @return int 通信函数的返回值 
  */
-int HAL_SPI_NAND_Erase_Block(HAL_NAND_Device_t hal_nand_device, uint32_t block_addr)
+int HAL_SPI_NAND_Erase_Block(HAL_NAND_Device_t *hal_nand_device, uint32_t block_addr)
 {
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_BLK_ERASE, block_addr, NULL, NULL, 0, SPI_FIFO);
 }
@@ -651,8 +663,8 @@ int HAL_SPI_NAND_Erase_Block(HAL_NAND_Device_t hal_nand_device, uint32_t block_a
  * @param  len              数据长度
  * @return int 
  */
-int HAL_SPI_NAND_Internal_Data_Move(HAL_NAND_Device_t hal_nand_device, uint32_t page_src_addr,  \
-    uint32_t page_dst_addr, uint32_t offset, uint8_t *buf, size_t len)
+int HAL_SPI_NAND_Internal_Data_Move(HAL_NAND_Device_t *hal_nand_device, uint32_t page_src_addr,
+                                    uint32_t page_dst_addr, uint32_t offset, uint8_t *buf, size_t len)
 {
     uint8_t status;
 
@@ -691,80 +703,80 @@ static void hal_spi_test_oneline(int argc, char **argv)
     // char dout_buff[4096] = {0};
     char din_buff[16] = {0};
     uint8_t lock_map = 0;
-    HAL_SPI_NAND_Init(hal_nand_device);
+    HAL_SPI_NAND_Init(&hal_nand_device);
 
-    HAL_SPI_NAND_Read_ID(hal_nand_device, id);
+    HAL_SPI_NAND_Read_ID(&hal_nand_device, id);
 
     LOG_D("READ ID: %02X %02X", id[0], id[1]);
-    HAL_SPI_NAND_Get_Lock_Block(hal_nand_device, &lock_map);
+    HAL_SPI_NAND_Get_Lock_Block(&hal_nand_device, &lock_map);
     LOG_D("DEFAULT lock %02X", lock_map);
     lock_map = 0x00;
-    HAL_SPI_NAND_Lock_Block(hal_nand_device, &lock_map);
+    HAL_SPI_NAND_Lock_Block(&hal_nand_device, &lock_map);
     lock_map = 0;
-    HAL_SPI_NAND_Get_Lock_Block(hal_nand_device, &lock_map);
+    HAL_SPI_NAND_Get_Lock_Block(&hal_nand_device, &lock_map);
     LOG_D("Now lock %02X", lock_map);
 
 
     status = 0;
 
-    // HAL_SPI_NAND_Get_Cfg(hal_nand_device, &cfg);
+    // HAL_SPI_NAND_Get_Cfg(&hal_nand_device, &cfg);
 
     // cfg = cfg | 0x01;
-    // HAL_SPI_NAND_Set_Cfg(hal_nand_device, &cfg);
+    // HAL_SPI_NAND_Set_Cfg(&hal_nand_device, &cfg);
     // cfg=0;
-    // HAL_SPI_NAND_Get_Cfg(hal_nand_device, &cfg);
+    // HAL_SPI_NAND_Get_Cfg(&hal_nand_device, &cfg);
     LOG_D("cfg %02X", cfg);
 
     //memcpy(dout_buff, "ABCDEFG", 8);
 
 
     
-    HAL_SPI_NAND_Write_Enable(hal_nand_device);
-    HAL_SPI_NAND_Read_Status(hal_nand_device,&status);
+    HAL_SPI_NAND_Write_Enable(&hal_nand_device);
+    HAL_SPI_NAND_Read_Status(&hal_nand_device,&status);
 
     LOG_D("status before erase %02X", status);
-    HAL_SPI_NAND_Erase_Block(hal_nand_device, page_addr_for_test);//擦除第10块
+    HAL_SPI_NAND_Erase_Block(&hal_nand_device, page_addr_for_test);//擦除第10块
 
-    HAL_SPI_NAND_Wait(hal_nand_device, &status);
+    HAL_SPI_NAND_Wait(&hal_nand_device, &status);
 
     // LOG_D("Erase END");
 
-    // HAL_SPI_NAND_Read_Page_To_Cache(hal_nand_device, page_addr_for_test);
+    // HAL_SPI_NAND_Read_Page_To_Cache(&hal_nand_device, page_addr_for_test);
 
-    // HAL_SPI_NAND_Wait(hal_nand_device, &status);
+    // HAL_SPI_NAND_Wait(&hal_nand_device, &status);
 
-    // HAL_SPI_NAND_Read_From_Cache(hal_nand_device, page_addr_for_test, test_column, 16, din_buff);
+    // HAL_SPI_NAND_Read_From_Cache(&hal_nand_device, page_addr_for_test, test_column, 16, din_buff);
 
     // LOG_D("Read END 1 %02X %02X %02X %02X %02X %02X %02X %02X",\
     // din_buff[0], din_buff[1], din_buff[2], din_buff[3], din_buff[4], din_buff[5], din_buff[6], din_buff[7]);
 
-    HAL_SPI_NAND_Write_Enable(hal_nand_device);
+    HAL_SPI_NAND_Write_Enable(&hal_nand_device);
 
-    HAL_SPI_NAND_Read_Status(hal_nand_device,&status);
+    HAL_SPI_NAND_Read_Status(&hal_nand_device,&status);
     LOG_D("status %02X", status);
     status = 0;
 
 
-    HAL_SPI_NAND_Program_Data_To_Cache(hal_nand_device, page_addr_for_test, test_column, 8, (uint8_t *)"ABCDEFG", true);
+    HAL_SPI_NAND_Program_Data_To_Cache(&hal_nand_device, page_addr_for_test, test_column, 8, (uint8_t *)"ABCDEFG", true);
 
-    HAL_SPI_NAND_Read_From_Cache(hal_nand_device, page_addr_for_test, test_column, 8, din_buff);
+    HAL_SPI_NAND_Read_From_Cache(&hal_nand_device, page_addr_for_test, test_column, 8, din_buff);
 
     LOG_D("Read END 1 %02X %02X %02X %02X %02X %02X %02X %02X \r\n str %s",\
     din_buff[0], din_buff[1], din_buff[2], din_buff[3], din_buff[4], din_buff[5], din_buff[6], din_buff[7], din_buff);
 
-    HAL_SPI_NAND_Program_Execute(hal_nand_device, page_addr_for_test);
+    HAL_SPI_NAND_Program_Execute(&hal_nand_device, page_addr_for_test);
 
-    HAL_SPI_NAND_Wait(hal_nand_device, &status);
+    HAL_SPI_NAND_Wait(&hal_nand_device, &status);
 
     LOG_D("Program END");
 
-    HAL_SPI_NAND_Read_Page_To_Cache(hal_nand_device, page_addr_for_test);
+    HAL_SPI_NAND_Read_Page_To_Cache(&hal_nand_device, page_addr_for_test);
 
-    HAL_SPI_NAND_Wait(hal_nand_device, &status);
+    HAL_SPI_NAND_Wait(&hal_nand_device, &status);
 
     //memset(din_buff, 0x00, sizeof(din_buff));
 
-    HAL_SPI_NAND_Read_From_Cache(hal_nand_device, page_addr_for_test, test_column, 8, din_buff);
+    HAL_SPI_NAND_Read_From_Cache(&hal_nand_device, page_addr_for_test, test_column, 8, din_buff);
 
     LOG_D("Read END 2 %02X %02X %02X %02X %02X %02X %02X %02X \r\n str %s",\
     din_buff[0], din_buff[1], din_buff[2], din_buff[3], din_buff[4], din_buff[5], din_buff[6], din_buff[7], din_buff);

@@ -55,6 +55,8 @@
 #define STATUS_READY        		            (0 << 0)
 #define STATUS_BUSY     		                (1 << 0)
 
+#define STATUS_WEL                              (1 << 1)
+
 #define STATUS_E_FAIL_MASK      	            0x04
 #define STATUS_E_FAIL       		            (1 << 2)
 
@@ -103,6 +105,7 @@ typedef struct NAND_memory_info
     uint32_t block_size;                    // 每块大小
     uint32_t page_per_block;                // 每块的页数
     uint32_t block_num_per_chip;            // 每个chip的总块数
+    uint32_t page_per_chip;
     // uint32_t total_size;                 // NAND FLASH总大小
     // uint32_t block_per_plane;            // 每平面的块数（直接使用总块数）
     // uint32_t plane_per_die;              // 每Die的平面数
