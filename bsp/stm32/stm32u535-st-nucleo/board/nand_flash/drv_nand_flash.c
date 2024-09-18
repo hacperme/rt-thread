@@ -87,47 +87,54 @@ static rt_err_t _read_page(struct rt_mtd_nand_device *device,
 
     rt_err_t res = RT_ERROR;
     rt_uint8_t status = 0;
+    int hal_res;
     rt_uint32_t nand_block = page / (hal_nand_device.nand_flash_info->memory_info->page_per_block);
     rt_uint16_t nand_page = page % (hal_nand_device.nand_flash_info->memory_info->page_per_block);
     rt_uint32_t nand_page_addr = (nand_page << 12) | nand_block;
 
     rt_mutex_take(&rt_hw_nand_lock, RT_WAITING_FOREVER);
-    if (HAL_SPI_NAND_Read_Page_To_Cache(&hal_nand_device, nand_page_addr) == 0)
+    hal_res = HAL_SPI_NAND_Read_Page_To_Cache(&hal_nand_device, nand_page_addr);
+    if (hal_res != 0)
     {
-        if (HAL_SPI_NAND_Wait(&hal_nand_device, &status) == 0)
+        LOG_E("HAL_SPI_NAND_Read_Page_To_Cache failed res=%d nand_page_addr=0x%08X", hal_res, nand_page_addr);
+        goto _read_page_exit;
+    }
+    hal_res = HAL_SPI_NAND_Wait(&hal_nand_device, &status);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Wait not ready res=%d status=%d", hal_res, status);
+        goto _read_page_exit;
+    }
+    hal_res = HAL_SPI_NAND_Read_From_Cache(
+        &hal_nand_device, nand_page_addr, 0, data_len, data
+    );
+    if (hal_res != 0)
+    {
+        LOG_E(
+            "HAL_SPI_NAND_Read_From_Cache failed, res=%d, nand_page_addr=0x%08X, data_len=%d",
+            hal_res, nand_page_addr, data_len
+        );
+        goto _read_page_exit;
+    }
+    if (spare != RT_NULL && spare_len > 0)
+    {
+        hal_res = HAL_SPI_NAND_Read_From_Cache(
+            &hal_nand_device, nand_page_addr,
+            hal_nand_device.nand_flash_info->memory_info->page_size,
+            spare_len, spare
+        );
+        if (hal_res != 0)
         {
-            int read_data_res = HAL_SPI_NAND_Read_From_Cache(
-                &hal_nand_device, nand_page_addr, 0, data_len, data
+            LOG_E(
+                "HAL_SPI_NAND_Read_From_Cache failed, res=%d, nand_page_addr=0x%08X, spare_len=%d",
+                hal_res, nand_page_addr, spare_len
             );
-            if (spare != RT_NULL && spare_len > 0)
-            {
-                int read_spare_res = HAL_SPI_NAND_Read_From_Cache(
-                    &hal_nand_device, nand_page_addr,
-                    hal_nand_device.nand_flash_info->memory_info->page_size,
-                    spare_len, spare
-                );
-            }
-            if (read_data_res == 0)
-            {
-                res = RT_EOK;
-            }
-            else
-            {
-                LOG_E(
-                    "HAL_SPI_NAND_Read_From_Cache failed, nand_page_addr=0x%08X, page_total_size=%d",
-                    nand_page_addr, hal_nand_device.nand_flash_info->memory_info->page_total_size
-                );
-            }
-        }
-        else
-        {
-            LOG_E("HAL_SPI_NAND_Wait not ready status=0x%02X", status);
+            goto _read_page_exit;
         }
     }
-    else
-    {
-        LOG_E("HAL_SPI_NAND_Read_Page_To_Cache nand_page_addr=0x%08X", nand_page_addr);
-    }
+    res = RT_EOK;
+
+_read_page_exit:
     rt_mutex_release(&rt_hw_nand_lock);
     return res;
 }
@@ -167,55 +174,94 @@ static rt_err_t _write_page(struct rt_mtd_nand_device *device,
 
     rt_err_t res = RT_ERROR;
     rt_uint8_t status = 0;
+    int hal_res;
     rt_uint32_t nand_block = page / (hal_nand_device.nand_flash_info->memory_info->page_per_block);
     rt_uint16_t nand_page = page % (hal_nand_device.nand_flash_info->memory_info->page_per_block);
     rt_uint32_t nand_page_addr = (nand_page << 12) | nand_block;
 
     // TODO: Write spare data.
     rt_mutex_take(&rt_hw_nand_lock, RT_WAITING_FOREVER);
-    if (HAL_SPI_NAND_Read_Page_To_Cache(&hal_nand_device, nand_page_addr) == 0)
+    hal_res = HAL_SPI_NAND_Read_Page_To_Cache(&hal_nand_device, nand_page_addr);
+    if (hal_res != 0)
     {
-        if (HAL_SPI_NAND_Wait(&hal_nand_device, &status) == 0)
+        LOG_E("HAL_SPI_NAND_Read_Page_To_Cache failed. res=%d, nand_page_addr=0x%08X", hal_res, nand_page_addr);
+        goto _write_page_exit;
+    }
+    hal_res = HAL_SPI_NAND_Wait(&hal_nand_device, &status);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Wait failed. res=%d, status=%d", hal_res, status);
+        goto _write_page_exit;
+    }
+    hal_res = HAL_SPI_NAND_Write_Enable(&hal_nand_device);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Write_Enable failed. res=%d", hal_res);
+        goto _write_page_exit;
+    }
+    status = 0;
+    hal_res = HAL_SPI_NAND_Read_Status(&hal_nand_device, &status);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Read_Status status failed. res=%d, status=%d", hal_res, status);
+        goto _write_page_exit;
+    }
+    if (status & STATUS_WEL == 0)
+    {
+        LOG_E("STATUS_WEL is not ready. status=%d", status);
+        goto _write_page_exit;
+    }
+    hal_res = HAL_SPI_NAND_Program_Data_To_Cache(
+        &hal_nand_device, nand_page_addr, 0,
+        data_len, (rt_uint8_t *)data, 0
+    );
+    if (hal_res != 0)
+    {
+        LOG_E(
+            "HAL_SPI_NAND_Program_Data_To_Cache failed. res=%d, nand_page_addr=0x%08X, data_len=%d",
+            hal_res, nand_page_addr, data_len
+        );
+        goto _write_page_exit;
+    }
+    if (spare != RT_NULL && spare_len > 0)
+    {
+        hal_res = HAL_SPI_NAND_Program_Data_To_Cache(
+            &hal_nand_device, nand_page_addr,
+            hal_nand_device.nand_flash_info->memory_info->page_size,
+            spare_len, (rt_uint8_t *)spare, 0
+        );
+        if (hal_res != 0)
         {
-            if (HAL_SPI_NAND_Write_Enable(&hal_nand_device) == 0)
-            {
-                status = 0;
-                if (HAL_SPI_NAND_Read_Status(&hal_nand_device, &status) == 0)
-                {
-                    if (status & STATUS_WEL != 0)
-                    {
-                        int p_data_res = HAL_SPI_NAND_Program_Data_To_Cache(
-                            &hal_nand_device, nand_page_addr, 0,
-                            data_len, data, 0
-                        );
-                        if (spare != RT_NULL && spare_len > 0)
-                        {
-                            int p_spare_res = HAL_SPI_NAND_Program_Data_To_Cache(
-                                &hal_nand_device, nand_page_addr,
-                                hal_nand_device.nand_flash_info->memory_info->page_size,
-                                spare_len, spare, 0
-                            );
-                        }
-                        if (p_data_res == 0)
-                        {
-                            status = 0;
-                            if (HAL_SPI_NAND_Wait(&hal_nand_device, &status) == 0)
-                            {
-                                if (HAL_SPI_NAND_Program_Execute(&hal_nand_device, nand_page_addr) == 0)
-                                {
-                                    status = 0;
-                                    if (HAL_SPI_NAND_Wait(&hal_nand_device, &status) == 0)
-                                    {
-                                        res = RT_EOK;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            LOG_E(
+                "HAL_SPI_NAND_Program_Data_To_Cache failed. res=%d, nand_page_addr=0x%08X, spare_len=%d",
+                hal_res, nand_page_addr, spare_len
+            );
+            goto _write_page_exit;
         }
     }
+    status = 0;
+    hal_res = HAL_SPI_NAND_Wait(&hal_nand_device, &status);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Wait failed. res=%d, status=%d", hal_res, status);
+        goto _write_page_exit;
+    }
+    hal_res = HAL_SPI_NAND_Program_Execute(&hal_nand_device, nand_page_addr);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Program_Execute failed. res=%d, nand_page_addr=0x%08X", hal_res, nand_page_addr);
+        goto _write_page_exit;
+    }
+    status = 0;
+    hal_res = HAL_SPI_NAND_Wait(&hal_nand_device, &status);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Wait failed. res=%d, status=%d", hal_res, status);
+        goto _write_page_exit;
+    }
+    res = RT_EOK;
+
+_write_page_exit:
     rt_mutex_release(&rt_hw_nand_lock);
     return res;
 }
@@ -237,6 +283,7 @@ static rt_err_t _page_copy(struct rt_mtd_nand_device *device,
     }
 
     rt_err_t res = RT_ERROR;
+    int hal_res;
     rt_uint32_t nand_src_block = src_page / (hal_nand_device.nand_flash_info->memory_info->page_per_block);
     rt_uint16_t nand_src_page = src_page % (hal_nand_device.nand_flash_info->memory_info->page_per_block);
     rt_uint32_t nand_src_page_addr = (nand_src_page << 12) | nand_src_block;
@@ -245,13 +292,17 @@ static rt_err_t _page_copy(struct rt_mtd_nand_device *device,
     rt_uint32_t nand_dst_page_addr = (nand_dst_page << 12) | nand_dst_block;
 
     rt_mutex_take(&rt_hw_nand_lock, RT_WAITING_FOREVER);
-    if (HAL_SPI_NAND_Internal_Data_Move(&hal_nand_device, nand_src_page_addr, nand_dst_page_addr, 0, RT_NULL, 0) == 0)
+    hal_res = HAL_SPI_NAND_Internal_Data_Move(&hal_nand_device, nand_src_page_addr, nand_dst_page_addr, 0, RT_NULL, 0);
+    if (hal_res == 0)
     {
         res = RT_EOK;
     }
     else
     {
-        LOG_E("HAL_SPI_NAND_Internal_Data_Move src_page_addr=0x%08X dst_page_addr=0x%08X", nand_src_page_addr, nand_dst_page_addr);
+        LOG_E(
+            "HAL_SPI_NAND_Internal_Data_Move failed. res=%d, src_page_addr=0x%08X dst_page_addr=0x%08X",
+            hal_res, nand_src_page_addr, nand_dst_page_addr
+        );
     }
     rt_mutex_release(&rt_hw_nand_lock);
     return RT_EOK;
@@ -269,45 +320,44 @@ static rt_err_t _erase_block(struct rt_mtd_nand_device *device, rt_uint32_t bloc
 
     rt_err_t res = RT_ERROR;
     rt_uint8_t status = 0;
+    int hal_res;
 
     rt_mutex_take(&rt_hw_nand_lock, RT_WAITING_FOREVER);
-    if (HAL_SPI_NAND_Write_Enable(&hal_nand_device) == 0)
+    hal_res = HAL_SPI_NAND_Write_Enable(&hal_nand_device);
+    if (hal_res != 0)
     {
-        if (HAL_SPI_NAND_Read_Status(&hal_nand_device, &status) == 0)
-        {
-            if (HAL_SPI_NAND_Erase_Block(&hal_nand_device, block) == 0)
-            {
-                status = 0;
-                if (HAL_SPI_NAND_Wait(&hal_nand_device, &status) == 0)
-                {
-                    if (status & STATUS_E_FAIL == 0)
-                    {
-                        res = RT_EOK;
-                    }
-                    else
-                    {
-                        LOG_E("Erase failed.");
-                    }
-                }
-                else
-                {
-                    LOG_E("HAL_SPI_NAND_Wait failed.");
-                }
-            }
-            else
-            {
-                LOG_E("HAL_SPI_NAND_Erase_Block failed.");
-            }
-        }
-        else
-        {
-            LOG_E("HAL_SPI_NAND_Read_Status failed. status=%d", status);
-        }
+        LOG_E("HAL_SPI_NAND_Write_Enable failed. res=%d", hal_res);
+        goto _erase_block_exit;
+    }
+    hal_res = HAL_SPI_NAND_Read_Status(&hal_nand_device, &status);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Read_Status failed. res=%d, status=%d", hal_res, status);
+        goto _erase_block_exit;
+    }
+    hal_res = HAL_SPI_NAND_Erase_Block(&hal_nand_device, block);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Erase_Block failed. res=%d, block=%d", hal_res, block);
+        goto _erase_block_exit;
+    }
+    status = 0;
+    hal_res = HAL_SPI_NAND_Wait(&hal_nand_device, &status);
+    if (hal_res != 0)
+    {
+        LOG_E("HAL_SPI_NAND_Wait failed. hal_res=%d, status=%d", hal_res, status);
+        goto _erase_block_exit;
+    }
+    if (status & STATUS_E_FAIL == 0)
+    {
+        res = RT_EOK;
     }
     else
     {
-        LOE_E("HAL_SPI_NAND_Write_Enable failed.");
+        LOG_E("Erase failed. status=%d", status);
     }
+
+_erase_block_exit:
     rt_mutex_release(&rt_hw_nand_lock);
     return res;
 }
@@ -373,6 +423,6 @@ int rt_hw_nand_init(void)
     return RT_EOK;
 }
 
-// INIT_DEVICE_EXPORT(rt_hw_nand_init);
+INIT_DEVICE_EXPORT(rt_hw_nand_init);
 
 #endif
