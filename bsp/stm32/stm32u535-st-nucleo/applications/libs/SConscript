@@ -7,6 +7,7 @@ CPPPATH += [cwd + "/src"]
 CPPPATH += [cwd + "/inc"]
 src     = Glob('src/*.c')
 # src     += Glob('.test/test_esp32.c')
+# src     += Glob('.test/test_nand_flash.c')
 
 libs = DefineGroup('libs', src, depend = [''], CPPPATH = CPPPATH)
 

@@ -88,33 +88,7 @@ const uint32_t ADDR_SIZE_LIST[]=
 #include "board.h"
 #include "drv_common.h"
 
-typedef enum {
-    NAND_STM32_DIRECTION = 0,
-    NAND_ESP32_DIRECTION = 1,
-} encore_nand_direction_e;
-
-typedef enum {
-    NAND_POWERON = 1,
-    NAND_POWEROFF = 0,
-} encore_nand_poweron_e;
-
-static inline void encore_nand_direction_switch(encore_nand_direction_e direction)
-{
-    rt_pin_mode(QSPI_CPUN_ESP_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(QSPI_CPUN_ESP_PIN, direction);
-}
-
-static inline void encore_nand_power_switch(encore_nand_poweron_e poweron)
-{
-    rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(FLASH_PWRON_PIN, poweron);
-}
-
 void MX_OSPI_Init(OSPI_HandleTypeDef *hal_nand_ospi) {
-
-    encore_nand_power_switch(NAND_POWERON);
-    encore_nand_direction_switch(NAND_STM32_DIRECTION);
-
     // 启用 OSPI 外设的时钟
     __HAL_RCC_OSPI1_CLK_ENABLE();
 
@@ -703,7 +677,7 @@ static void hal_spi_test_oneline(int argc, char **argv)
     // char dout_buff[4096] = {0};
     char din_buff[16] = {0};
     uint8_t lock_map = 0;
-    HAL_SPI_NAND_Init(&hal_nand_device);
+    // HAL_SPI_NAND_Init(&hal_nand_device);
 
     HAL_SPI_NAND_Read_ID(&hal_nand_device, id);
 
@@ -738,6 +712,7 @@ static void hal_spi_test_oneline(int argc, char **argv)
     HAL_SPI_NAND_Erase_Block(&hal_nand_device, page_addr_for_test);//擦除第10块
 
     HAL_SPI_NAND_Wait(&hal_nand_device, &status);
+    LOG_D("status after erase %02X", status);
 
     // LOG_D("Erase END");
 
@@ -783,4 +758,4 @@ static void hal_spi_test_oneline(int argc, char **argv)
 
 }
 
-MSH_CMD_EXPORT(hal_spi_test_oneline, HAL SPI TEST ONELINE);
+// MSH_CMD_EXPORT(hal_spi_test_oneline, HAL SPI TEST ONELINE);

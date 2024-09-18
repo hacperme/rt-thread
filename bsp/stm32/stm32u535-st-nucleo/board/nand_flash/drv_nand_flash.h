@@ -9,4 +9,7 @@
 #ifndef __DRV_NAND_FLASH_H__
 #define __DRV_NAND_FLASH_H__
 
+void nand_to_stm32(void);
+void nand_to_esp32(void);
+
 #endif // __DRV_NAND_FLASH_H__
