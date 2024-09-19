@@ -424,7 +424,7 @@ static rt_err_t _erase_block(struct rt_mtd_nand_device *device, rt_uint32_t bloc
         LOG_E("HAL_SPI_NAND_Wait failed. hal_res=%d, status=%d", hal_res, status);
         goto _erase_block_exit;
     }
-    LOG_D("status=%d, STATUS_E_FAIL=%d, status & STATUS_E_FAIL=%d", status, STATUS_E_FAIL, status & STATUS_E_FAIL);
+    // LOG_D("status=%d, STATUS_E_FAIL=%d, status & STATUS_E_FAIL=%d", status, STATUS_E_FAIL, status & STATUS_E_FAIL);
     if ((status & STATUS_E_FAIL) == 0)
     {
         res = RT_EOK;
@@ -436,6 +436,7 @@ static rt_err_t _erase_block(struct rt_mtd_nand_device *device, rt_uint32_t bloc
 
 _erase_block_exit:
     rt_mutex_release(&rt_hw_nand_lock);
+    LOG_I("_erase_block block=%d %s", block, res == RT_EOK ? "success" : "failed");
     return res;
 }
 
@@ -461,7 +462,7 @@ static const struct rt_mtd_nand_driver_ops ops =
         _check_block,
         _mark_bad,
 };
-static struct rt_mtd_nand_device nand_dev;
+struct rt_mtd_nand_device nand_dev;
 
 int rt_hw_nand_init(void)
 {

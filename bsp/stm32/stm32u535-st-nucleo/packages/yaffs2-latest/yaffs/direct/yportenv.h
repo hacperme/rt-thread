@@ -49,19 +49,30 @@ typedef signed int s32;
 #ifndef DT_UNKNOWN
     #define DT_UNKNOWN	0
 #endif
-#define DT_FIFO		1
-#define DT_CHR		2
+#ifndef DT_FIFO
+	#define DT_FIFO		1
+#endif
+#ifndef DT_CHR
+	#define DT_CHR		2
+#endif
 #ifndef DT_DIR
     #define DT_DIR		4
 #endif
-#define DT_BLK		6
+#ifndef DT_BLK
+	#define DT_BLK		6
+#endif
 #ifndef DT_REG
     #define DT_REG		8
 #endif
-#define DT_LNK		10
-#define DT_SOCK		12
-#define DT_WHT		14
-
+#ifndef DT_LNK
+	#define DT_LNK		10
+#endif
+#ifndef DT_SOCK
+	#define DT_SOCK		12
+#endif
+#ifndef DT_WHT
+	#define DT_WHT		14
+#endif
 
 /*
  * Attribute flags.

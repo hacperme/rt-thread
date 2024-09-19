@@ -25,6 +25,8 @@
 #include "dfs.h"
 #include "drv_dfs.h"
 #endif
+#include "dfs_fs.h"
+#include "yaffsfs.h"
 
 extern char __bootloader_rom_start[];
 extern char __bootloader_rom_end[];
@@ -62,6 +64,31 @@ int main(void)
     int res = rt_hw_fs_mount();
     LOG_I("rt_hw_fs_mount %s", res == RT_EOK ? "success" : "failed");
 #endif
+
+    static struct rt_mtd_nand_device *nand_dev;
+    nand_dev = (struct rt_mtd_nand_device *)rt_device_find("nand");
+    
+    int res;
+    yaffs_set_trace(0xFFFF);
+    res = yaffs_start_up(nand_dev, "/");
+    LOG_I("yaffs_start_up %s", res == RT_EOK ? "success" : "failed");
+
+    res = dfs_mount("nand", "/", "yaffs", 0, 0);
+    if (res != 0)
+    {
+        rt_err_t err_no = rt_get_errno();
+        LOG_E("dfs_mount faield error_code=%d", err_no);
+        // res = dfs_mkfs("yaffs", "nand");
+        // if (res == 0)
+        // {
+        //     res = dfs_mount("nand", "/", "yaffs", 0, 0);
+        // }
+        // else
+        // {
+        //     LOG_E("dfs_mkfs yaffs nand failed. res=%d", res);
+        // }
+    }
+    LOG_D("dfs_mount nand yaffs %s res=%d", res == 0 ? "success" : "failed", res);
 
     // extern void main_business_entry(void);
     // main_business_entry();

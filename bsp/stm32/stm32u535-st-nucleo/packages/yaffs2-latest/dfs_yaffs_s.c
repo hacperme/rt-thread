@@ -6,7 +6,7 @@
 #include "yaffs/direct/yaffsfs.h"
 #include "yaffs/direct/yaffs_flashif.h"
 
-static int dfs_yfile_open(struct dfs_fd *file)
+static int dfs_yfile_open(struct dfs_file *file)
 {
     struct dfs_filesystem *fs;
     struct yaffs_obj *obj;
@@ -23,12 +23,12 @@ static int dfs_yfile_open(struct dfs_fd *file)
         yaffs_DIR *dir;
         if (oflag & O_CREAT)
         {
-            result = yaffs_mkdir_reldir(obj, file->path, 0x777);
+            result = yaffs_mkdir_reldir(obj, file->vnode->path, 0x777);
             if (result < 0)
                 return yaffsfs_GetLastError();
         }
         /* open dir */
-        dir = yaffs_opendir_reldir(obj, file->path);
+        dir = yaffs_opendir_reldir(obj, file->vnode->path);
         if (dir == RT_NULL)
             return yaffsfs_GetLastError();
         /* save this pointer,will used by dfs_yaffs_getdents*/
@@ -37,25 +37,25 @@ static int dfs_yfile_open(struct dfs_fd *file)
     }
 
     /* regular file operations */
-    fd = yaffs_open_reldir(obj, file->path, oflag, S_IREAD | S_IWRITE);
+    fd = yaffs_open_reldir(obj, file->vnode->path, oflag, S_IREAD | S_IWRITE);
     if (fd < 0)
         return yaffsfs_GetLastError();
 
     file->data = (void *)fd;
     file->pos = yaffs_lseek(fd, 0, SEEK_CUR);
-    file->size = yaffs_lseek(fd, 0, SEEK_END);
+    file->vnode->size = yaffs_lseek(fd, 0, SEEK_END);
     yaffs_lseek(fd, file->pos, SEEK_SET);
 
     if (oflag & O_APPEND)
     {
-        file->pos = file->size;
-        file->size = yaffs_lseek(fd, 0, SEEK_END);
+        file->pos = file->vnode->size;
+        file->vnode->size = yaffs_lseek(fd, 0, SEEK_END);
     }
 
     return 0;
 }
 
-static int dfs_yfile_close(struct dfs_fd *file)
+static int dfs_yfile_close(struct dfs_file *file)
 {
     int oflag;
     int fd;
@@ -78,12 +78,12 @@ static int dfs_yfile_close(struct dfs_fd *file)
     return yaffsfs_GetLastError();
 }
 
-static int dfs_yfile_ioctl(struct dfs_fd *file, int cmd, void *args)
+static int dfs_yfile_ioctl(struct dfs_file *file, int cmd, void *args)
 {
     return -ENOSYS;
 }
 
-static int dfs_yfile_read(struct dfs_fd *file, void *buf, size_t len)
+static int dfs_yfile_read(struct dfs_file *file, void *buf, size_t len)
 {
     int fd;
     int char_read;
@@ -99,7 +99,7 @@ static int dfs_yfile_read(struct dfs_fd *file, void *buf, size_t len)
     return char_read;
 }
 
-static int dfs_yfile_write(struct dfs_fd *file, const void *buf, size_t len)
+static int dfs_yfile_write(struct dfs_file *file, const void *buf, size_t len)
 {
     int fd;
     int char_write;
@@ -116,7 +116,7 @@ static int dfs_yfile_write(struct dfs_fd *file, const void *buf, size_t len)
     return char_write;
 }
 
-static int dfs_yfile_flush(struct dfs_fd *file)
+static int dfs_yfile_flush(struct dfs_file *file)
 {
     int fd;
     int result;
@@ -130,10 +130,10 @@ static int dfs_yfile_flush(struct dfs_fd *file)
     return 0;
 }
 
-static int dfs_yfile_lseek(struct dfs_fd *file, rt_off_t offset)
+static off_t dfs_yfile_lseek(struct dfs_file *file, off_t offset)
 {
     int fd;
-    int result;
+    off_t result;
 
     fd = (int)(file->data);
 
@@ -145,7 +145,7 @@ static int dfs_yfile_lseek(struct dfs_fd *file, rt_off_t offset)
     return result;
 }
 
-static int dfs_yfile_getdents(struct dfs_fd *file, struct dirent *dirp, uint32_t count)
+static int dfs_yfile_getdents(struct dfs_file *file, struct dirent *dirp, uint32_t count)
 {
     rt_uint32_t index;
     struct dirent *d;
@@ -208,7 +208,7 @@ static int dfs_yaffs_unmount(struct dfs_filesystem *fs)
     return 0;
 }
 
-static int dfs_yaffs_mkfs(rt_device_t dev_id)
+static int dfs_yaffs_mkfs(rt_device_t dev_id, const char *fs_name)
 {
     extern int yaffs_format_reldev(struct yaffs_dev * dev,
                                    int unmount_flag,
@@ -334,6 +334,8 @@ int dfs_yaffs_init(void)
     /* Register yaffs file system */
 
     yaffsfs_OSInitialisation();
-    return dfs_register(&dfs_yaffs_ops);
+    int res = dfs_register(&dfs_yaffs_ops);
+    rt_kprintf("dfs_register yaffs %s\n", res == 0 ? "success" : "failed");
+    return res;
 }
 INIT_COMPONENT_EXPORT(dfs_yaffs_init);

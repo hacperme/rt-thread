@@ -1560,8 +1560,8 @@ int yaffs2_scan_backwards(struct yaffs_dev *dev)
 
 	if (!block_index) {
 		yaffs_trace(YAFFS_TRACE_SCAN,
-			"yaffs2_scan_backwards() could not allocate block index!"
-			);
+			"yaffs2_scan_backwards() could not allocate block index! block_index size=0x%08X",
+			n_blocks * sizeof(struct yaffs_block_index));
 		return YAFFS_FAIL;
 	}
 

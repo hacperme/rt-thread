@@ -298,6 +298,8 @@
 /* end of Micrium: Micrium software products porting for RT-Thread */
 #define PKG_USING_PERF_COUNTER
 #define PKG_USING_PERF_COUNTER_V2241
+#define PKG_USING_DFS_YAFFS
+#define PKG_USING_YAFFS_LATEST_VERSION
 /* end of system packages */
 
 /* peripheral libraries and drivers */

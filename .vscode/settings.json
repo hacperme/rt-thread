@@ -12,6 +12,11 @@
         "rtdbg.h": "c",
         "reent.h": "c",
         "rtconfig.h": "c",
-        "rtdevice.h": "c"
+        "rtdevice.h": "c",
+        "drv_log.h": "c",
+        "dfs_fs.h": "c",
+        "yaffs_guts.h": "c",
+        "yaffs_flashif2.h": "c",
+        "yportenv.h": "c"
     }
 }

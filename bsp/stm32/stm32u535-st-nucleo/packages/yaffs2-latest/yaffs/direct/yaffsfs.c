@@ -2849,6 +2849,7 @@ int yaffs_mount_common(struct yaffs_dev *dev, const YCHAR *path,
 	if (!dev) {
 		if (yaffsfs_CheckMemRegion(path, 0, 0) < 0) {
 			yaffsfs_SetError(-EFAULT);
+			rt_kprintf("yaffsfs_CheckMemRegion failed.\n");
 			return -1;
 		}
 
@@ -2856,6 +2857,7 @@ int yaffs_mount_common(struct yaffs_dev *dev, const YCHAR *path,
 
 		if (yaffsfs_CheckPath(path) < 0) {
 			yaffsfs_SetError(-ENAMETOOLONG);
+			rt_kprintf("yaffsfs_CheckPath failed.\n");
 			return -1;
 		}
 	}
@@ -2882,11 +2884,16 @@ int yaffs_mount_common(struct yaffs_dev *dev, const YCHAR *path,
 			if (result == YAFFS_FAIL)
 				yaffsfs_SetError(-ENOMEM);
 			retVal = result ? 0 : -1;
+			rt_kprintf("yaffs_guts_initialise. result=%d\n", result);
 
-		} else
+		} else {
 			yaffsfs_SetError(-EBUSY);
-	} else
+			rt_kprintf("dev is mounted.\n");
+		}
+	} else	{
 		yaffsfs_SetError(-ENODEV);
+		rt_kprintf("yaffsfs_FindMountPoint failed.\n");
+	}
 
 	yaffsfs_Unlock();
 	return retVal;

@@ -232,6 +232,7 @@ int dfs_mount(const char   *device_name,
     else if ((dev_id = rt_device_find(device_name)) == NULL)
     {
         /* no this device */
+        LOG_E("not find device %d", device_name);
         rt_set_errno(-ENODEV);
         return -1;
     }
@@ -249,6 +250,7 @@ int dfs_mount(const char   *device_name,
     if (ops == &filesystem_operation_table[DFS_FILESYSTEM_TYPES_MAX])
     {
         /* can't find filesystem */
+        LOG_E("can't find filesystem %d", filesystemtype);
         rt_set_errno(-ENODEV);
         return -1;
     }
@@ -256,6 +258,7 @@ int dfs_mount(const char   *device_name,
     /* check if there is mount implementation */
     if ((*ops == NULL) || ((*ops)->mount == NULL))
     {
+        LOG_E("is mount implementation");
         rt_set_errno(-ENOSYS);
         return -1;
     }
@@ -264,9 +267,11 @@ int dfs_mount(const char   *device_name,
     fullpath = dfs_normalize_path(NULL, path);
     if (fullpath == NULL) /* not an abstract path */
     {
+        LOG_E("not an abstract path");
         rt_set_errno(-ENOTDIR);
         return -1;
     }
+    LOG_D("fullpath %s", fullpath);
 
     /* Check if the path exists or not, raw APIs call, fixme */
     if ((strcmp(fullpath, "/") != 0) && (strcmp(fullpath, "/dev") != 0))
@@ -279,6 +284,7 @@ int dfs_mount(const char   *device_name,
             rt_free(fullpath);
             rt_set_errno(-ENOTDIR);
 
+            LOG_E("dfs_file_open failed.");
             return -1;
         }
         dfs_file_close(&fd);
@@ -298,6 +304,7 @@ int dfs_mount(const char   *device_name,
         else if (strcmp(iter->path, path) == 0)
         {
             rt_set_errno(-EINVAL);
+            LOG_E("the PATH is mounted.");
             goto err1;
         }
     }
@@ -328,6 +335,7 @@ int dfs_mount(const char   *device_name,
             /* The underlying device has error, clear the entry. */
             dfs_lock();
             rt_memset(fs, 0, sizeof(struct dfs_filesystem));
+            LOG_E("The underlying device has error, clear the entry.");
 
             goto err1;
         }
@@ -345,6 +353,7 @@ int dfs_mount(const char   *device_name,
         /* clear filesystem table entry */
         rt_memset(fs, 0, sizeof(struct dfs_filesystem));
 
+        LOG_E("call mount of this filesystem.");
         goto err1;
     }
 

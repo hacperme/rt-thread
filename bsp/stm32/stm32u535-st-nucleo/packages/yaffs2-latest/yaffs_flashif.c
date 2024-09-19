@@ -76,7 +76,7 @@ void yaffs_mtd_drv_install(struct yaffs_dev *dev)
     dev->drv.drv_write_chunk_fn  = write_chunk;
 }
 
-RT_WEAK int yaffs_start_up(rt_mtd_nand_t psMtdNandDev, const char *pcMountingPath)
+rt_weak int yaffs_start_up(rt_mtd_nand_t psMtdNandDev, const char *pcMountingPath)
 {
     rt_device_t psRTDev;
     RT_ASSERT(psMtdNandDev);

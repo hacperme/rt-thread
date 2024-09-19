@@ -17,6 +17,7 @@
 
 /* ===================== Flash device Configuration ========================= */
 extern const struct fal_flash_dev stm32u5_onchip_flash;
+// extern struct rt_mtd_nand_device nand_dev
 
 /* flash device table */
 #define FAL_FLASH_DEV_TABLE                                          \
@@ -28,8 +29,8 @@ extern const struct fal_flash_dev stm32u5_onchip_flash;
 /* partition table */
 #define FAL_PART_TABLE                                                                \
 {                                                                                     \
-    {0x12345678,        "bl",     "onchip_flash",          0,  384*1024, 0}, \
-    {0x87654321,        "fs",     "onchip_flash",   384*1024,  128*1024, 0}, \
+    {0x12345678,        "bl",     "onchip_flash",          0,  256*1024, 0},          \
+    {0x12345678,        "ap",     "onchip_flash",   256*1024,  256*1024, 0},          \
 }
 #endif /* FAL_PART_HAS_TABLE_CFG */
 
