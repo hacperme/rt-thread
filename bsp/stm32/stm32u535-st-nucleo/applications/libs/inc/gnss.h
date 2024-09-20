@@ -12,7 +12,9 @@
 #include "rtthread.h"
 #include "rtdevice.h"
 #include "board.h"
+#ifdef PKG_USING_LWGPS
 #include "lwgps/lwgps.h"
+#endif
 
 #define GNSS_UART_NAME "uart4"
 #ifdef RT_SERIAL_RB_BUFSZ
@@ -58,7 +60,9 @@ rt_err_t gnss_close(void);
 rt_err_t gnss_reset(void);
 
 rt_err_t gnss_read_nmea(char *data, rt_uint32_t size, rt_uint16_t timeout);
+#ifdef PKG_USING_LWGPS
 rt_err_t gnss_read_data(lwgps_t *gnss_data, rt_uint16_t timeout);
+#endif
 rt_err_t gnss_read_nmea_item(nmea_item_t nmea_item, rt_uint16_t timeout);
 
 #endif  // __GNSS_H__

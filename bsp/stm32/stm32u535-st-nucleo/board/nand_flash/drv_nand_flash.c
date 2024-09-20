@@ -477,15 +477,15 @@ int rt_hw_nand_init(void)
 
     rt_mutex_init(&rt_hw_nand_lock, "nand", RT_IPC_FLAG_PRIO);
 
-    nand_dev.page_size       = 4096;
-    nand_dev.pages_per_block = 64;
+    nand_dev.page_size       = PAGE_SIZE;
+    nand_dev.pages_per_block = PAGE_PER_BLOCK;
     nand_dev.plane_num       = 1;
-    nand_dev.oob_size        = 256;
-    nand_dev.oob_free        = 256;
+    nand_dev.oob_size        = SPARE_SIZE;
+    nand_dev.oob_free        = SPARE_SIZE;
     nand_dev.block_start     = 0;
-    nand_dev.block_end       = 4095;
+    nand_dev.block_end       = BLOCK_NUM_PER_CHIP - 1;
 
-    nand_dev.block_total     = 4096;
+    nand_dev.block_total     = BLOCK_NUM_PER_CHIP;
     nand_dev.ops = &ops;
 
     result = rt_mtd_nand_register_device("nand", &nand_dev);

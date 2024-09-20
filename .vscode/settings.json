@@ -17,6 +17,13 @@
         "dfs_fs.h": "c",
         "yaffs_guts.h": "c",
         "yaffs_flashif2.h": "c",
-        "yportenv.h": "c"
+        "yportenv.h": "c",
+        "lwgps.h": "c",
+        "stm32u5xx_hal_tim.h": "c",
+        "rtdef.h": "c",
+        "drv_flash.h": "c",
+        "drv_config.h": "c",
+        "fal.h": "c",
+        "hal_spi_nand_driver.h": "c"
     }
 }

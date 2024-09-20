@@ -56,13 +56,13 @@ static NAND_ecc_info_t AS5F38G04SND_08LIN_ecc_info =
 
 static NAND_memory_info_t AS5F38G04SND_08LIN_memory_info =
 {
-    .page_size = 4096,
-    .spare_size = 256,
-    .page_total_size = 4096 + 256,
-    .block_size = 4096 * 64,
-    .page_per_block = 64,
-    .block_num_per_chip = 4096,
-    .page_per_chip = 4096 * 64
+    .page_size = PAGE_SIZE,
+    .spare_size = SPARE_SIZE,
+    .page_total_size = PAGE_TOTAL_SIZE,
+    .block_size = BLOCK_SIZE,
+    .page_per_block = PAGE_PER_BLOCK,
+    .block_num_per_chip = BLOCK_NUM_PER_CHIP,
+    .page_per_chip = PAGE_PER_CHIP
 };
 #endif
 #endif

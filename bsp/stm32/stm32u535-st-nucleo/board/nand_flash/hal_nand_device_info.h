@@ -4,6 +4,15 @@
 #include <stdint.h>
 #include "stm32u5xx_hal.h"
 
+#define PAGE_SIZE                       4096
+#define SPARE_SIZE                      256
+#define PAGE_TOTAL_SIZE                 (PAGE_SIZE + SPARE_SIZE)
+#define PAGE_PER_BLOCK                  64
+#define BLOCK_SIZE                      (PAGE_PER_BLOCK * PAGE_SIZE)
+// #define BLOCK_NUM_PER_CHIP              4096
+#define BLOCK_NUM_PER_CHIP              512
+#define PAGE_PER_CHIP                   (PAGE_PER_BLOCK * BLOCK_NUM_PER_CHIP)
+
 //#define NAND_MODEL_AUTO_DETECT
 /****************************************************/
 /************* FLASH MODEL SUPPORT LIST *************/

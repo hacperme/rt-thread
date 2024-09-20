@@ -820,7 +820,7 @@ static int _dfs_lfs_flush(struct dfs_file* file)
     return _lfs_result_to_dfs(result);
 }
 
-static DFS_LFS_RETURN_TYPE _dfs_lfs_lseek(struct dfs_file* file, rt_off_t offset)
+static off_t _dfs_lfs_lseek(struct dfs_file* file, rt_off_t offset)
 {
     dfs_lfs_fd_t* dfs_lfs_fd;
 
@@ -834,7 +834,7 @@ static DFS_LFS_RETURN_TYPE _dfs_lfs_lseek(struct dfs_file* file, rt_off_t offset
         lfs_soff_t soff = lfs_file_seek(dfs_lfs_fd->lfs, &dfs_lfs_fd->u.file, offset, LFS_SEEK_SET);
         if (soff < 0)
         {
-            return _lfs_result_to_dfs(soff);
+            return (off_t)_lfs_result_to_dfs(soff);
         }
 
         file->pos = dfs_lfs_fd->u.file.pos;
@@ -844,7 +844,7 @@ static DFS_LFS_RETURN_TYPE _dfs_lfs_lseek(struct dfs_file* file, rt_off_t offset
         lfs_soff_t soff = lfs_dir_seek(dfs_lfs_fd->lfs, &dfs_lfs_fd->u.dir, offset);
         if (soff < 0)
         {
-            return _lfs_result_to_dfs(soff);
+            return (off_t)_lfs_result_to_dfs(soff);
         }
 
         file->pos = dfs_lfs_fd->u.dir.pos;

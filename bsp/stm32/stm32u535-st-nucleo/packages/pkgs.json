@@ -10,11 +10,6 @@
   "ver": "latest"
  },
  {
-  "name": "PERF_COUNTER",
-  "path": "/packages/system/perf_counter",
-  "ver": "v2.2.4.1"
- },
- {
   "name": "YAFFS",
   "path": "/packages/system/yaffs2",
   "ver": "latest"
@@ -27,21 +22,6 @@
  {
   "name": "LWGPS",
   "path": "/packages/misc/lwgps",
-  "ver": "latest"
- },
- {
-  "name": "RTDUINO",
-  "path": "/packages/arduino/RTduino",
-  "ver": "latest"
- },
- {
-  "name": "ARDUINO_ADAFRUIT_SENSOR",
-  "path": "/packages/arduino/sensors/Adafruit-Sensor",
-  "ver": "latest"
- },
- {
-  "name": "ARDUINO_ADAFRUIT_BUSIO",
-  "path": "/packages/arduino/signalio/Adafruit-BusIO",
   "ver": "latest"
  }
 ]

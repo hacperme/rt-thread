@@ -36,9 +36,7 @@
 #define RT_USING_SEMAPHORE
 #define RT_USING_MUTEX
 #define RT_USING_EVENT
-#define RT_USING_MAILBOX
 #define RT_USING_MESSAGEQUEUE
-#define RT_USING_MESSAGEQUEUE_PRIORITY
 #define RT_USING_SIGNALS
 /* end of Inter-Thread communication */
 
@@ -170,7 +168,6 @@
 
 /* end of Interprocess Communication (IPC) */
 /* end of POSIX (Portable Operating System Interface) layer */
-#define RT_USING_CPLUSPLUS
 /* end of C/C++ and POSIX layer */
 
 /* Network */
@@ -277,6 +274,7 @@
 #define PKG_VSNPRINTF_SUPPORT_WRITEBACK_SPECIFIER
 #define PKG_VSNPRINTF_SUPPORT_LONG_LONG
 #define PKG_VSNPRINTF_CHECK_FOR_NUL_IN_FORMAT_SPECIFIER
+#define PKG_VSNPRINTF_SUPPORT_MSVC_STYLE_INTEGER_SPECIFIERS
 #define PKG_VSNPRINTF_INTEGER_BUFFER_SIZE 32
 #define PKG_VSNPRINTF_DECIMAL_BUFFER_SIZE 32
 #define PKG_VSNPRINTF_DEFAULT_FLOAT_PRECISION 6
@@ -296,8 +294,6 @@
 /* Micrium: Micrium software products porting for RT-Thread */
 
 /* end of Micrium: Micrium software products porting for RT-Thread */
-#define PKG_USING_PERF_COUNTER
-#define PKG_USING_PERF_COUNTER_V2241
 #define PKG_USING_DFS_YAFFS
 #define PKG_USING_YAFFS_LATEST_VERSION
 /* end of system packages */
@@ -349,30 +345,10 @@
 /* entertainment: terminal games and other interesting software packages */
 
 /* end of entertainment: terminal games and other interesting software packages */
-#define PKG_USING_LWGPS
-#define GPS_MODULE_BAUD_RATE 115200
-#define LWGPS_CFG_DOUBLE 0
-#define LWGPS_CFG_STATUS 0
-#define LWGPS_CFG_STATEMENT_GPGGA 1
-#define LWGPS_CFG_STATEMENT_GPGSA 1
-#define LWGPS_CFG_STATEMENT_GPRMC 1
-#define LWGPS_CFG_STATEMENT_GPGSV 1
-#define LWGPS_CFG_STATEMENT_GPGSV_SAT_DET 0
-#define LWGPS_CFG_STATEMENT_PUBX 0
-#define LWGPS_CFG_STATEMENT_PUBX_TIME 0
-#define PKG_USING_LWGPS_LATEST_VERSION
 /* end of miscellaneous packages */
 
 /* Arduino libraries */
 
-#define PKG_USING_RTDUINO
-#define RTDUINO_THREAD_SIZE 2048
-#define RTDUINO_THREAD_PRIO 30
-#define RTDUINO_SUPPORT_HIGH_PRECISION_MICROS
-#define RTDUINO_USING_WIRE
-#define RTDUINO_WIRE_BUFFER_LENGTH 32
-#define RTDUINO_USING_SPI
-#define PKG_USING_RTDUINO_LATEST_VERSION
 
 /* Projects and Demos */
 
@@ -380,8 +356,6 @@
 
 /* Sensors */
 
-#define PKG_USING_ARDUINO_ADAFRUIT_SENSOR
-#define PKG_USING_ARDUINO_ADAFRUIT_SENSOR_LATEST_VERSION
 /* end of Sensors */
 
 /* Display */
@@ -412,8 +386,6 @@
 
 /* Signal IO */
 
-#define PKG_USING_ARDUINO_ADAFRUIT_BUSIO
-#define PKG_USING_ARDUINO_ADAFRUIT_BUSIO_LATEST_VERSION
 /* end of Signal IO */
 
 /* Uncategorized */
@@ -455,6 +427,7 @@
 #define BSP_I2C1_SDA_PIN 19
 #define BSP_USING_ONCHIP_RTC
 #define BSP_RTC_USING_LSE
+#define BSP_USING_CRC
 #define BSP_USING_ON_CHIP_FLASH
 /* end of On-chip Peripheral Drivers */
 

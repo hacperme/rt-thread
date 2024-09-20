@@ -14,8 +14,8 @@ static int dfs_yfile_open(struct dfs_file *file)
     int oflag;
     int result;
 
-    fs = (struct dfs_filesystem *)file->data;
-    obj = (struct yaffs_obj *)fs->data;
+    fs = (struct dfs_filesystem *)file->vnode->fs;
+    obj = (struct yaffs_obj *)file->vnode->data;
 
     oflag = file->flags;
     if (oflag & O_DIRECTORY)
@@ -24,11 +24,13 @@ static int dfs_yfile_open(struct dfs_file *file)
         if (oflag & O_CREAT)
         {
             result = yaffs_mkdir_reldir(obj, file->vnode->path, 0x777);
+            rt_kprintf("yaffs_mkdir_reldir result=%d\n", result);
             if (result < 0)
                 return yaffsfs_GetLastError();
         }
         /* open dir */
         dir = yaffs_opendir_reldir(obj, file->vnode->path);
+        rt_kprintf("yaffs_opendir_reldir %s\n", dir == RT_NULL ? "success" : "failed");
         if (dir == RT_NULL)
             return yaffsfs_GetLastError();
         /* save this pointer,will used by dfs_yaffs_getdents*/
@@ -38,6 +40,7 @@ static int dfs_yfile_open(struct dfs_file *file)
 
     /* regular file operations */
     fd = yaffs_open_reldir(obj, file->vnode->path, oflag, S_IREAD | S_IWRITE);
+    rt_kprintf("yaffs_open_reldir fd=%d\n", fd);
     if (fd < 0)
         return yaffsfs_GetLastError();
 

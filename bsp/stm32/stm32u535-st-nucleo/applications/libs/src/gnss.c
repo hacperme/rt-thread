@@ -24,7 +24,9 @@ static struct rt_semaphore GNSS_THD_SUSPEND_SEM;
 static struct rt_thread GNSS_READ_THD;
 static char GNSS_READ_THD_STACK[0x1000];
 
+#ifdef PKG_USING_LWGPS
 static lwgps_t HGPS;
+#endif
 static char nmea[GNSS_BUFF_SIZE];
 static nmea_item NMEA_ITEMS = {0};
 static const char NMEA_VALID_CHAR[4] = ",A,";
@@ -210,8 +212,10 @@ static void gnss_thread_entry(void *parameter)
                 // LOG_D("\r\n%s", nmea);
                 // LOG_D("===================================");
                 // LOG_D("NMEA Size %d", rt_strlen(nmea));
+#ifdef PKG_USING_LWGPS
                 rt_memset(&HGPS, 0, sizeof(HGPS));
                 lwgps_process(&HGPS, nmea, rt_strlen(nmea));
+#endif
                 rt_memset(&NMEA_ITEMS, 0, sizeof(NMEA_ITEMS));
                 gnss_parse_nmea(nmea);
             }
@@ -226,7 +230,9 @@ static void gnss_thread_entry(void *parameter)
     }
     // LOG_D("Clear nmea, HGPS, NMEA_ITEMS");
     rt_memset(nmea, 0, GNSS_BUFF_SIZE);
+#ifdef PKG_USING_LWGPS
     rt_memset(&HGPS, 0, sizeof(HGPS));
+#endif
     rt_memset(&NMEA_ITEMS, 0, sizeof(NMEA_ITEMS));
     rt_enter_critical();
     res = rt_sem_release(&GNSS_THD_SUSPEND_SEM);
@@ -467,6 +473,7 @@ rt_err_t gnss_read_nmea(char *data, rt_uint32_t size, rt_uint16_t timeout)
     return res;
 }
 
+#ifdef PKG_USING_LWGPS
 rt_err_t gnss_read_data(lwgps_t *gnss_data, rt_uint16_t timeout)
 {
     rt_err_t res = RT_ERROR;
@@ -487,6 +494,7 @@ rt_err_t gnss_read_data(lwgps_t *gnss_data, rt_uint16_t timeout)
     rt_mutex_release(&GNSS_LOCK);
     return res;
 }
+#endif
 
 rt_err_t gnss_read_nmea_item(nmea_item_t nmea_item, rt_uint16_t timeout)
 {
@@ -510,6 +518,7 @@ rt_err_t gnss_read_nmea_item(nmea_item_t nmea_item, rt_uint16_t timeout)
 }
 
 #ifdef RT_USING_MSH
+#ifdef PKG_USING_LWGPS
 static rt_err_t test_show_nmea_data(lwgps_t *gnss_data)
 {
     char msg[64];
@@ -531,6 +540,7 @@ static rt_err_t test_show_nmea_data(lwgps_t *gnss_data)
     }
     return res;
 }
+#endif
 
 static rt_err_t test_show_nmea_item(nmea_item_t test_nmea_item)
 {
@@ -568,13 +578,17 @@ static void test_gnss(int argc, char **argv)
     rt_thread_mdelay(100); //at least 300 ms
 
     rt_uint8_t cnt = 5;
+#ifdef PKG_USING_LWGPS
     lwgps_t gnss_data = {0};
+#endif
     nmea_item test_nmea_item = {0};
 
     while (cnt > 0)
     {
+#ifdef PKG_USING_LWGPS
         /* Test to show GNSS data */
         test_show_nmea_data(&gnss_data);
+#endif
 
         /* Test to show NMEA item data */
         test_show_nmea_item(&test_nmea_item);
