@@ -868,6 +868,7 @@ int yaffs_open_sharing_reldir(struct yaffs_obj *reldir, const YCHAR *path,
 	yaffsfs_Lock();
 
 	handle = yaffsfs_NewHandleAndFileDes();
+	rt_kprintf("yaffsfs_NewHandleAndFileDes handle=%d\n", handle);
 
 	if (handle < 0) {
 		yaffsfs_SetError(-ENFILE);
