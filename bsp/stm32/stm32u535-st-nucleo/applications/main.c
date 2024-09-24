@@ -32,7 +32,7 @@
 #include "yaffsfs.h"
 #endif
 
-#if defined(BSP_USING_DHARA) && 0
+#if defined(BSP_USING_DHARA) && 1
 #include "dfs_fs.h"
 #include "dhara_blk_device.h"
 #endif
@@ -119,7 +119,7 @@ int main(void)
     );
 #endif
 
-#if defined(BSP_USING_DHARA) && 0
+#if defined(BSP_USING_DHARA) && 1
     extern rt_err_t dhara_blk_device_init(void);
     res = dhara_blk_device_init();
     LOG_D("dhara_blk_device_init %s", res == 0 ? "success" : "failed");

@@ -113,8 +113,8 @@ static inline void encore_nand_power_switch(encore_nand_poweron_e poweron)
 
 void MX_OSPI_Init(void) {
 
-    encore_nand_power_switch(NAND_POWERON);
-    encore_nand_direction_switch(NAND_STM32_DIRECTION);
+    // encore_nand_power_switch(NAND_POWERON);
+    // encore_nand_direction_switch(NAND_STM32_DIRECTION);
 
     // 启用 OSPI 外设的时钟
     __HAL_RCC_OSPI1_CLK_ENABLE();
@@ -217,7 +217,7 @@ void HAL_OSPI_MspInit(OSPI_HandleTypeDef* hospi)
 /**
  * @brief HAL_NAND_BSP_Init BSP初始化函数
  */
-void HAL_NAND_BSP_Init()
+void HAL_NAND_BSP_Init(void)
 {
     MX_OSPI_Init();
 }
@@ -339,7 +339,7 @@ static inline void mdelay(unsigned int ms)
  * @return true 成功
  * @return false 失败
  */
-bool HAL_SPI_NAND_Init(HAL_NAND_Device_t nand_device)
+int HAL_SPI_NAND_Init(HAL_NAND_Device_t nand_device)
 {
     uint8_t nand_jedec_id[3] = {0};
     //uint8_t addr = 0x00;

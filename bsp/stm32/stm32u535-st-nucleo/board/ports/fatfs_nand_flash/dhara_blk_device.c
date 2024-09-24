@@ -144,10 +144,22 @@ const static struct rt_device_ops dhara_blk_dev_ops =
 rt_err_t dhara_blk_device_init(void)
 {
     rt_err_t res;
-    res = rt_mutex_init(&dhara_blk_dev.dhara_lock, "dharalk", RT_IPC_FLAG_PRIO);
+
+    extern int rt_hw_nand_flash_init(void);
+
+    res = rt_hw_nand_flash_init();
+    LOG_D("rt_hw_nand_flash_init %s.", res == RT_EOK ? "success" : "failed");
     if (res != RT_EOK)
     {
-        LOG_E("rt_mutex_init dharalk failed.");
+        // LOG_E("rt_hw_nand_flash_init failed.");
+        return res;
+    }
+
+    res = rt_mutex_init(&dhara_blk_dev.dhara_lock, "dharalk", RT_IPC_FLAG_PRIO);
+    LOG_D("rt_mutex_init dharalk %s.", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        // LOG_E("rt_mutex_init dharalk failed.");
         return res;
     }
 
@@ -163,13 +175,22 @@ rt_err_t dhara_blk_device_init(void)
     dhara_blk_dev.work_buffer = rt_malloc(dhara_blk_dev.geometry.bytes_per_sector);
     dhara_blk_dev.gc_factor = 45;
 
+    res = dhara_bind_with_spi_nand_device(&dhara_blk_dev.dhara_nand, &hal_nand_device);
+    LOG_D("dhara_bind_with_spi_nand_device dhara_nand hal_nand_device %s.", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        // LOG_E("dhara_bind_with_spi_nand_device dhara_nand hal_nand_device failed");
+        goto _fail_;
+    }
+
     dhara_map_init(&dhara_blk_dev.dhara_map, &dhara_blk_dev.dhara_nand, dhara_blk_dev.work_buffer, dhara_blk_dev.gc_factor);
 
     dhara_error_t ignored;
     res = dhara_map_resume(&dhara_blk_dev.dhara_map, &ignored) == 0 ? RT_EOK : RT_ERROR;
+    LOG_D("dhara_map_resume %s.", res == RT_EOK ? "success" : "failed");
     if (res != RT_EOK)
     {
-        LOG_E("dhara_map_resume failed");
+        // LOG_E("dhara_map_resume failed");
         goto _fail_;
     }
 
@@ -188,17 +209,10 @@ rt_err_t dhara_blk_device_init(void)
 
     dhara_blk_dev.parent.user_data = RT_NULL;
     res = rt_device_register(&dhara_blk_dev.parent, "dharadev", RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
+    LOG_D("rt_device_register dharadev %s.", res == RT_EOK ? "success" : "failed");
     if (res != RT_EOK)
     {
-        LOG_E("rt_device_register dharadev failed");
-        goto _fail_;
-    }
-
-    res = dhara_bind_with_spi_nand_device(&dhara_blk_dev.dhara_nand, &hal_nand_device);
-    if (res != RT_EOK)
-    {
-        LOG_E("dhara_bind_with_spi_nand_device dhara_nand hal_nand_device failed");
-        rt_device_unregister(&dhara_blk_dev.parent);
+        // LOG_E("rt_device_register dharadev failed");
         goto _fail_;
     }
 

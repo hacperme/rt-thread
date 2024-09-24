@@ -17,8 +17,10 @@ typedef struct
     NAND_flash_info_t* nand_flash_info;
 } HAL_NAND_Device_t;
 
+void HAL_NAND_BSP_Init(void);
+
 // 初始化硬件，挂载FLASH并且检查ID是否匹配
-bool HAL_SPI_NAND_Init(HAL_NAND_Device_t nand_device);
+int HAL_SPI_NAND_Init(HAL_NAND_Device_t nand_device);
 
 // 读取ID
 int HAL_SPI_NAND_Read_ID(HAL_NAND_Device_t hal_nand_device, uint8_t *din_id);
