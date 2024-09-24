@@ -184,6 +184,7 @@ rt_err_t dhara_blk_device_init(void)
     }
 
     dhara_map_init(&dhara_blk_dev.dhara_map, &dhara_blk_dev.dhara_nand, dhara_blk_dev.work_buffer, dhara_blk_dev.gc_factor);
+    LOG_D("dhara_map_init over.");
 
     dhara_error_t ignored;
     res = dhara_map_resume(&dhara_blk_dev.dhara_map, &ignored) == 0 ? RT_EOK : RT_ERROR;
