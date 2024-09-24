@@ -227,7 +227,7 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLOPEN=1,1,4,\"%s\",%d,0", serveraddr, server_port);
 	AT_SSL_SEND_CMD;
 	
-	if(rt_sem_take(_ql_at_sem._qsslopen, 120000) != RT_EOK)
+	if(rt_sem_take(_ql_at_sem._qsslopen, 8000) != RT_EOK)
 	{
 		LOG_E("QSSLOPEN no urc, timeout\n");
 		goto ssl_end;
@@ -277,7 +277,7 @@ bool at_ssl_check(at_client_t client)
 	}
 
 	
-	if(rt_sem_take(_ql_at_sem._qsslurc, 10000000) != RT_EOK)
+	if(rt_sem_take(_ql_at_sem._qsslurc, 8000) != RT_EOK)
 	{
 		LOG_E("QIURC no urc, timeout.\n");
 		return false; 
@@ -362,7 +362,7 @@ bool at_ssl_cacert_save(at_client_t client, const char* cacert_name, const char*
 		goto cacert_ret;
 	}
 
-	if(rt_sem_take(_ql_at_sem._qfupl, 120000) != RT_EOK)
+	if(rt_sem_take(_ql_at_sem._qfupl, 8000) != RT_EOK)
 	{
 		LOG_E("QFUPL no urc, timeout\n");
 		goto cacert_ret;
