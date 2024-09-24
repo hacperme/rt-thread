@@ -1,5 +1,10 @@
 [
  {
+  "name": "YD_CRYPTO",
+  "path": "/packages/security/yd_crypto",
+  "ver": "v1.1.01"
+ },
+ {
   "name": "CJSON",
   "path": "/packages/language/JSON/cJSON",
   "ver": "v1.7.17"

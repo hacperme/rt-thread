@@ -21,13 +21,20 @@
 // #define DBG_LEVEL DBG_WARNING
 // #define DBG_LEVEL DBG_ERROR
 #include <rtdbg.h>
+
 #if defined(BSP_USING_ON_CHIP_FLASH) && defined(RT_USING_DFS) && defined(PKG_USING_LITTLEFS)
 #include "dfs.h"
 #include "drv_dfs.h"
 #endif
+
 #if defined(PKG_USING_DFS_YAFFS)
 #include "dfs_fs.h"
 #include "yaffsfs.h"
+#endif
+
+#if defined(BSP_USING_DHARA) && 0
+#include "dfs_fs.h"
+#include "dhara_blk_device.h"
 #endif
 
 extern char __bootloader_rom_start[];
@@ -69,9 +76,10 @@ int main(void)
         mem_total / 1024, mem_used / 1024, mem_used_max / 1024,
         (mem_total - mem_used) / 1024
     );
+    int res;
 
 #if defined(BSP_USING_ON_CHIP_FLASH) && defined(RT_USING_DFS) && defined(PKG_USING_LITTLEFS)
-    int res = rt_hw_fs_mount();
+    res = rt_hw_fs_mount();
     LOG_I("rt_hw_fs_mount %s", res == RT_EOK ? "success" : "failed");
 #endif
 
@@ -79,7 +87,6 @@ int main(void)
     static struct rt_mtd_nand_device *nand_dev;
     nand_dev = (struct rt_mtd_nand_device *)rt_device_find("nand");
     
-    int res;
     yaffs_set_trace(0xFFFF);
     res = yaffs_start_up(nand_dev, "/");
     LOG_I("yaffs_start_up %s", res == RT_EOK ? "success" : "failed");
@@ -112,6 +119,28 @@ int main(void)
     );
 #endif
 
+#if defined(BSP_USING_DHARA) && 0
+    extern rt_err_t dhara_blk_device_init(void);
+    res = dhara_blk_device_init();
+    LOG_D("dhara_blk_device_init %s", res == 0 ? "success" : "failed");
+    if (res == 0)
+    {
+        res = dfs_mount("dharadev", "/", "elm", 0, 0);
+        if (res != 0)
+        {
+            res = dfs_mkfs("elm", "dharadev");
+            if (res == 0)
+            {
+                res = dfs_mount("dharadev", "/", "elm", 0, 0);
+            }
+            else
+            {
+                LOG_E("dfs_mkfs elm dharadev failed.");
+            }
+        }
+        LOG_D("dfs_mount dharadev elm %s", res == 0 ? "success" : "failed");
+    }
+#endif
     // extern void main_business_entry(void);
     // main_business_entry();
 

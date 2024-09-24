@@ -24,6 +24,8 @@
         "drv_flash.h": "c",
         "drv_config.h": "c",
         "fal.h": "c",
-        "hal_spi_nand_driver.h": "c"
+        "hal_spi_nand_driver.h": "c",
+        "fal_cfg.h": "c",
+        "dhara_blk_device.h": "c"
     }
 }

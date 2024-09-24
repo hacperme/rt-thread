@@ -199,6 +199,10 @@ endmenu
 
 menu "Board extended module Drivers"
 
+    config BSP_USING_DHARA
+        bool "Enable dhara"
+        default n
+
 endmenu
 
 endmenu

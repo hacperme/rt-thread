@@ -481,7 +481,7 @@ int rt_hw_nand_init(void)
     nand_dev.pages_per_block = PAGE_PER_BLOCK;
     nand_dev.plane_num       = 1;
     nand_dev.oob_size        = SPARE_SIZE;
-    nand_dev.oob_free        = SPARE_SIZE;
+    nand_dev.oob_free        = SPARE_FREE_SIZE;
     nand_dev.block_start     = 0;
     nand_dev.block_end       = BLOCK_NUM_PER_CHIP - 1;
 
