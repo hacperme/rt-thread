@@ -6,6 +6,10 @@
 #include <math.h>
 #include <rtthread.h>
 
+#define DRV_DEBUG
+#define LOG_TAG "NAND_TO_DHARA"
+#include <drv_log.h>
+
 #ifndef __containerof
 
 #include <stddef.h>
@@ -42,9 +46,9 @@ int dhara_bind_with_spi_nand_device(struct dhara_nand *n, HAL_NAND_Device_t* spi
 
     dhara_bind_spi_nand_list[index].is_binded = 1;
 
-    n->num_blocks = spi_nand_device->nand_flash_info->memory_info->block_num_per_chip;
-    n->log2_page_size = (uint8_t)log2((double)spi_nand_device->nand_flash_info->memory_info->page_size);
-    n->log2_ppb = (uint8_t)log2((double)spi_nand_device->nand_flash_info->memory_info->page_per_block);
+    if(n->num_blocks == 0) n->num_blocks = spi_nand_device->nand_flash_info->memory_info->block_num_per_chip;
+    if(n->log2_page_size == 0) n->log2_page_size = (uint8_t)log2((double)spi_nand_device->nand_flash_info->memory_info->page_size);
+    if(n->log2_ppb == 0) n->log2_ppb = (uint8_t)log2((double)spi_nand_device->nand_flash_info->memory_info->page_per_block);
     
     dhara_bind_spi_nand_list[index].dhara_nand = n;
     dhara_bind_spi_nand_list[index].spi_nand_device = spi_nand_device; 
@@ -52,13 +56,28 @@ int dhara_bind_with_spi_nand_device(struct dhara_nand *n, HAL_NAND_Device_t* spi
     return 0;
 }
 
+static HAL_NAND_Device_t* dhara_find_spi_nand_device(const struct dhara_nand *n)
+{
+    int index = 0;
+    for(index = 0; index < DHARA_NAND_BIND_SPI_NAND_INDEX_MAX; index)
+    {
+        if(dhara_bind_spi_nand_list[index].is_binded == 1 && dhara_bind_spi_nand_list[index].dhara_nand == n)
+        {
+            return dhara_bind_spi_nand_list[index].spi_nand_device;
+        }
+    }
+
+    return NULL;
+}
+
 /* Is the given block bad? */
 int dhara_nand_is_bad(const struct dhara_nand *n, dhara_block_t b)
 {
-    //通过nand_dev的指针索引到dhara_bind_spi_nand_t结构体
-    dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
-    //通过dhara_bind_spi_nand_t取得dhara_nand对应的HAL_NAND_Device的指针，解引用拿到HAL_NAND_Device结构体本身
-    HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    // //通过nand_dev的指针索引到dhara_bind_spi_nand_t结构体
+    // dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
+    // //通过dhara_bind_spi_nand_t取得dhara_nand对应的HAL_NAND_Device的指针，解引用拿到HAL_NAND_Device结构体本身
+    // HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    HAL_NAND_Device_t spi_nand_device = *(dhara_find_spi_nand_device(n));
 
     //(1 << n->log2_ppb)实际上就是对数的反运算，得2的log2_ppb次幂，即page_per_block本身
     //与block_num相乘，获得该block的首页地址，也即块地址
@@ -72,8 +91,9 @@ int dhara_nand_is_bad(const struct dhara_nand *n, dhara_block_t b)
  */
 void dhara_nand_mark_bad(const struct dhara_nand *n, dhara_block_t b)
 {
-    dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
-    HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    // dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
+    // HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    HAL_NAND_Device_t spi_nand_device = *(dhara_find_spi_nand_device(n));
 
     dhara_page_t blk_first_page_addr = b * (1 << n->log2_ppb);
     
@@ -90,8 +110,9 @@ void dhara_nand_mark_bad(const struct dhara_nand *n, dhara_block_t b)
  */
 int dhara_nand_erase(const struct dhara_nand *n, dhara_block_t b, dhara_error_t *err)
 {
-    dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
-    HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    // dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
+    // HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    HAL_NAND_Device_t spi_nand_device = *(dhara_find_spi_nand_device(n));
     uint8_t status,ret = 0;
 
     dhara_page_t blk_first_page_addr = b * (1 << n->log2_ppb);
@@ -121,6 +142,7 @@ int dhara_nand_erase(const struct dhara_nand *n, dhara_block_t b, dhara_error_t 
     }
     
 end:
+    LOG_I("DHARA Erase blk %X, ret %d", b, ret);
     return ret;	
 }
 
@@ -134,8 +156,9 @@ end:
  */
 int dhara_nand_prog(const struct dhara_nand *n, dhara_page_t p, const uint8_t *data, dhara_error_t *err)
 {
-    dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
-    HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    // dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
+    // HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    HAL_NAND_Device_t spi_nand_device = *(dhara_find_spi_nand_device(n));
     uint8_t status,ret = 0;
     
     uint32_t nand_page_size = 1 << n->log2_page_size;
@@ -184,14 +207,16 @@ int dhara_nand_prog(const struct dhara_nand *n, dhara_page_t p, const uint8_t *d
     }   
 
 end:
+    LOG_I("DHARA Program page %X, size %d, ret %d", p, sizeof(data), ret);
     return ret;			
 }
 
 /* Check that the given page is erased */
 int dhara_nand_is_free(const struct dhara_nand *n, dhara_page_t p)
 {
-    dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
-    HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    // dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
+    // HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    HAL_NAND_Device_t spi_nand_device = *(dhara_find_spi_nand_device(n));
     uint8_t status,ret = 0;
 
     uint32_t nand_page_size = 1 << n->log2_page_size;
@@ -223,8 +248,9 @@ end:
  */
 int dhara_nand_read(const struct dhara_nand *n, dhara_page_t p, size_t offset, size_t length, uint8_t *data, dhara_error_t *err)
 {
-    dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
-    HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    // dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
+    // HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    HAL_NAND_Device_t spi_nand_device = *(dhara_find_spi_nand_device(n));
     uint8_t status,ret = 0;
     uint32_t ecc_err, ecc_corrected;
 
@@ -257,6 +283,7 @@ int dhara_nand_read(const struct dhara_nand *n, dhara_page_t p, size_t offset, s
     }
     
 end:
+    LOG_I("DHARA Read page %X, size %d, ret %d", p, length, ret);
     return ret;	
     
 }
@@ -267,8 +294,9 @@ end:
  */
 int dhara_nand_copy(const struct dhara_nand *n, dhara_page_t src, dhara_page_t dst, dhara_error_t *err)
 {
-    dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
-    HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    // dhara_bind_spi_nand_t *nand_dev = __containerof(&n, dhara_bind_spi_nand_t, dhara_nand);
+    // HAL_NAND_Device_t spi_nand_device = *(nand_dev->spi_nand_device);
+    HAL_NAND_Device_t spi_nand_device = *(dhara_find_spi_nand_device(n));
     
     uint8_t status,ret = 0;
     uint32_t ecc_err, ecc_corrected;
@@ -316,7 +344,7 @@ int dhara_nand_copy(const struct dhara_nand *n, dhara_page_t src, dhara_page_t d
     
     if ((status & STATUS_P_FAIL_MASK) == STATUS_P_FAIL) 
     {
-        return -EIO;
+        return -7;
     }
 
 end:
