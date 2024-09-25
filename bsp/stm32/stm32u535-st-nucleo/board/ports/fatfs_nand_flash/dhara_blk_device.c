@@ -171,6 +171,8 @@ rt_err_t dhara_blk_device_init(void)
     dhara_blk_dev.dhara_nand.num_blocks = hal_nand_device.nand_flash_info->memory_info->block_num_per_chip;
     dhara_blk_dev.dhara_nand.log2_ppb = (uint8_t)log2((double)hal_nand_device.nand_flash_info->memory_info->page_per_block);  // 64 pages per block is standard
     dhara_blk_dev.dhara_nand.log2_page_size = (uint8_t)log2((double)hal_nand_device.nand_flash_info->memory_info->page_size);  // 4096 bytes per page is fairly standard
+    LOG_D("dhara_blk_dev.dhara_nand.log2_ppb=%d", dhara_blk_dev.dhara_nand.log2_ppb);
+    LOG_D("dhara_blk_dev.dhara_nand.log2_page_size=%d", dhara_blk_dev.dhara_nand.log2_page_size);
 
     dhara_blk_dev.work_buffer = rt_malloc(dhara_blk_dev.geometry.bytes_per_sector);
     dhara_blk_dev.gc_factor = 45;
@@ -188,12 +190,12 @@ rt_err_t dhara_blk_device_init(void)
 
     dhara_error_t ignored;
     res = dhara_map_resume(&dhara_blk_dev.dhara_map, &ignored) == 0 ? RT_EOK : RT_ERROR;
-    LOG_D("dhara_map_resume %s.", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        // LOG_E("dhara_map_resume failed");
-        goto _fail_;
-    }
+    LOG_D("dhara_map_resume %s. ignored=%d", res == RT_EOK ? "success" : "failed", ignored);
+    // if (res != RT_EOK)
+    // {
+    //     // LOG_E("dhara_map_resume failed");
+    //     goto _fail_;
+    // }
 
 #ifdef RT_USING_DEVICE_OPS
     dhara_blk_dev.parent.ops  = &dhara_blk_dev_ops;
