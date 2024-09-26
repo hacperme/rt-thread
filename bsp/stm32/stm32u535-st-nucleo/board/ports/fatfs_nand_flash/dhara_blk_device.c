@@ -7,15 +7,18 @@
  * @copyright : Copyright (c) 2024
  */
 
+#include <rtthread.h>
+#include <rtdevice.h>
 #include "dhara_blk_device.h"
 #include "dhara/map.h"
 #include "hal_nand_device_info.h"
 #include "hal_spi_nand_driver.h"
+#include "drv_nand_flash.h"
 #include <math.h>
 
-#define DRV_DEBUG
-#define LOG_TAG "DHARA_DEVICE"
-#include <drv_log.h>
+#define DBG_SECTION_NAME "DHARA_BLK_DEVICE"
+#define DBG_LEVEL DBG_INFO
+#include <rtdbg.h>
 
 struct dhara_blk_device
 {
@@ -74,26 +77,28 @@ static rt_ssize_t dhara_blk_dev_read(rt_device_t dev, rt_off_t pos, void* buffer
     dhara_error_t err;
     rt_ssize_t i;
 
-    rt_mutex_take(&part->dhara_lock, RT_WAITING_FOREVER);
     for (i = 0; i < size; i++)
     {
-        if (dhara_map_read(&part->dhara_map, size + i, buffer + i * part->geometry.bytes_per_sector, &err))
+        rt_mutex_take(&part->dhara_lock, RT_WAITING_FOREVER);
+        if (dhara_map_read(&part->dhara_map, pos + i, buffer + i * part->geometry.bytes_per_sector, &err))
         {
             i = -1;
-            break;
         }
         else if (err)
         {
             // This indicates a soft ECC error, we rewrite the sector to recover
-            if (dhara_map_write(&part->dhara_map, size + i, buffer + i * part->geometry.bytes_per_sector, &err))
+            if (dhara_map_write(&part->dhara_map, pos + i, buffer + i * part->geometry.bytes_per_sector, &err))
             {
                 i = -1;
-                break;
             }
         }
+        rt_mutex_release(&part->dhara_lock);
+        if (i == -1)
+        {
+            break;
+        }
     }
-    rt_mutex_release(&part->dhara_lock);
-
+    LOG_D("dhara_blk_dev_read pos=%d, size=%d, ret_size=%d", pos, size, i);
     return i;
 }
 
@@ -104,30 +109,23 @@ static rt_ssize_t dhara_blk_dev_write(rt_device_t dev, rt_off_t pos, const void*
     dhara_error_t err;
     rt_ssize_t i;
 
-    rt_mutex_take(&part->dhara_lock, RT_WAITING_FOREVER);
     for (i = 0; i < size; i++)
     {
-        if (dhara_map_write(&part->dhara_map, size + i, buffer + i * part->geometry.bytes_per_sector, &err))
+        rt_mutex_take(&part->dhara_lock, RT_WAITING_FOREVER);
+        if (dhara_map_write(&part->dhara_map, pos + i, buffer + i * part->geometry.bytes_per_sector, &err))
         {
             i = -1;
+        }
+        rt_mutex_release(&part->dhara_lock);
+        if (i == -1)
+        {
             break;
         }
     }
-    rt_mutex_release(&part->dhara_lock);
+    LOG_D("dhara_blk_dev_write pos=%d, size=%d, ret_size=%d", pos, size, i);
 
     return i;
 }
-
-// static rt_uint8_t degree(rt_uint64_t num)
-// {
-//     rt_uint8_t cnt = 0;
-//     while (num > 1)
-//     {
-//         num >>= 1;
-//         cnt++;
-//     }
-//     return cnt;
-// }
 
 #ifdef RT_USING_DEVICE_OPS
 const static struct rt_device_ops dhara_blk_dev_ops =
@@ -143,9 +141,7 @@ const static struct rt_device_ops dhara_blk_dev_ops =
 
 rt_err_t dhara_blk_device_init(void)
 {
-    rt_err_t res;
-
-    extern int rt_hw_nand_flash_init(void);
+    int res;
 
     res = rt_hw_nand_flash_init();
     LOG_D("rt_hw_nand_flash_init %s.", res == RT_EOK ? "success" : "failed");
@@ -171,8 +167,12 @@ rt_err_t dhara_blk_device_init(void)
     dhara_blk_dev.dhara_nand.num_blocks = hal_nand_device.nand_flash_info->memory_info->block_num_per_chip;
     dhara_blk_dev.dhara_nand.log2_ppb = (uint8_t)log2((double)hal_nand_device.nand_flash_info->memory_info->page_per_block);  // 64 pages per block is standard
     dhara_blk_dev.dhara_nand.log2_page_size = (uint8_t)log2((double)hal_nand_device.nand_flash_info->memory_info->page_size);  // 4096 bytes per page is fairly standard
-    LOG_D("dhara_blk_dev.dhara_nand.log2_ppb=%d", dhara_blk_dev.dhara_nand.log2_ppb);
-    LOG_D("dhara_blk_dev.dhara_nand.log2_page_size=%d", dhara_blk_dev.dhara_nand.log2_page_size);
+    LOG_D(
+        "dhara_nand log2_ppb=%d, log2_page_size=%d, num_blocks=%d",
+        dhara_blk_dev.dhara_nand.log2_ppb,
+        dhara_blk_dev.dhara_nand.log2_page_size,
+        dhara_blk_dev.dhara_nand.num_blocks
+    );
 
     dhara_blk_dev.work_buffer = rt_malloc(dhara_blk_dev.geometry.bytes_per_sector);
     dhara_blk_dev.gc_factor = 45;
@@ -187,10 +187,17 @@ rt_err_t dhara_blk_device_init(void)
 
     dhara_map_init(&dhara_blk_dev.dhara_map, &dhara_blk_dev.dhara_nand, dhara_blk_dev.work_buffer, dhara_blk_dev.gc_factor);
     LOG_D("dhara_map_init over.");
+    LOG_D(
+        "dhara_map.journal.nand->log2_ppb=%d, log2_page_size=%d, num_blocks=%d",
+        dhara_blk_dev.dhara_map.journal.nand->log2_ppb,
+        dhara_blk_dev.dhara_map.journal.nand->log2_page_size,
+        dhara_blk_dev.dhara_map.journal.nand->num_blocks
+    );
 
     dhara_error_t ignored;
     res = dhara_map_resume(&dhara_blk_dev.dhara_map, &ignored) == 0 ? RT_EOK : RT_ERROR;
-    LOG_D("dhara_map_resume %s. ignored=%d", res == RT_EOK ? "success" : "failed", ignored);
+    LOG_D("dhara_map_resume %s. res=%d, ignored=%d", res == RT_EOK ? "success" : "failed", res, ignored);
+    LOG_D("dhara_map.count=%d", dhara_blk_dev.dhara_map.count);
     // if (res != RT_EOK)
     // {
     //     // LOG_E("dhara_map_resume failed");
@@ -224,5 +231,5 @@ rt_err_t dhara_blk_device_init(void)
 _fail_:
     rt_mutex_detach(&dhara_blk_dev.dhara_lock);
     rt_free(dhara_blk_dev.work_buffer);
-    return res;
+    return RT_ERROR;
 }

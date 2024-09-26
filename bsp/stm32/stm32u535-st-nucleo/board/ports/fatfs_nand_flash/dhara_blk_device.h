@@ -9,9 +9,6 @@
 #ifndef __DHARA_BLK_DEVICE_H__
 #define __DHARA_BLK_DEVICE_H__
 
-#include <rtthread.h>
-#include <rtdevice.h>
-
 rt_err_t dhara_blk_device_init(void);
 
 #endif

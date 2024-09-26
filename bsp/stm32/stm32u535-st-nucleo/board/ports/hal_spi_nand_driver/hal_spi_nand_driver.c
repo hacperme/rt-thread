@@ -6,7 +6,7 @@
 #include <string.h>
 
 #define DBG_TAG "NAND_G_DRV"
-#define DBG_LVL DBG_LOG
+#define DBG_LVL DBG_WARNING
 #include <rtdbg.h>
 
 /*************************************************************************/
@@ -89,27 +89,27 @@ const uint32_t ADDR_SIZE_LIST[]=
 
 OSPI_HandleTypeDef hal_nand_ospi;
 
-typedef enum {
-    NAND_STM32_DIRECTION = 0,
-    NAND_ESP32_DIRECTION = 1,
-} encore_nand_direction_e;
+// typedef enum {
+//     NAND_STM32_DIRECTION = 0,
+//     NAND_ESP32_DIRECTION = 1,
+// } encore_nand_direction_e;
 
-typedef enum {
-    NAND_POWERON = 1,
-    NAND_POWEROFF = 0,
-} encore_nand_poweron_e;
+// typedef enum {
+//     NAND_POWERON = 1,
+//     NAND_POWEROFF = 0,
+// } encore_nand_poweron_e;
 
-static inline void encore_nand_direction_switch(encore_nand_direction_e direction)
-{
-    rt_pin_mode(QSPI_CPUN_ESP_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(QSPI_CPUN_ESP_PIN, direction);
-}
+// static inline void encore_nand_direction_switch(encore_nand_direction_e direction)
+// {
+//     rt_pin_mode(QSPI_CPUN_ESP_PIN, PIN_MODE_OUTPUT);
+//     rt_pin_write(QSPI_CPUN_ESP_PIN, direction);
+// }
 
-static inline void encore_nand_power_switch(encore_nand_poweron_e poweron)
-{
-    rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
-    rt_pin_write(FLASH_PWRON_PIN, poweron);
-}
+// static inline void encore_nand_power_switch(encore_nand_poweron_e poweron)
+// {
+//     rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
+//     rt_pin_write(FLASH_PWRON_PIN, poweron);
+// }
 
 void MX_OSPI_Init(void) {
 
@@ -542,7 +542,7 @@ int HAL_SPI_NAND_Wait(HAL_NAND_Device_t hal_nand_device, uint8_t *s)
         {
             LOG_I("busy");
         }
-        mdelay(5);//delay 5ms
+        mdelay(1);  // delay 1ms
 	}
 out:
 	if (s)
@@ -701,6 +701,11 @@ int HAL_SPI_NAND_Check_Bad_Block(HAL_NAND_Device_t hal_nand_device, uint32_t blk
 
     HAL_SPI_NAND_Read_From_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag);
 
+    LOG_D(
+        "HAL_SPI_NAND_Check_Bad_Block bad_blk_flag[0]=0x%02X, bad_blk_flag[1]=0x%02X",
+        bad_blk_flag[0], bad_blk_flag[1]
+    );
+
     return (bad_blk_flag[0] != 0xFF) || (bad_blk_flag[1] != 0xFF);
 }
 
@@ -738,6 +743,7 @@ int HAL_SPI_NAND_Mark_Bad_Block(HAL_NAND_Device_t hal_nand_device, uint32_t blk_
 	return ((status & STATUS_P_FAIL_MASK) == STATUS_P_FAIL);
 }
 
+#if 0
 /*测试函数，忽略*/
 void hal_spi_test_oneline(void)
 {
@@ -834,3 +840,4 @@ void hal_spi_test_oneline(void)
 }
 
 // MSH_CMD_EXPORT(hal_spi_test_oneline, HAL SPI TEST ONELINE);
+#endif

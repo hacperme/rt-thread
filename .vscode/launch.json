@@ -2,7 +2,7 @@
     "configurations": [
         {
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/bsp/stm32/stm32u535-st-nucleo/rt-thread.map",
+            "executable": "${workspaceFolder}/bsp/stm32/stm32u535-st-nucleo/rt-thread.elf",
             "name": "Debug with J-Link",
             "request": "launch",
             "type": "cortex-debug",

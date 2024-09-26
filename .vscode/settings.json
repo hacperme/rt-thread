@@ -26,6 +26,8 @@
         "fal.h": "c",
         "hal_spi_nand_driver.h": "c",
         "fal_cfg.h": "c",
-        "dhara_blk_device.h": "c"
+        "dhara_blk_device.h": "c",
+        "board.h": "c",
+        "math.h": "c"
     }
 }

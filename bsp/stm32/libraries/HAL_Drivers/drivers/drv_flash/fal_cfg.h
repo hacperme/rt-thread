@@ -27,10 +27,10 @@ extern const struct fal_flash_dev stm32u5_onchip_flash;
 /* ====================== Partition Configuration ========================== */
 #ifdef FAL_PART_HAS_TABLE_CFG
 /* partition table */
-#define FAL_PART_TABLE                                                                \
-{                                                                                     \
-    {0x12345678,        "bl",     "onchip_flash",          0,  400*1024, 0},          \
-    {0x12345678,        "fs",     "onchip_flash",   400*1024,  112*1024, 0},          \
+#define FAL_PART_TABLE                                                       \
+{                                                                            \
+    {0x12345678, "bl", "onchip_flash", 0, 504*1024, 0},                      \
+    {0x12345678, "fs", "onchip_flash", 504*1024, 8*1024, 0},                 \
 }
 #endif /* FAL_PART_HAS_TABLE_CFG */
 

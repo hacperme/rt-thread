@@ -402,4 +402,39 @@ static void test_all_pin_enable(int argc, char **argv)
 }
 // MSH_CMD_EXPORT(test_all_pin_enable, test all pin enable);
 
+#include "drv_nand_flash.h"
+static void test_esp32_power_ctrl(int argc, char **argv)
+{
+    rt_err_t res;
+    rt_uint8_t mode = 0;
+    if (argc >= 2)
+    {
+        mode = atoi(argv[1]);
+    }
+
+    if (mode == 0)
+    {
+        nand_to_esp32();
+        res = esp32_power_on();
+        LOG_D("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
+    }
+    else if (mode == 1)
+    {
+        nand_to_stm32();
+        res = esp32_power_off();
+        LOG_D("esp32_power_off %s", res == RT_EOK ? "success" : "failed");
+    }
+    else if (mode == 2)
+    {
+        res = esp32_start_download();
+        LOG_D("esp32_start_download %s", res == RT_EOK ? "success" : "failed");
+    }
+    else
+    {
+        LOG_E("Args mode=%d is not supported.");
+    }
+}
+
+MSH_CMD_EXPORT(test_esp32_power_ctrl, test esp32 donwload);
+
 #endif

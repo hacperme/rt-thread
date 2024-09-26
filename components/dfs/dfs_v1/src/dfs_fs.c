@@ -271,7 +271,7 @@ int dfs_mount(const char   *device_name,
         rt_set_errno(-ENOTDIR);
         return -1;
     }
-    LOG_D("fullpath %s", fullpath);
+    // LOG_D("fullpath %s", fullpath);
 
     /* Check if the path exists or not, raw APIs call, fixme */
     if ((strcmp(fullpath, "/") != 0) && (strcmp(fullpath, "/dev") != 0))

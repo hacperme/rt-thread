@@ -120,7 +120,9 @@ int main(void)
 #endif
 
 #if defined(BSP_USING_DHARA) && 1
-    extern rt_err_t dhara_blk_device_init(void);
+    // extern rt_err_t dhara_blk_device_init(void);
+    rt_tick_t st, et;
+    st = rt_tick_get_millisecond();
     res = dhara_blk_device_init();
     LOG_D("dhara_blk_device_init %s", res == 0 ? "success" : "failed");
     if (res == 0)
@@ -129,18 +131,30 @@ int main(void)
         if (res != 0)
         {
             res = dfs_mkfs("elm", "dharadev");
+            LOG_D("dfs_mkfs elm dharadev %s", res == 0 ? "success" : "failed");
             if (res == 0)
             {
                 res = dfs_mount("dharadev", "/", "elm", 0, 0);
             }
-            else
-            {
-                LOG_E("dfs_mkfs elm dharadev failed.");
-            }
+            // else
+            // {
+            //     LOG_E("dfs_mkfs elm dharadev failed.");
+            // }
         }
         LOG_D("dfs_mount dharadev elm %s", res == 0 ? "success" : "failed");
     }
+    et = rt_tick_get_millisecond();
+    LOG_I("FATFS init time=%dms", et - st);
 #endif
+
+    mem_total = mem_used = mem_used_max = 0;
+    rt_memory_info(&mem_total, &mem_used, &mem_used_max);
+    LOG_I(
+        "mem_total=%dKB, mem_used=%dKB, mem_used_max=%dKB, mem_free=%dKB",
+        mem_total / 1024, mem_used / 1024, mem_used_max / 1024,
+        (mem_total - mem_used) / 1024
+    );
+
     // extern void main_business_entry(void);
     // main_business_entry();
 

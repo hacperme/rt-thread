@@ -1,22 +1,22 @@
-#include "nand.h"
-#include "error.h"
+#include "dhara/nand.h"
+#include "dhara/error.h"
 #include "sys/errno.h"
 #include "hal_spi_nand_driver.h"
 #include "hal_nand_device_info.h"
 #include <math.h>
 #include <rtthread.h>
 
-#define DRV_DEBUG
-#define LOG_TAG "NAND_TO_DHARA"
-#include <drv_log.h>
+#define DBG_TAG "NAND_TO_DHARA"
+#define DBG_LVL DBG_WARNING
+#include <rtdbg.h>
 
-#ifndef __containerof
+// #ifndef __containerof
 
-#include <stddef.h>
-#define __containerof(ptr, type, member) \
-    ((type *)((char *)(ptr) - offsetof(type, member)))
+// #include <stddef.h>
+// #define __containerof(ptr, type, member) \
+//     ((type *)((char *)(ptr) - offsetof(type, member)))
     
-#endif
+// #endif
 
 typedef struct dhara_bind_spi_nand
 {
@@ -169,7 +169,13 @@ int dhara_nand_prog(const struct dhara_nand *n, dhara_page_t p, const uint8_t *d
         ret = -1;
         goto end;
     }
-    
+
+    if(HAL_SPI_NAND_Wait(spi_nand_device, &status) != 0)
+    {
+        ret = -5;
+        goto end;
+    }
+
     if(HAL_SPI_NAND_Write_Enable(spi_nand_device) != 0)
     {
         ret = -2;

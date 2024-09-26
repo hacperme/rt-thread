@@ -7,56 +7,71 @@
  * @copyright : Copyright (c) 2024
  */
 
-#include <rtthread.h>
-#include <rtdevice.h>
-#include <board.h>
+#include "drv_nand_flash.h"
 
-#define DRV_DEBUG
-#define LOG_TAG     "DRV.NAND_FLASH"
-#include <drv_log.h>
+#define DBG_SECTION_NAME "DRV.NAND_FLASH"
+#define DBG_LEVEL DBG_LOG
+#include <rtdbg.h>
 
-#include "hal_nand_device_info.h"
-#include "hal_spi_nand_driver.h"
+extern HAL_NAND_Device_t hal_nand_device;
 
-typedef enum {
-    NAND_STM32_DIRECTION = 0,
-    NAND_ESP32_DIRECTION = 1,
-} nand_direction_e;
-
-typedef enum {
-    NAND_POWERON = 1,
-    NAND_POWEROFF = 0,
-} nand_poweron_e;
-
-static inline void nand_direction_switch(nand_direction_e direction)
+rt_err_t nand_direction_switch(nand_direction_e direction)
 {
     rt_pin_mode(QSPI_CPUN_ESP_PIN, PIN_MODE_OUTPUT);
     rt_pin_write(QSPI_CPUN_ESP_PIN, direction);
+    rt_err_t res = rt_pin_read(QSPI_CPUN_ESP_PIN) == direction ? RT_EOK : RT_ERROR;
+    return res;
 }
 
-static inline void nand_power_switch(nand_poweron_e poweron)
+rt_err_t nand_power_switch(nand_poweron_e poweron)
 {
     rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
     rt_pin_write(FLASH_PWRON_PIN, poweron);
+    rt_err_t res = rt_pin_read(FLASH_PWRON_PIN) == poweron ? RT_EOK : RT_ERROR;
+    return res;
 }
 
 void nand_to_stm32(void)
 {
-    nand_power_switch(NAND_POWERON);
-    nand_direction_switch(NAND_STM32_DIRECTION);
+    rt_err_t res;
+    res = nand_power_switch(NAND_POWERON);
+    LOG_D("nand_power_switch NAND_POWERON %s", res == RT_EOK ? "success" : "failed");
+    res = nand_direction_switch(NAND_STM32_DIRECTION);
+    LOG_D("nand_direction_switch NAND_STM32_DIRECTION %s", res == RT_EOK ? "success" : "failed");
 }
 
 void nand_to_esp32(void)
 {
-    nand_power_switch(NAND_POWERON);
-    nand_direction_switch(NAND_ESP32_DIRECTION);
+    rt_err_t res;
+    res = nand_power_switch(NAND_POWERON);
+    LOG_D("nand_power_switch NAND_POWERON %s", res == RT_EOK ? "success" : "failed");
+    res = nand_direction_switch(NAND_ESP32_DIRECTION);
+    LOG_D("nand_direction_switch NAND_ESP32_DIRECTION %s", res == RT_EOK ? "success" : "failed");
+}
+
+static void erase_nand_flash(void)
+{
+    int res;
+    uint8_t status;
+    // for(uint32_t i = 0; i < 4096; i++)
+    for(uint32_t i = 0; i < hal_nand_device.nand_flash_info->memory_info->block_num_per_chip; i++)
+    {
+        HAL_SPI_NAND_Write_Enable(hal_nand_device);
+        HAL_SPI_NAND_Read_Status(hal_nand_device, &status);
+
+        LOG_I("status before erase_nand_flash block %02X", status);
+        res = HAL_SPI_NAND_Erase_Block(hal_nand_device, i);
+        LOG_D("erase_nand_flash block=%d %s", i, res == 0 ? "success": "failed");
+
+        HAL_SPI_NAND_Wait(hal_nand_device, &status);
+        LOG_I("after before erase_nand_flash block %02X", status);
+    }
 }
 
 int rt_hw_nand_flash_init(void)
 {
     int hal_res;
     uint8_t wlock = 0;
-    extern HAL_NAND_Device_t hal_nand_device;
 
     nand_to_stm32();
 
@@ -100,5 +115,7 @@ int rt_hw_nand_flash_init(void)
             return -RT_ERROR;
         }
     }
+
+    // erase_nand_flash();
     return RT_EOK;
 }
