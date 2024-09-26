@@ -12,7 +12,7 @@
 #define AWS_REGION "ap-east-1"
 #define AWS_SERVICE "s3"
 #define AWS_BUCKET "iot-encortec"
-#define AWS_HOST "iot-encortec.s3.iot-encortec.amazonaws.com"
+#define AWS_HOST "iot-encortec.s3.ap-east-1.amazonaws.com"
 
 void bin2hex(const uint8_t *src, uint32_t src_length, uint8_t *output)
 {
@@ -132,6 +132,26 @@ void create_signature(const char *amz_date, const char *date, const char *region
 char weekDay[7][4] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 char mon[12][4] = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 
+#define QTH_AWS_X509_CA "-----BEGIN CERTIFICATE-----\r\n" \
+                    "MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF\r\n" \
+                    "ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6\r\n" \
+                    "b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL\r\n" \
+                    "MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv\r\n" \
+                    "b3QgQ0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXj\r\n" \
+                    "ca9HgFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM\r\n" \
+                    "9O6II8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qw\r\n" \
+                    "IFAGbHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6\r\n" \
+                    "VOujw5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L\r\n" \
+                    "93FcXmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQm\r\n" \
+                    "jgSubJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC\r\n" \
+                    "AYYwHQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUA\r\n" \
+                    "A4IBAQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDI\r\n" \
+                    "U5PMCCjjmCXPI6T53iHTfIUJrU6adTrCC2qJeHZERxhlbI1Bjjt/msv0tadQ1wUs\r\n" \
+                    "N+gDS63pYaACbvXy8MWy7Vu33PqUXHeeE6V/Uq2V8viTO96LXFvKWlJbYK8U90vv\r\n" \
+                    "o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU\r\n" \
+                    "5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy\r\n" \
+                    "rqXRfboQnoZsG4q5WTP468SQvvG5\r\n" \
+                    "-----END CERTIFICATE-----"
 
 #define QST_SSL_CA "-----BEGIN CERTIFICATE-----\r\n" \
 				"MIIEtDCCA5ygAwIBAgIJAL/pgY5ZFAJZMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD\r\n" \
@@ -249,7 +269,7 @@ int at_https_upload_file(const char *filename)
         "AWS4-HMAC-SHA256 Credential=%s/%s/%s/%s/aws4_request,SignedHeaders=host;x-amz-content-sha256;x-amz-date,Signature=%s",
         AWS_ACCESS_KEY_ID, date, region, service, signature
     );
-    rt_kprintf("Authentication: %s\n", auth);
+    rt_kprintf("Authorization: %s\n", auth);
 
     char request[512] = {0};
     snprintf(
@@ -271,7 +291,6 @@ int at_https_upload_file(const char *filename)
         return -1;
     }
 
-	// if(at_ssl_connect(client1, "cacert_st.pem", "112.31.84.164", 8381, strlen(request) + content_length) != true) {
     if(at_ssl_connect(client1, "cacert_st.pem", AWS_HOST, 443, strlen(request) + content_length) != true) {
         fclose(file);
         return -1;
@@ -279,29 +298,21 @@ int at_https_upload_file(const char *filename)
 
 	if(at_ssl_send(client1, request, strlen(request)) != true) {
         fclose(file);
+        at_ssl_close(client1);
         return -1;
     }
 
     while ((bytes_read = fread(buffer, 1, 1024, file)) > 0) {
         if(at_ssl_send(client1, buffer, bytes_read) != true) {
             fclose(file);
+            at_ssl_close(client1);
             return -1;
         }
     }
 
     fclose(file);
+    bool result = at_ssl_check(client1);
+    at_ssl_close(client1);
 
-	if(at_ssl_check(client1) != true) {
-        return -1;
-    }
-
-	if(at_ssl_close(client1) != true) {
-        return -1;
-    }
-
-	if(at_ssl_client_deinit() != true) {
-        return -1;
-    }
-
-    return 0;
+    return result ? 0 : -1;
 }

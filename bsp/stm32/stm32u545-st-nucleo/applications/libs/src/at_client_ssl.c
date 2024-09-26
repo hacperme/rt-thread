@@ -201,7 +201,7 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 
 	/*--------------config ssl start-----------------*/
 	memset(send_cmd, 0, sizeof(send_cmd));
-	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLCFG=\"sslversion\",1,1");
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLCFG=\"sslversion\",1,4");
 	AT_SSL_SEND_CMD;
 
 	memset(send_cmd, 0, sizeof(send_cmd));
@@ -209,7 +209,7 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 	AT_SSL_SEND_CMD;
 
 	memset(send_cmd, 0, sizeof(send_cmd));
-	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLCFG=\"seclevel\",1,1");
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLCFG=\"seclevel\",1,0");
 	AT_SSL_SEND_CMD;
 
 	
@@ -347,7 +347,7 @@ bool at_ssl_cacert_save(at_client_t client, const char* cacert_name, const char*
 
 	
 	memset(send_cmd, 0, sizeof(send_cmd));
-	snprintf(send_cmd, sizeof(send_cmd), "AT+QFUPL=\"%s\",%d,100,1", cacert_name, len);
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QFUPL=\"%s\",%d,100,0", cacert_name, len);
 	if (at_obj_exec_cmd(client, resp1, send_cmd) < 0)
 	{
 		LOG_E("Failed to execut %s\n",send_cmd);
