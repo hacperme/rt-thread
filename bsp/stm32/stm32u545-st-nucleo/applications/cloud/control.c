@@ -134,7 +134,7 @@ rt_err_t cat1_init()
 {
     rt_err_t result = RT_EOK;
 
-    cat1_at_client_init();
+    at_ssl_client_init();
     antenna_init(CAT1_MODULE, MAIN_ANT);
     sim_init(CAT1_MODULE, SIM2);
 

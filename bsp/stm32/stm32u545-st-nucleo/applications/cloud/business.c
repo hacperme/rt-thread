@@ -9,7 +9,7 @@
 #include "board_pin.h"
 #include <string.h>
 #include "cJSON.h"
-#include "at_client_http.h"
+#include "at_client_ssl.h"
 #include "control.h"
 #include "data_save_as_file.h"
 #include <time.h>
@@ -484,6 +484,7 @@ enum cat1_upload_file_status {
 
 static int cat1_upload_file_retry_times = 0;
 
+extern int at_https_upload_file(const char *filename);
 int cat1_upload_file()
 {
     if (cat1_upload_file_retry_times >= 3) {
@@ -500,7 +501,8 @@ int cat1_upload_file()
     while (file_name = get_oldest_file_name(&fs)) {
         LOG_D("file name is: %s", file_name);
         // 需要上报
-        if (at_http_upload_file_chunked(file_name) == -1) {
+        // if (at_http_upload_file_chunked(file_name) == -1) {
+        if (at_https_upload_file(file_name) == -1) {
             LOG_D("at http upload file failed");
             return CAT1_UPLOAD_FILE_FAILED;
         }
@@ -653,7 +655,7 @@ static void sm_set_initial_status(int status) {
 
 static void sm_init(void) {
     sm_mq = rt_mq_create("sm_mq", 16, 8, RT_IPC_FLAG_FIFO);
-    sm_set_initial_status(RECORD_WAKEUP_SROUCE);
+    sm_set_initial_status(CAT1_INIT);
 }
 
 void main_business_entry(void)
