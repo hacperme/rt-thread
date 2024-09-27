@@ -9,6 +9,9 @@
 #ifndef __DHARA_BLK_DEVICE_H__
 #define __DHARA_BLK_DEVICE_H__
 
+#define DHARA_BLK_DEV_NAME "dharadev"
+
 rt_err_t dhara_blk_device_init(void);
+void refresh_dhara_map(void);
 
 #endif

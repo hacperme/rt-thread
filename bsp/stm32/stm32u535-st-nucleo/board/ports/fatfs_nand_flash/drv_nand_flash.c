@@ -53,7 +53,6 @@ static void erase_nand_flash(void)
 {
     int res;
     uint8_t status;
-    // for(uint32_t i = 0; i < 4096; i++)
     for(uint32_t i = 0; i < hal_nand_device.nand_flash_info->memory_info->block_num_per_chip; i++)
     {
         HAL_SPI_NAND_Write_Enable(hal_nand_device);

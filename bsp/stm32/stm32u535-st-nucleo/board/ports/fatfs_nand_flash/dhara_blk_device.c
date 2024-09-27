@@ -143,14 +143,6 @@ rt_err_t dhara_blk_device_init(void)
 {
     int res;
 
-    res = rt_hw_nand_flash_init();
-    LOG_D("rt_hw_nand_flash_init %s.", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        // LOG_E("rt_hw_nand_flash_init failed.");
-        return res;
-    }
-
     res = rt_mutex_init(&dhara_blk_dev.dhara_lock, "dharalk", RT_IPC_FLAG_PRIO);
     LOG_D("rt_mutex_init dharalk %s.", res == RT_EOK ? "success" : "failed");
     if (res != RT_EOK)
@@ -218,7 +210,7 @@ rt_err_t dhara_blk_device_init(void)
 #endif
 
     dhara_blk_dev.parent.user_data = RT_NULL;
-    res = rt_device_register(&dhara_blk_dev.parent, "dharadev", RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
+    res = rt_device_register(&dhara_blk_dev.parent, DHARA_BLK_DEV_NAME, RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
     LOG_D("rt_device_register dharadev %s.", res == RT_EOK ? "success" : "failed");
     if (res != RT_EOK)
     {
@@ -232,4 +224,11 @@ _fail_:
     rt_mutex_detach(&dhara_blk_dev.dhara_lock);
     rt_free(dhara_blk_dev.work_buffer);
     return RT_ERROR;
+}
+
+void refresh_dhara_map(void)
+{
+    dhara_error_t ignored;
+    int res = dhara_map_resume(&dhara_blk_dev.dhara_map, &ignored) == 0 ? RT_EOK : RT_ERROR;
+    LOG_D("dhara_map_resume. res=%d, ignored=%d", res, ignored);
 }
