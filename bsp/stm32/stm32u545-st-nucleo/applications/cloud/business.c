@@ -417,7 +417,7 @@ int nbiot_report_sensor_data_to_server()
         snprintf(
             data_string, 
             sizeof(data_string), 
-            "{\"1\":%f,\"5\":%f,\"11\":%f,\"2\":%f,\"14\":%d", 
+            "{\"1\":%f,\"5\":%f,\"11\":%f,\"2\":%f,\"14\":%d}",
             sensor_data.temp1, 
             sensor_data.temp2, 
             sensor_data.temp3, 
