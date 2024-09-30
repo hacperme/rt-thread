@@ -3,11 +3,11 @@
 
 #include <stdbool.h>
 
-#define FILE_NAME_MAX_LEN 20
-#define FILE_SYSTEM_SIZE 128 * 1024         // 文件系统大小 128KB
-#define SINGLE_FILE_SIZE_LIMIT_DFT 8 * 1024 // 单个文件最大大小 8KB
-#define MIN_FREE_BLOCKS 2                   // 最小空闲空间 2 个 block
-#define TIMESTAMP_FORMAT "%y%m%d%H%M%S.dat" // 时间戳格式
+#define FILE_NAME_MAX_LEN 50
+#define FILE_SYSTEM_SIZE 512 * 1024 * 1024                // 文件系统大小 512 MB
+#define SINGLE_FILE_SIZE_LIMIT_DFT 8 * 1024               // 单个文件最大大小 4MB
+#define MIN_FREE_BLOCKS 2                                 // 最小空闲空间 1024 个 block
+#define TIMESTAMP_FORMAT "%y%m%d%H%M%S.dat"               // 时间戳格式
 
 struct FileSystem {
     char oldest_file_name[FILE_NAME_MAX_LEN];

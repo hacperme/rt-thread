@@ -7,6 +7,11 @@
 #include "at.h"
 #include <stdarg.h>
 #include <sys/stat.h>
+#include "drv_fatfs_dhara_nand.h"
+#include "drv_nand_flash.h"
+#include <dirent.h>
+#include <sys/statfs.h>
+#include <stdio.h>
 
 typedef rt_err_t (*rt_thread_init_api_ptr_t)(struct rt_thread *thread, const char *name, void (*entry)(void *parameter), void *parameter, void *stack_start, rt_uint32_t stack_size, rt_uint8_t priority, rt_uint32_t tick);
 typedef rt_err_t (*rt_thread_detach_api_ptr_t)(rt_thread_t thread);
@@ -270,4 +275,26 @@ typedef struct tm *(*localtime_api_ptr_t)(const time_t* t);
 typedef time_t (*mktime_api_ptr_t)(struct tm* const t);
 typedef char *(*ctime_api_ptr_t)(const time_t* tim_p);
 typedef time_t (*time_api_ptr_t)(time_t* t);
+typedef rt_err_t (*nand_direction_switch_api_ptr_t)(nand_direction_e direction);
+typedef rt_err_t (*nand_power_switch_api_ptr_t)(nand_poweron_e poweron);
+typedef void (*nand_to_stm32_api_ptr_t)(void);
+typedef void (*nand_to_esp32_api_ptr_t)(void);
+typedef rt_err_t (*fatfs_dhara_nand_init_api_ptr_t)(void (*callback)(fdnfs_init_status_e *status), fdnfs_init_status_e *status);
+typedef rt_err_t (*fatfs_dhara_nand_unmount_api_ptr_t)(void);
+typedef rt_err_t (*fatfs_dhara_nand_mount_api_ptr_t)(void);
+typedef rt_err_t (*fatfs_dhara_nand_remount_api_ptr_t)(void);
+typedef int (*closedir_api_ptr_t)(DIR *d);
+typedef DIR *(*opendir_api_ptr_t)(const char *name);
+typedef struct dirent *(*readdir_api_ptr_t)(DIR *d);
+typedef void (*rewinddir_api_ptr_t)(DIR *d);
+typedef void (*seekdir_api_ptr_t)(DIR *d, long offset);
+typedef long (*telldir_api_ptr_t)(DIR *d);
+typedef int (*statfs_api_ptr_t)(const char *path, struct statfs *buf);
+typedef int (*fstatfs_api_ptr_t)(int fd, struct statfs *buf);
+typedef int (*mkdir_api_ptr_t)(const char *path, mode_t mode);
+typedef int (*chdir_api_ptr_t)(const char *path);
+typedef char *(*getcwd_api_ptr_t)(char *buf, size_t size);
+typedef int (*rmdir_api_ptr_t)(const char *path);
+typedef int (*access_api_ptr_t)(const char *path, int mode);
+typedef int (*stat_api_ptr_t)(const char *path, struct stat *buf);
 #endif

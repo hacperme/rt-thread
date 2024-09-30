@@ -54,7 +54,7 @@ static long long string_to_long_long(const char *timestamp_str) {
 }
 
 // 生成时间戳文件名
-static void generate_timestamp_filename(struct FileSystem *fs, char *filename) {
+static void generate_timestamp_filename(char *filename) {
     time_t now = time(NULL);
     strftime(filename, FILE_NAME_MAX_LEN, TIMESTAMP_FORMAT, localtime(&now));
 }
@@ -178,7 +178,7 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
     // 判断是否需要新建文件
     if (latest_file_name == NULL || (!disable_single_file_size_limit && (latest_file_size + length > fs->single_file_size_limit))) {
         char filename[FILE_NAME_MAX_LEN] = {0};
-        generate_timestamp_filename(fs, filename);
+        generate_timestamp_filename(filename);
 
         // 创建新文件
         LOG_D("++ Creating file: %s", filename);

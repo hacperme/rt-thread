@@ -142,6 +142,10 @@ size_t get_file_size(const char *filename) {
 int check_free_space(const char *path) {
     struct statfs stat = {0};
     statfs(path, &stat);
+    log_debug(
+        "stat.f_bsize=%d, stat.f_blocks=%d, stat.f_bfree=%d, stat.f_bavail=%d",
+        stat.f_bsize, stat.f_blocks, stat.f_bfree, stat.f_bavail
+    );
     return stat.f_bfree;
 }
 
@@ -165,11 +169,11 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
         latest_file_size = get_file_size(latest_file_name);
     }
 
-    // 检查是否有足够的空闲空间
-    int free_blocks = check_free_space("/");
-    if (free_blocks <= MIN_FREE_BLOCKS) {
-        delete_oldest_file(fs); // 删除最早的文件
-    }
+    // // 检查是否有足够的空闲空间
+    // int free_blocks = check_free_space("/");
+    // if (free_blocks <= MIN_FREE_BLOCKS) {
+    //     delete_oldest_file(fs); // 删除最早的文件
+    // }
 
     // 判断是否需要新建文件
     if (latest_file_name == NULL || (!disable_single_file_size_limit && (latest_file_size + length > fs->single_file_size_limit))) {
@@ -180,6 +184,7 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
         log_debug("++ Creating file: %s", filename);
         FILE *file = fopen(filename, "ab");
         if (!file) {
+            log_error("open file %s failed.");
             return -1; // 打开文件失败
         }
 
@@ -200,6 +205,7 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
         log_debug("-- Append to file %s", latest_file_name);
         FILE *file = fopen(latest_file_name, "ab");
         if (!file) {
+            log_error("append to file open file %s failed.", latest_file_name);
             return -1; // 打开文件失败
         }
 
@@ -247,14 +253,15 @@ static void del_files() {
 }
 // MSH_CMD_EXPORT(del_files, del files);
 
-static void data_save_as_file_test() {
+void data_save_as_file_test() {
     struct FileSystem fs;
 
     data_save_as_file_init(&fs, 0);
     
     rt_memset(data_buffer, '1', 1024);
+    int cnt = 10;
 
-    while (1)
+    while (cnt > 0)
     {
         log_info("<<<<<<<<<<<< Before written to file");
         list_files("/");
@@ -265,6 +272,7 @@ static void data_save_as_file_test() {
         }
         log_info("----------------------------------------------------------------------");
         rt_thread_mdelay(500);
+        cnt--;
     }
 }
 

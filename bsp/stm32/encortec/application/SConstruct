@@ -67,6 +67,8 @@ CPPPATH = [
     os.path.join(SDK_ROOT, "bootloader"),
     os.path.join(SDK_ROOT, "bootloader/board"),
     os.path.join(SDK_ROOT, "bootloader/board/CubeMX_Config/Inc"),
+    os.path.join(SDK_ROOT, "bootloader/board/drivers/fatfs_nand_flash"),
+    os.path.join(SDK_ROOT, "bootloader/board/drivers/hal_spi_nand_driver"),
     os.path.join(SDK_ROOT, "application", "rt_api"),
     os.path.join(SDK_ROOT, "application", "logging"),
 ]
@@ -125,6 +127,7 @@ main/syscalls.c
 rt_api/rt_api.c
 logging/logging.c
 .test/test_example.c
+.test/test_file.c
 """
 )
 

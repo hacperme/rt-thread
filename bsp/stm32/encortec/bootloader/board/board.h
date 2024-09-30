@@ -29,7 +29,7 @@ extern "C" {
 #define STM32_SRAM1_START              (0x20000000)
 #define STM32_SRAM1_END                (STM32_SRAM1_START + STM32_SRAM1_SIZE * 1024)
 
-#define STM32_FLASH_MPU_SIZE           ((uint32_t)256 * 1024)
+#define STM32_FLASH_MPU_SIZE           ((uint32_t)384 * 1024)
 
 #if defined(__ARMCC_VERSION)
 extern int Image$$RW_IRAM1$$ZI$$Limit;

@@ -3,7 +3,7 @@
 
 /* RT-Thread Kernel */
 
-#define RT_NAME_MAX 8
+#define RT_NAME_MAX 16
 #define RT_CPUS_NR 1
 #define RT_ALIGN_SIZE 8
 #define RT_THREAD_PRIORITY_32
@@ -84,7 +84,35 @@
 
 /* DFS: device virtual file system */
 
+#define RT_USING_DFS
+#define DFS_USING_POSIX
+#define DFS_USING_WORKDIR
+#define DFS_FD_MAX 16
+#define RT_USING_DFS_V1
+#define DFS_FILESYSTEMS_MAX 4
+#define DFS_FILESYSTEM_TYPES_MAX 4
+#define RT_USING_DFS_ELMFAT
+
+/* elm-chan's FatFs, Generic FAT Filesystem Module */
+
+#define RT_DFS_ELM_CODE_PAGE 437
+#define RT_DFS_ELM_WORD_ACCESS
+#define RT_DFS_ELM_USE_LFN_3
+#define RT_DFS_ELM_USE_LFN 3
+#define RT_DFS_ELM_LFN_UNICODE_0
+#define RT_DFS_ELM_LFN_UNICODE 0
+#define RT_DFS_ELM_MAX_LFN 255
+#define RT_DFS_ELM_DRIVES 1
+#define RT_DFS_ELM_MAX_SECTOR_SIZE 4096
+#define RT_DFS_ELM_REENTRANT
+#define RT_DFS_ELM_MUTEX_TIMEOUT 3000
+/* end of elm-chan's FatFs, Generic FAT Filesystem Module */
+#define RT_USING_DFS_DEVFS
 /* end of DFS: device virtual file system */
+#define RT_USING_FAL
+#define FAL_DEBUG_CONFIG
+#define FAL_DEBUG 1
+#define FAL_PART_HAS_TABLE_CFG
 
 /* Device Drivers */
 
@@ -101,8 +129,8 @@
 #define RT_USING_ADC
 #define RT_USING_RANDOM
 #define RT_USING_PWM
+#define RT_USING_MTD_NOR
 #define RT_USING_MTD_NAND
-#define RT_MTD_NAND_DEBUG
 #define RT_USING_RTC
 #define RT_USING_ALARM
 #define RT_USING_SPI
@@ -126,7 +154,7 @@
 /* Timezone and Daylight Saving Time */
 
 #define RT_LIBC_USING_LIGHT_TZ_DST
-#define RT_LIBC_TZ_DEFAULT_HOUR 8
+#define RT_LIBC_TZ_DEFAULT_HOUR 0
 #define RT_LIBC_TZ_DEFAULT_MIN 0
 #define RT_LIBC_TZ_DEFAULT_SEC 0
 /* end of Timezone and Daylight Saving Time */
@@ -142,7 +170,6 @@
 
 /* end of Interprocess Communication (IPC) */
 /* end of POSIX (Portable Operating System Interface) layer */
-#define RT_USING_CPLUSPLUS
 /* end of C/C++ and POSIX layer */
 
 /* Network */
@@ -370,6 +397,7 @@
 
 /* Onboard Peripheral Drivers */
 
+#define BSP_USING_NAND_FLASH
 /* end of Onboard Peripheral Drivers */
 
 /* On-chip Peripheral Drivers */
@@ -395,10 +423,13 @@
 #define BSP_USING_ONCHIP_RTC
 #define BSP_RTC_USING_LSE
 #define BSP_USING_CRC
+#define BSP_USING_ON_CHIP_FLASH
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */
 
+#define BSP_USING_DHARA
+/* end of Board extended module Drivers */
 /* end of Hardware Drivers Config */
 
 /* Encortec Application Config */
@@ -408,7 +439,6 @@
 #define APP_USING_LOG
 #define APP_LOG_PRINT_CHANNEL
 #define APP_LOG_PRINT_TO_UART
-#define APP_LOG_PRINT_TO_FILE
 #define APP_LOG_LEVEL
 #define APP_LOG_LEVEL_DBG
 #define APP_LOG_LEVEL_INF

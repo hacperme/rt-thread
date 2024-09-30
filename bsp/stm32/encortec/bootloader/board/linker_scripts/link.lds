@@ -2,8 +2,8 @@
  * linker script for STM32L4XX with GNU ld
  */
 
-BOOTLOADER_ROM_SIZE = 256K;
-APP_ROM_SIZE = 256K;
+BOOTLOADER_ROM_SIZE = 384K;
+APP_ROM_SIZE = 128K;
 
 BOOTLOADER_RAM_SIZE = 32K;
 APP_RAM_SIZE = 32K;
@@ -85,6 +85,9 @@ SECTIONS
         KEEP(build\kernel\src\timer.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr_ex.o(.text*))
+        KEEP(build\board\drivers\fatfs_nand_flash\drv_nand_flash.o(.text*))
+        KEEP(build\board\drivers\fatfs_nand_flash\drv_fatfs_dhara_nand.o(.text*))
+        KEEP(build\kernel\components\dfs\dfs_v1\src\dfs_posix.o(.text*))
         *(.text)                        /* remaining code */
         *(.text.*)                      /* remaining code */
         *(.rodata)                      /* read-only data (constants) */

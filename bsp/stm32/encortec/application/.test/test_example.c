@@ -8,10 +8,46 @@
  */
 #include "logging.h"
 #include "rtthread.h"
+#include "drv_fatfs_dhara_nand.h"
 
 #if 1
+
+static struct rt_semaphore mnt_sem;
+
+void fatfs_dhara_nand_mnt_cb(fdnfs_init_status_e *status)
+{
+    log_debug("fatfs_dhara_nand_mnt_cb status=%d", *status);
+    if (*status == 0)
+    {
+        rt_sem_release(&mnt_sem);
+    }
+}
+
+static fdnfs_init_status_e mnt_status;
+
 int application_start(int argc, char *argv[]) {
     app_log_init();
+
+    rt_err_t res;
+    res = rt_sem_init(&mnt_sem, "mntsem", 0, RT_IPC_FLAG_PRIO);
+    log_debug("rt_sem_init mntsem res=%d", res);
+    if (res != RT_EOK)
+    {
+        return -1;
+    }
+
+    fatfs_dhara_nand_init(fatfs_dhara_nand_mnt_cb, &mnt_status);
+
+    res = rt_sem_take(&mnt_sem, RT_WAITING_FOREVER);
+
+    if (res == RT_EOK)
+    {
+        // extern void data_save_as_file_test();
+        // data_save_as_file_test();
+
+        extern void test_fs_option(void);
+        test_fs_option();
+    }
 
     // extern void test_adxl372(int argc, char **argv);
     // test_adxl372(argc, argv);

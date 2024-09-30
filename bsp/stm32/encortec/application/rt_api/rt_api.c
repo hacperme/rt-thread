@@ -1176,3 +1176,91 @@ time_t time(time_t* t) {
     return ((time_api_ptr_t)(time_addr))(t);
 }
 
+rt_err_t nand_direction_switch(nand_direction_e direction) {
+    return ((nand_direction_switch_api_ptr_t)(nand_direction_switch_addr))(direction);
+}
+
+rt_err_t nand_power_switch(nand_poweron_e poweron) {
+    return ((nand_power_switch_api_ptr_t)(nand_power_switch_addr))(poweron);
+}
+
+void nand_to_stm32(void) {
+    return ((nand_to_stm32_api_ptr_t)(nand_to_stm32_addr))();
+}
+
+void nand_to_esp32(void) {
+    return ((nand_to_esp32_api_ptr_t)(nand_to_esp32_addr))();
+}
+
+rt_err_t fatfs_dhara_nand_init(void (*callback)(fdnfs_init_status_e *status), fdnfs_init_status_e *status) {
+    return ((fatfs_dhara_nand_init_api_ptr_t)(fatfs_dhara_nand_init_addr))(callback, status);
+}
+
+rt_err_t fatfs_dhara_nand_unmount(void) {
+    return ((fatfs_dhara_nand_unmount_api_ptr_t)(fatfs_dhara_nand_unmount_addr))();
+}
+
+rt_err_t fatfs_dhara_nand_mount(void) {
+    return ((fatfs_dhara_nand_mount_api_ptr_t)(fatfs_dhara_nand_mount_addr))();
+}
+
+rt_err_t fatfs_dhara_nand_remount(void) {
+    return ((fatfs_dhara_nand_remount_api_ptr_t)(fatfs_dhara_nand_remount_addr))();
+}
+
+int closedir(DIR *d) {
+    return ((closedir_api_ptr_t)(closedir_addr))(d);
+}
+
+DIR * opendir(const char *name) {
+    return ((opendir_api_ptr_t)(opendir_addr))(name);
+}
+
+struct dirent * readdir(DIR *d) {
+    return ((readdir_api_ptr_t)(readdir_addr))(d);
+}
+
+void rewinddir(DIR *d) {
+    return ((rewinddir_api_ptr_t)(rewinddir_addr))(d);
+}
+
+void seekdir(DIR *d, long offset) {
+    return ((seekdir_api_ptr_t)(seekdir_addr))(d, offset);
+}
+
+long telldir(DIR *d) {
+    return ((telldir_api_ptr_t)(telldir_addr))(d);
+}
+
+int statfs(const char *path, struct statfs *buf) {
+    return ((statfs_api_ptr_t)(statfs_addr))(path, buf);
+}
+
+int fstatfs(int fd, struct statfs *buf) {
+    return ((fstatfs_api_ptr_t)(fstatfs_addr))(fd, buf);
+}
+
+int mkdir(const char *path, mode_t mode) {
+    return ((mkdir_api_ptr_t)(mkdir_addr))(path, mode);
+}
+
+int chdir(const char *path) {
+    return ((chdir_api_ptr_t)(chdir_addr))(path);
+}
+
+char * getcwd(char *buf, size_t size) {
+    return ((getcwd_api_ptr_t)(getcwd_addr))(buf, size);
+}
+
+int rmdir(const char *path) {
+    return ((rmdir_api_ptr_t)(rmdir_addr))(path);
+}
+
+int access(const char *path, int mode) {
+    return ((access_api_ptr_t)(access_addr))(path, mode);
+}
+
+int stat(const char *path, struct stat *buf) {
+    return ((stat_api_ptr_t)(stat_addr))(path, buf);
+}
+
