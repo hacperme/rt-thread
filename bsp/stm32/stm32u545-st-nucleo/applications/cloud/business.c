@@ -505,7 +505,6 @@ int cat1_upload_file()
     LOG_D("cat1 upload file, Cat1FileUpload: %d", server_ctrl_data.Cat1FileUpload);
 
     char *file_name = NULL;
-    // if(server_ctrl_data.Cat1FileUpload) {
     while (file_name = get_oldest_file_name(&fs)) {
         LOG_D("file name is: %s", file_name);
         // 需要上报
@@ -664,10 +663,12 @@ static void sm_set_initial_status(int status) {
 static void sm_init(void) {
     sm_mq = rt_mq_create("sm_mq", 16, 8, RT_IPC_FLAG_FIFO);
     sm_set_initial_status(RECORD_WAKEUP_SROUCE);
+    // sm_set_initial_status(CAT1_INIT);
 }
 
 void main_business_entry(void)
 {
+    rt_err_t result;
     int status;
     int rv = 0;
     

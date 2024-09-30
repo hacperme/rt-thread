@@ -77,8 +77,8 @@ void sim_deinit()
     // do nothing
 }
 
-{
 void nbiot_init()
+{
     nbiot_at_client_init();
     antenna_init(NBIOT_MODULE, MAIN_ANT);
     sim_init(NBIOT_MODULE, SIM1);

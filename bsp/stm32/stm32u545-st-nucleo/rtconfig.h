@@ -70,7 +70,7 @@
 
 #define RT_USING_COMPONENTS_INIT
 #define RT_USING_USER_MAIN
-#define RT_MAIN_THREAD_STACK_SIZE 16384
+#define RT_MAIN_THREAD_STACK_SIZE 8192
 #define RT_MAIN_THREAD_PRIORITY 10
 #define RT_USING_MSH
 #define RT_USING_FINSH
@@ -149,7 +149,7 @@
 /* Timezone and Daylight Saving Time */
 
 #define RT_LIBC_USING_LIGHT_TZ_DST
-#define RT_LIBC_TZ_DEFAULT_HOUR 8
+#define RT_LIBC_TZ_DEFAULT_HOUR 0
 #define RT_LIBC_TZ_DEFAULT_MIN 0
 #define RT_LIBC_TZ_DEFAULT_SEC 0
 /* end of Timezone and Daylight Saving Time */

@@ -278,10 +278,11 @@ int at_https_upload_file(const char *filename)
         "PUT %s HTTP/1.1\r\n" \
         "Host: %s\r\n" \
         "Date: %s\r\n" \
+        "Content-Length: %d\r\n" \
         "Authorization: %s\r\n" \
         "X-Amz-Date: %s\r\n" \
         "X-Amz-Content-Sha256: %s\r\n\r\n",
-        uri, host, localtime, auth, amz_date, hashed_payload
+        uri, host, localtime, content_length, auth, amz_date, hashed_payload
     );
 
     at_client_t client1 = at_client_get("uart1");

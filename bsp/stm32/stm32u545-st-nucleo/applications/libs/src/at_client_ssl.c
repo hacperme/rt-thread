@@ -145,7 +145,7 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 		return false;
 	}
 
-	at_set_end_sign('>');
+	at_obj_set_end_sign(client, '>');
 
 	/*--------------check cacer file start-----------------*/
 	memset(send_cmd, 0, sizeof(send_cmd));
