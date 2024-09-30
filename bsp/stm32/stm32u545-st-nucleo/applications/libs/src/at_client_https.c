@@ -7,8 +7,8 @@
 #include "at_client_ssl.h"
 #include "sha256.h"
 
-#define AWS_ACCESS_KEY_ID "xxxxxxxxxxxxxxxxxxxx"
-#define AWS_SECRET_ACCESS_KEY "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+#define AWS_ACCESS_KEY_ID "xxxxxxxxxxxxxxxxxx"
+#define AWS_SECRET_ACCESS_KEY "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 #define AWS_REGION "ap-east-1"
 #define AWS_SERVICE "s3"
 #define AWS_BUCKET "iot-encortec"

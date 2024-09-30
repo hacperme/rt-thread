@@ -229,7 +229,11 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 		LOG_E("QSSLOPEN no urc, timeout\n");
 		goto ssl_end;
 	}
-	
+
+	memset(send_cmd, 0, sizeof(send_cmd));
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLSTATE");
+	AT_SSL_SEND_CMD;
+
 	ret = true;
 
 	/*--------------ssl handle end-----------------*/

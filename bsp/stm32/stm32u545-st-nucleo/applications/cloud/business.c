@@ -396,7 +396,11 @@ int nbiot_report_sensor_data_to_server()
         snprintf(
             data_string, 
             sizeof(data_string), 
-            "{\"1\":%f,\"5\":%f,\"11\":%f,\"2\":%f,\"6\":%f,\"7\":%f,\"8\":%f,\"9\":%f,\"10\":%f,\"15\":%f,\"16\":%d,\"17\":%d,\"18\":%d,\"14\":%d}",
+            "{" \
+            "\"1\":%f,\"5\":%f,\"11\":%f,\"2\":%f,\"6\":%f,\"7\":%f,\"8\":%f," \
+            "\"9\":%f,\"10\":%f,\"15\":%f,\"16\":%d,\"17\":%d,\"18\":%d,\"14\":%d," \
+            "\"20\":%d,\"21\":%s,\"3\":{\"1\":\"%s\",\"2\":\"%s\"}" \
+            "}",
             sensor_data.temp1, 
             sensor_data.temp2, 
             sensor_data.temp3, 
@@ -410,7 +414,11 @@ int nbiot_report_sensor_data_to_server()
             sensor_data.cur_vol,
             sensor_data.vcat_vol,
             sensor_data.vbat_vol,
-            wakeup_source_flag
+            wakeup_source_flag,
+            21,
+            "true",
+            "abcdefghij",
+            "0213456789"
         );
     }
     else {
@@ -655,7 +663,7 @@ static void sm_set_initial_status(int status) {
 
 static void sm_init(void) {
     sm_mq = rt_mq_create("sm_mq", 16, 8, RT_IPC_FLAG_FIFO);
-    sm_set_initial_status(CAT1_INIT);
+    sm_set_initial_status(RECORD_WAKEUP_SROUCE);
 }
 
 void main_business_entry(void)
