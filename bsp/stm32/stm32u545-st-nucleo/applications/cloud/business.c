@@ -260,7 +260,7 @@ enum nbiot_network_status nbiot_wait_network_ready()
     }
     else {
         if (! set_network_config_flag) {
-            struct network_config config = {"LPWA.VODAFONE.IOT", "2,8,20", "3,0"};
+            struct network_config config = {"QUECTEL.VF.LPWA", "2,8,20", "3,0"};
             if(nbiot_set_network_config(&config) == RT_EOK) {
                 LOG_D("nbiot_set_network_config success");
                 set_network_config_flag = 1;
