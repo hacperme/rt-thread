@@ -121,6 +121,7 @@ rt_err_t fatfs_dhara_nand_mount(void)
             refresh_dhara_map();
         }
         res = dfs_mount(DHARA_BLK_DEV_NAME, FATFS_BASE_PATH, FATFS_NAME, 0, 0);
+        LOG_I("first dfs_mount %s", res == 0 ? "success" : "failed");
         if (res != 0)
         {
             res = dfs_mkfs(FATFS_NAME, DHARA_BLK_DEV_NAME);
@@ -154,10 +155,12 @@ rt_err_t fatfs_dhara_nand_remount(void)
 static void test_nand_fs_mount_result_cb(fdnfs_init_status_e *status)
 {
     LOG_D("test_nand_fs_mount_result_cb status %d", *status);
+    extern int test_file(void);
+    test_file();
 }
 
 static fdnfs_init_status_e fs_status;
-static void test_nand_fs_init(void)
+void test_nand_fs_init(void)
 {
     rt_err_t res = fatfs_dhara_nand_init(test_nand_fs_mount_result_cb, &fs_status);
     LOG_D("fatfs_dhara_nand_init res=%d", fs_status);

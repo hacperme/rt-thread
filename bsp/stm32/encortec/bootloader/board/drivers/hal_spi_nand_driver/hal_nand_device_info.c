@@ -61,7 +61,6 @@ static NAND_memory_info_t AS5F38G04SND_08LIN_memory_info =
     .page_total_size = 4096 + 256,
     .block_size = 4096 * 64,
     .page_per_block = 64,
-    // .block_num_per_chip = 1360
     .block_num_per_chip = 4096
 };
 

@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include "logging.h"
 #include "sys/stat.h"
+#include "sys/statfs.h"
 #include "sys/unistd.h"
 
 #define filename "test_file.txt"
@@ -39,9 +40,25 @@ void test_dir_option(void)
     rt_memset(dir_buff, 0, 64);
     getcwd(dir_buff, 64);
     log_debug("getcwd %s", dir_buff);
+    list_files("/test_dir");
+    // rename("/test_dir/data.1", "/test_dir/data.2");
+    // list_files("/test_dir");
+
+    struct statfs dir_stat;
+    int res;
+    res = statfs("/", &dir_stat);
+    log_debug("statfs / res=%d", res);
+    if (res == 0)
+    {
+        log_debug(
+            "dir_stat.f_bsize=%ld, dir_stat.f_blocks=%ld, dir_stat.f_bfree=%ld, dir_stat.f_bavail=%ld",
+            dir_stat.f_bsize, dir_stat.f_blocks, dir_stat.f_bfree, dir_stat.f_bavail
+        );
+    }
 
     // rmdir("/test_dir");
     // log_debug("rmdir test_dir");
+    chdir("/");
     list_files("/");
 }
 

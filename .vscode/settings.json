@@ -35,6 +35,8 @@
         "stdio.h": "c",
         "logging.h": "c",
         "stat.h": "c",
-        "ctime": "c"
+        "ctime": "c",
+        "unistd.h": "c",
+        "drv_nand_flash.h": "c"
     }
 }
