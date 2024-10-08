@@ -13,7 +13,7 @@
 #include "rtdevice.h"
 
 rt_err_t cur_vol_read(rt_uint16_t *value);
-rt_err_t vcat_vol_read(rt_uint16_t *value);
-rt_err_t vbap_vol_read(rt_uint16_t *value);
+rt_err_t vcap_vol_read(rt_uint16_t *value);
+rt_err_t vbat_vol_read(rt_uint16_t *value);
 
 #endif  // __VOLTAGE_H__

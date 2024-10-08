@@ -1,5 +1,4 @@
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -24,11 +23,9 @@
 		if (at_obj_exec_cmd(X, Y, Z) < 0)	\
 		{											\
 			LOG_E("Failed to execut %s\n",X);		\
-			goto M;							\
+			M;							\
 		}											\
 	}while(0)
-
-
 
 
 typedef struct
@@ -141,14 +138,14 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 	int file_handle = 0;
 	int pdp_status = 0;
 	bool ret = false;
-	#define AT_SSL_SEND_CMD AT_SEND_CMD(client, resp, send_cmd, ssl_end)
+	#define AT_SSL_SEND_CMD AT_SEND_CMD(client, resp, send_cmd, goto ssl_end)
 
 	if(!(client && cacert_filename && serveraddr && server_port && total_size && resp))
 	{
 		return false;
 	}
 
-	at_set_end_sign('>');
+	at_obj_set_end_sign(client, '>');
 
 	/*--------------check cacer file start-----------------*/
 	memset(send_cmd, 0, sizeof(send_cmd));
@@ -204,7 +201,7 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 
 	/*--------------config ssl start-----------------*/
 	memset(send_cmd, 0, sizeof(send_cmd));
-	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLCFG=\"sslversion\",1,1");
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLCFG=\"sslversion\",1,4");
 	AT_SSL_SEND_CMD;
 
 	memset(send_cmd, 0, sizeof(send_cmd));
@@ -212,7 +209,7 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 	AT_SSL_SEND_CMD;
 
 	memset(send_cmd, 0, sizeof(send_cmd));
-	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLCFG=\"seclevel\",1,1");
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLCFG=\"seclevel\",1,0");
 	AT_SSL_SEND_CMD;
 
 	
@@ -227,18 +224,16 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLOPEN=1,1,4,\"%s\",%d,0", serveraddr, server_port);
 	AT_SSL_SEND_CMD;
 	
-	if(rt_sem_take(_ql_at_sem._qsslopen, 8000) != RT_EOK)
+	if(rt_sem_take(_ql_at_sem._qsslopen, 60000) != RT_EOK)
 	{
 		LOG_E("QSSLOPEN no urc, timeout\n");
 		goto ssl_end;
 	}
 
-	
 	memset(send_cmd, 0, sizeof(send_cmd));
-	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLSEND=4,%d", total_size);
-	AT_SSL_SEND_CMD;	
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLSTATE");
+	AT_SSL_SEND_CMD;
 
-	
 	ret = true;
 
 	/*--------------ssl handle end-----------------*/
@@ -255,10 +250,16 @@ ssl_end:
 
 bool at_ssl_send(at_client_t client, const char* data, size_t data_len)
 {
+	char send_cmd[32] = {0};
+
 	if(!(client && resp && data && data_len))
 	{
 		return false;
 	}
+	
+	memset(send_cmd, 0, sizeof(send_cmd));
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QSSLSEND=4,%d", data_len);
+	AT_SEND_CMD(client, resp, send_cmd, return false);
 	
 	if (at_client_obj_send(client, data, data_len) < 0) {
 		LOG_E("Failed to send ssl data\n");
@@ -350,7 +351,7 @@ bool at_ssl_cacert_save(at_client_t client, const char* cacert_name, const char*
 
 	
 	memset(send_cmd, 0, sizeof(send_cmd));
-	snprintf(send_cmd, sizeof(send_cmd), "AT+QFUPL=\"%s\",%d,100,1", cacert_name, len);
+	snprintf(send_cmd, sizeof(send_cmd), "AT+QFUPL=\"%s\",%d,100,0", cacert_name, len);
 	if (at_obj_exec_cmd(client, resp1, send_cmd) < 0)
 	{
 		LOG_E("Failed to execut %s\n",send_cmd);
@@ -539,4 +540,202 @@ int example_at_ssl1(void)
     return 0;
 }
 
+rt_err_t cat1_wait_rdy()
+{
+    return rt_sem_take(_ql_at_sem._rdy, rt_tick_from_millisecond(15000));
+}
 
+rt_err_t cat1_qpowd()
+{
+    // cat1 "uart1"
+    at_client_t client = RT_NULL;
+    rt_err_t result = RT_EOK;
+
+    at_response_t resp = at_create_resp(512, 0, rt_tick_from_millisecond(5000));
+    if (resp == RT_NULL) {
+        LOG_D("no enought mem for cat1 at resp");
+        return RT_ERROR;
+    }
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        at_client_init("uart1", 512, 512);
+        client = at_client_get("uart1");
+    }
+
+    result = at_obj_exec_cmd(client, resp, "AT+QPOWD");
+    LOG_D("at_obj_exec_cmd result: %d", result);
+	return result;
+}
+
+rt_err_t cat1_check_state()
+{
+    at_client_t client = RT_NULL;
+    rt_err_t result = RT_EOK;
+
+    at_response_t resp = at_create_resp(512, 0, rt_tick_from_millisecond(1000));
+    if (resp == RT_NULL) {
+        LOG_D("no enought mem for cat1 at resp");
+        return RT_ERROR;
+    }
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        at_client_init("uart1", 512, 512);
+        client = at_client_get("uart1");
+    }
+
+    for (int i=0; i < 10; i++) {
+        result = at_obj_exec_cmd(client, resp, "AT");
+        LOG_D("at_obj_exec_cmd result: %d", result);
+        if (result == RT_EOK) {
+            break;
+        }
+    }
+	return result;
+}
+
+rt_err_t cat1_set_cfun_mode(int mode)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_D("create resp failed.");
+        return RT_ERROR;
+    }
+
+    char s[20] = {0};
+    snprintf(s, 20, "AT+CFUN=%d", mode);
+    result = at_obj_exec_cmd(client, resp, s);
+    if (result != RT_EOK) {
+        LOG_E("nbiot cfun0 err: %d", result);
+    }
+
+    at_delete_resp(resp);
+    return result;
+}
+
+rt_err_t cat1_check_network(int retry_times)
+{
+    int n = -1;
+    int stat = -1;
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("cat1 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_D("create resp failed.");
+        return RT_ERROR;
+    }
+
+    for (int i=0; i < retry_times; i++) {
+        result = at_obj_exec_cmd(client, resp, "AT+CEREG?");
+        at_resp_parse_line_args(resp, 2, "+CEREG: %d,%d", &n, &stat);
+        LOG_D("cat1 check status, n: %d, stat: %d", n, stat);
+        if (stat == 1 || stat == 5) {
+            at_delete_resp(resp);
+            return RT_EOK;
+        }
+        rt_thread_mdelay(5000);
+    }
+
+    at_delete_resp(resp);
+    return RT_ERROR;
+}
+
+rt_err_t cat1_enable_echo(int enable)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("cat1 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_E("create resp failed.");
+        return RT_ERROR;
+    }
+
+    // disable at echo
+    result = at_obj_exec_cmd(client, resp, enable ? "ATE1" : "ATE0");
+    if (result != RT_EOK) {
+        LOG_E("cat1 disable at echo failed: %d", result);
+    }
+
+    at_delete_resp(resp);
+    return result;
+}
+
+rt_err_t cat1_set_network_config()
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("cat1 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_D("create resp failed.");
+        return RT_ERROR;
+    }
+
+    // 先检查下 AT+QGMR 确认模组上面的固件是可以上云的包含 QTH字样的固件
+    result = at_obj_exec_cmd(client, resp, "AT+QGMR");
+    if (result != RT_EOK) {
+        LOG_D("at_obj_exec_cmd AT+QEREG=2 failed");
+        goto ERROR;
+    }
+
+    result = at_obj_exec_cmd(client, resp, "AT+CEREG=2");
+    if (result != RT_EOK) {
+        LOG_D("at_obj_exec_cmd AT+QEREG=2 failed");
+        goto ERROR;
+    }
+  
+    result = at_obj_exec_cmd(client, resp, "AT+QICSGP=1,1,\"%s\",\"\",\"\",1", "QUECTEL.VF.STD");
+    if (result != RT_EOK) {
+        LOG_E("set apn result: %d", result);
+        goto ERROR;
+    }
+    LOG_D("set apn success");
+
+    result = at_obj_exec_cmd(client, resp, "AT+QIACT?");
+    if (result != RT_EOK) {
+        LOG_E("at_obj_exec_cmd AT+QIACT?: %d", result);
+        goto ERROR;
+    }
+    LOG_D("set AT+QIACT? success");
+
+    result = at_obj_exec_cmd(client, resp, "AT+QIACT=1");
+    if (result != RT_EOK) {
+        LOG_E("at_obj_exec_cmd AT+QIACT=1: %d", result);
+        goto ERROR;
+    }
+    LOG_D("set AT+QIACT=1 success");
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}

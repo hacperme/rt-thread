@@ -76,7 +76,8 @@ CPPPATH = [
 driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/tools"),
     os.path.join(SDK_ROOT, "application/board/driver/adxl372"),
-    os.path.join(SDK_ROOT, "application/board/driver/at_client_http"),
+    os.path.join(SDK_ROOT, "application/board/driver/cat1"),
+    os.path.join(SDK_ROOT, "application/board/driver/nb"),
     os.path.join(SDK_ROOT, "application/board/driver/data_save_as_file"),
     os.path.join(SDK_ROOT, "application/board/driver/fdc1004"),
     os.path.join(SDK_ROOT, "application/board/driver/gnss"),
@@ -139,8 +140,6 @@ logging/logging.c
 driver_c_files = [
     "board/driver/tools/tools.c",
     "board/driver/adxl372/adxl372.c",
-    "board/driver/at_client_http/at_client_http.c",
-    "board/driver/at_client_http/at_client_ssl.c",
     "board/driver/data_save_as_file/data_save_as_file.c",
     "board/driver/fdc1004/fdc1004.c",
     "board/driver/gnss/gnss.c",
@@ -149,14 +148,17 @@ driver_c_files = [
     "board/driver/tmp116/tmp116.c",
     "board/driver/voltage/voltage.c",
     "board/driver/watch_dog/watch_dog.c",
+    "board/driver/cat1/at_client_https.c",
+    "board/driver/cat1/at_client_ssl.c",
+    "board/driver/cat1/hmac_sha256.c",
+    "board/driver/cat1/sha256.c",
+    "board/driver/nb/nbiot.c",
 ]
 
 cloud_c_files = [
     "board/cloud/business.c",
-    "board/cloud/control.c",
-    "board/cloud/example.c",
-    "board/cloud/nbiot.c",
     "board/cloud/settings.c",
+    "board/cloud/control.c",
 ]
 app_c_files += driver_c_files
 

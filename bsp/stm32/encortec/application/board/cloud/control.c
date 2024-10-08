@@ -1,5 +1,5 @@
 #include <rtthread.h>
-#include "board_pin.h"
+#include "board.h"
 #include "lpm.h"
 #include "nbiot.h"
 #include "control.h"
@@ -8,6 +8,101 @@
 // #define DBG_TAG "control"
 // #define DBG_LVL DBG_LOG
 // #include <rtdbg.h>
+
+void sensor_pwron_pin_init(void)
+{
+    rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t sensor_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(SENSOR_PWRON_PIN, mode);
+    return rt_pin_read(SENSOR_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void antenna_active_pin_init(void)
+{
+    rt_pin_mode(ANTENNA_ACTIVE_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t antenna_active_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(ANTENNA_ACTIVE_PIN, mode);
+    return rt_pin_read(ANTENNA_ACTIVE_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void intn_ext_ant_pin_init(void)
+{
+    rt_pin_mode(INTN_EXT_ANT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t intn_ext_ant_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(INTN_EXT_ANT_PIN, mode);
+    return rt_pin_read(INTN_EXT_ANT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void nb_cat1_rf_pin_init(void)
+{
+    rt_pin_mode(NB_CAT1_RF_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t nb_cat1_rf_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(NB_CAT1_RF_PIN, mode);
+    return rt_pin_read(NB_CAT1_RF_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void sim_select_pin_init(void)
+{
+    rt_pin_mode(SIM_SELECT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t sim_select_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(SIM_SELECT_PIN, mode);
+    return rt_pin_read(SIM_SELECT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void nbiot_boot_pin_init(void)
+{
+    rt_pin_mode(NBIOT_BOOT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t nbiot_boot_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(NBIOT_BOOT_PIN, mode);
+    return rt_pin_read(NBIOT_BOOT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void flash_pwron_pin_init(void)
+{
+    rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t flash_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(FLASH_PWRON_PIN, mode);
+    return rt_pin_read(FLASH_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+int board_pins_init(void)
+{
+    rt_err_t res = RT_EOK;
+
+    sensor_pwron_pin_init();
+    intn_ext_ant_pin_init();
+    antenna_active_pin_init();
+    nb_cat1_rf_pin_init();
+    sim_select_pin_init();
+    nbiot_boot_pin_init();
+    flash_pwron_pin_init();
+
+    return res;
+}
+
+INIT_BOARD_EXPORT(board_pins_init);
+
 
 rt_err_t antenna_active()
 {

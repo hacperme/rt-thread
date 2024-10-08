@@ -2,10 +2,10 @@
 #define __CONTROL_H__
 
 #include <rtthread.h>
-#include "board_pin.h"
 #include "lpm.h"
 #include "nbiot.h"
 #include "at_client_ssl.h"
+#include "board.h"
 
 enum AntennaType {MAIN_ANT=0, REMPTE_ANT};
 enum ModuleType {NBIOT_MODULE=0, CAT1_MODULE};
@@ -40,7 +40,5 @@ rt_err_t cat1_power_ctrl(int state);
 rt_err_t cat1_init();
 
 void cat1_deinit();
-
-// for test
 
 #endif

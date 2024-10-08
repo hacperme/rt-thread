@@ -37,6 +37,9 @@
         "stat.h": "c",
         "ctime": "c",
         "unistd.h": "c",
-        "drv_nand_flash.h": "c"
+        "drv_nand_flash.h": "c",
+        "voltage.h": "c",
+        "tmp116.h": "c",
+        "control.h": "c"
     }
 }

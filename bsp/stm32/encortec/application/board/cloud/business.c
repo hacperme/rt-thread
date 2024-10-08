@@ -6,7 +6,6 @@
 #include "hdc3021.h"
 #include "fdc1004.h"
 #include "adxl372.h"
-#include "board_pin.h"
 #include <string.h>
 #include "cJSON.h"
 #include "at_client_ssl.h"
@@ -81,15 +80,8 @@ int external_devices_init()
     rt_err_t res = RT_EOK;
 
     //TODO: check file system `GNSS.reported`
-
-    antenna_active_pin_enable(PIN_HIGH);
-    sensor_pwron_pin_enable(PIN_HIGH);
-    flash_pwron_pin_enable(PIN_LOW);
-    sim_select_pin_enable(PIN_LOW);  // set to nb
-    nb_cat1_rf_pin_enable(PIN_LOW);  // low for nbiot rf
     nbiot_power_off();
     cat1_power_off();
-    intn_ext_ant_pin_enable(PIN_LOW);  // low for main ant
     esp32_power_off();
     gnss_open();
 
@@ -123,7 +115,7 @@ struct SensorData
     float acc_z;
     float water_level;
     int cur_vol;
-    int vcat_vol;
+    int vcap_vol;
     int vbat_vol;
 };
 struct SensorData sensor_data = {0};
@@ -141,18 +133,18 @@ int collect_sensor_data()
         read_acc_xyz_result = adxl372_measure_acc(ACC_XYZ_BUFF, 1024);
         log_debug("adxl372_measure_acc %s", read_acc_xyz_result == RT_EOK ? "success" : "failed");
 
-        // read cur_vol, vcat_vol, vbat_vol
+        // read cur_vol, vcap_vol, vbat_vol
         rt_uint16_t cur_vol = 0;
-        rt_uint16_t vcat_vol = 0;
+        rt_uint16_t vcap_vol = 0;
         rt_uint16_t vbat_vol = 0;
         res = cur_vol_read(&cur_vol);
         log_debug("cur_vol_read %s, cur_vol %dmv", res == RT_EOK ? "success" : "failed", cur_vol);
-        res = vcap_vol_read(&vcat_vol);
-        log_debug("vcap_vol_read %s, vcat_vol %dmv", res == RT_EOK ? "success" : "failed", vcat_vol);
+        res = vcap_vol_read(&vcap_vol);
+        log_debug("vcap_vol_read %s, vcap_vol %dmv", res == RT_EOK ? "success" : "failed", vcap_vol);
         res = vbat_vol_read(&vbat_vol);
         log_debug("vbat_vol_read %s, vbat_vol %dmv", res == RT_EOK ? "success" : "failed", vbat_vol);
         sensor_data.cur_vol = cur_vol;
-        sensor_data.vcat_vol = vcat_vol;
+        sensor_data.vcap_vol = vcap_vol;
         sensor_data.vbat_vol = vbat_vol;
     }
     
@@ -161,17 +153,12 @@ int collect_sensor_data()
     float temp2 = 0.0;
     rt_uint8_t addrs[2] = {TMP116_1_ADDR, TMP116_2_ADDR};
 
-    char msg[128] = {0};
     res = temp116_read_temperture(iic_dev, addrs[0], &temp1);
-    snprintf(msg, 128, "temp116_read_temperture %s, temp3=%f", RT_EOK ? "failed" : "success", temp1);
-    log_debug(msg);
-    // log_debug("temp116_read_temperture %s, temp1=%f", res != RT_EOK ? "failed" : "success", temp1);
+    log_debug("temp116_read_temperture %s, temp3=%f", RT_EOK ? "failed" : "success", temp1);
 
     res = temp116_read_temperture(iic_dev, addrs[1], &temp2);
-    rt_memset(msg, 0, 128);
-    snprintf(msg, 128, "temp116_read_temperture %s, temp3=%f", res != RT_EOK ? "failed" : "success", temp2);
-    log_debug(msg);
-    // log_debug("temp116_read_temperture %s, temp2=%f", res != RT_EOK ? "failed" : "success", temp2);
+    log_debug("temp116_read_temperture %s, temp3=%f", res != RT_EOK ? "failed" : "success", temp2);
+
     if (res == RT_EOK) {
         sensor_data.temp1 = temp1;
         sensor_data.temp2 = temp2;
@@ -181,10 +168,8 @@ int collect_sensor_data()
     float temp3 = 0.0;
     float humi = 0.0;
     res = hdc3021_read_temp_humi(iic_dev, &temp3, &humi);
-    rt_memset(msg, 0, 128);
-    snprintf(msg, 128, "hdc3021_read_temp_humi %s, temp3=%f, humi=%f", res != RT_EOK ? "failed" : "success", temp3, humi);
-    log_debug(msg);
-    // log_debug("hdc3021_read_temp_humi %s, temp3=%f, humi=%f", res != RT_EOK ? "failed" : "success", temp3, humi);
+    log_debug("hdc3021_read_temp_humi %s, temp3=%f, humi=%f", res != RT_EOK ? "failed" : "success", temp3, humi);
+
     if (res == RT_EOK) {
         sensor_data.temp3 = temp3;
         sensor_data.humi = humi;
@@ -199,7 +184,6 @@ int collect_sensor_data()
             sensor_data.water_level = value;
         }
 
-        char msg[26] = {0};
         // read nmea
         nmea_item nmea_item = {0};
         for (int i=0; i < 30; i++) {
@@ -413,7 +397,7 @@ int nbiot_report_sensor_data_to_server()
             sensor_data.acc_z,
             sensor_data.water_level,
             sensor_data.cur_vol,
-            sensor_data.vcat_vol,
+            sensor_data.vcap_vol,
             sensor_data.vbat_vol,
             wakeup_source_flag,
             21,
@@ -530,13 +514,9 @@ void stm32_sleep()
     rt_sem_take(stm32_sleep_ack_sem, rt_tick_from_millisecond(1000));
     log_debug("go into sleep");
 
-    sensor_pwron_pin_enable(PIN_LOW);
     esp32_power_off();
     gnss_close();
-    flash_pwron_pin_enable(PIN_LOW);
-    
     cat1_deinit();
-    antenna_active_pin_enable(PIN_LOW);
 
     end_tick_ms = rt_tick_get_millisecond();
     log_debug("start tick ms: %d", start_tick_ms);
@@ -591,7 +571,7 @@ void save_sensor_data()
     snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vcur: %d\r\n", sensor_data.cur_vol);
 
     // vcap: 3.3
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vcap: %d\r\n", sensor_data.vcat_vol);
+    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vcap: %d\r\n", sensor_data.vcap_vol);
 
     // GNSS: $GNGGA:,,,,,,GNSS:
     snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "GNSS: ");
@@ -832,4 +812,4 @@ void main_business_entry(void)
         }
     }
 }
-// MSH_CMD_EXPORT(main_business_entry, main_business_entry);
+MSH_CMD_EXPORT(main_business_entry, main_business_entry);
