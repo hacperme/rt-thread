@@ -12,20 +12,42 @@ board.c
 CubeMX_Config/Src/stm32u5xx_hal_msp.c
 ''')
 
-path =  [cwd]
+path = [cwd]
 path += [cwd + '/CubeMX_Config/Inc']
+
+# if GetDepend(['RT_USING_MTD_NAND']):
+#     src += Split('drivers/nandflash/nandflash_as5f38.c')
+#     path += [cwd + '/drivers/nandflash']
+
+if GetDepend(["BSP_USING_NAND_FLASH", "BSP_USING_DHARA"]):
+    src += Glob("drivers/fatfs_nand_flash/*.c")
+    src += Glob("drivers/hal_spi_nand_driver/*.c")
+    path += [cwd + '/drivers/fatfs_nand_flash']
+    path += [cwd + '/drivers/hal_spi_nand_driver']
 
 startup_path_prefix = SDK_LIB
 
 if rtconfig.PLATFORM in ['gcc']:
-    src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u545xx.s']
+    if GetDepend(["SOC_STM32U535VE"]):
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u535xx.s']
+    else:
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u545xx.s']
 elif rtconfig.PLATFORM in ['armcc', 'armclang']:
-    src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/arm/startup_stm32u545xx.s']
+    if GetDepend(["SOC_STM32U535VE"]):
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/arm/startup_stm32u535xx.s']
+    else:
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/arm/startup_stm32u545xx.s']
 elif rtconfig.PLATFORM in ['iccarm']:
-    src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/iar/startup_stm32u545xx.s']
+    if GetDepend(["SOC_STM32U535VE"]):
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/iar/startup_stm32u535xx.s']
+    else:
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/iar/startup_stm32u545xx.s']
 
 # You can select chips from the list above
-CPPDEFINES = ['STM32U545xx']
+if GetDepend(["SOC_STM32U535VE"]):
+    CPPDEFINES = ['STM32U535xx']
+else:
+    CPPDEFINES = ['STM32U545xx']
 group = DefineGroup('Drivers', src, depend = [''], CPPPATH = path, CPPDEFINES = CPPDEFINES)
 
 Return('group')

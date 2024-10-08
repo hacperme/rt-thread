@@ -1,0 +1,18 @@
+# RT-Thread building script for component
+
+from building import *
+
+cwd = GetCurrentDir()
+
+src = Glob('dhara/*.c')
+# src += Glob('ecc/*.c')
+# src += Glob('tools/*.c')
+
+depend = ["BSP_USING_DHARA"]
+CPPPATH = [cwd]
+CPPPATH += [cwd + '/dhara']
+# CPPPATH += [cwd + '/ecc']
+
+group = DefineGroup('dhara', src , depend=depend, CPPPATH=CPPPATH)
+
+Return('group')

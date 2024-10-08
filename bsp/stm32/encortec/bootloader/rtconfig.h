@@ -1,12 +1,9 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-#define SOC_STM32U545RE
-#define BOARD_STM32U545_NUCLEO
-
 /* RT-Thread Kernel */
 
-#define RT_NAME_MAX 8
+#define RT_NAME_MAX 16
 #define RT_CPUS_NR 1
 #define RT_ALIGN_SIZE 8
 #define RT_THREAD_PRIORITY_32
@@ -38,7 +35,9 @@
 #define RT_USING_SEMAPHORE
 #define RT_USING_MUTEX
 #define RT_USING_EVENT
+#define RT_USING_MAILBOX
 #define RT_USING_MESSAGEQUEUE
+#define RT_USING_MESSAGEQUEUE_PRIORITY
 #define RT_USING_SIGNALS
 /* end of Inter-Thread communication */
 
@@ -51,7 +50,7 @@
 /* end of Memory Management */
 #define RT_USING_DEVICE
 #define RT_USING_CONSOLE
-#define RT_CONSOLEBUF_SIZE 512
+#define RT_CONSOLEBUF_SIZE 2048
 #define RT_CONSOLE_DEVICE_NAME "lpuart1"
 #define RT_VER_NUM 0x50200
 #define RT_BACKTRACE_LEVEL_MAX_NR 32
@@ -66,7 +65,7 @@
 
 #define RT_USING_COMPONENTS_INIT
 #define RT_USING_USER_MAIN
-#define RT_MAIN_THREAD_STACK_SIZE 2048
+#define RT_MAIN_THREAD_STACK_SIZE 8192
 #define RT_MAIN_THREAD_PRIORITY 10
 #define RT_USING_MSH
 #define RT_USING_FINSH
@@ -85,7 +84,35 @@
 
 /* DFS: device virtual file system */
 
+#define RT_USING_DFS
+#define DFS_USING_POSIX
+#define DFS_USING_WORKDIR
+#define DFS_FD_MAX 16
+#define RT_USING_DFS_V1
+#define DFS_FILESYSTEMS_MAX 4
+#define DFS_FILESYSTEM_TYPES_MAX 4
+#define RT_USING_DFS_ELMFAT
+
+/* elm-chan's FatFs, Generic FAT Filesystem Module */
+
+#define RT_DFS_ELM_CODE_PAGE 437
+#define RT_DFS_ELM_WORD_ACCESS
+#define RT_DFS_ELM_USE_LFN_3
+#define RT_DFS_ELM_USE_LFN 3
+#define RT_DFS_ELM_LFN_UNICODE_0
+#define RT_DFS_ELM_LFN_UNICODE 0
+#define RT_DFS_ELM_MAX_LFN 255
+#define RT_DFS_ELM_DRIVES 1
+#define RT_DFS_ELM_MAX_SECTOR_SIZE 4096
+#define RT_DFS_ELM_REENTRANT
+#define RT_DFS_ELM_MUTEX_TIMEOUT 3000
+/* end of elm-chan's FatFs, Generic FAT Filesystem Module */
+#define RT_USING_DFS_DEVFS
 /* end of DFS: device virtual file system */
+#define RT_USING_FAL
+#define FAL_DEBUG_CONFIG
+#define FAL_DEBUG 1
+#define FAL_PART_HAS_TABLE_CFG
 
 /* Device Drivers */
 
@@ -96,20 +123,27 @@
 #define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
-#define RT_SERIAL_RB_BUFSZ 64
+#define RT_SERIAL_RB_BUFSZ 2048
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_ADC
 #define RT_USING_RANDOM
 #define RT_USING_PWM
+#define RT_USING_MTD_NOR
 #define RT_USING_MTD_NAND
-#define RT_MTD_NAND_DEBUG
 #define RT_USING_RTC
 #define RT_USING_ALARM
 #define RT_USING_SPI
 #define RT_USING_WDT
 #define RT_USING_SENSOR
 #define RT_USING_SENSOR_V2
+#define RT_USING_HWCRYPTO
+#define RT_HWCRYPTO_DEFAULT_NAME "hwcryto"
+#define RT_HWCRYPTO_IV_MAX_SIZE 16
+#define RT_HWCRYPTO_KEYBIT_MAX_SIZE 256
+#define RT_HWCRYPTO_USING_CRC
+#define RT_HWCRYPTO_USING_CRC_07
+#define RT_HWCRYPTO_USING_CRC_04C11DB7
 #define RT_USING_PIN
 /* end of Device Drivers */
 
@@ -120,7 +154,7 @@
 /* Timezone and Daylight Saving Time */
 
 #define RT_LIBC_USING_LIGHT_TZ_DST
-#define RT_LIBC_TZ_DEFAULT_HOUR 8
+#define RT_LIBC_TZ_DEFAULT_HOUR 0
 #define RT_LIBC_TZ_DEFAULT_MIN 0
 #define RT_LIBC_TZ_DEFAULT_SEC 0
 /* end of Timezone and Daylight Saving Time */
@@ -142,19 +176,14 @@
 
 #define RT_USING_AT
 #define AT_USING_CLIENT
-#define AT_CLIENT_NUM_MAX 3
+#define AT_CLIENT_NUM_MAX 2
 #define AT_USING_CLI
+#define AT_PRINT_RAW_CMD
 #define AT_SW_VERSION_NUM 0x10301
 /* end of Network */
 
 /* Memory protection */
 
-#define RT_USING_MEM_PROTECTION
-#define RT_USING_HW_STACK_GUARD
-#define USE_MEM_PROTECTION_EXAMPLES
-#define NUM_MEM_REGIONS 8
-#define NUM_EXCLUSIVE_REGIONS 2
-#define NUM_CONFIGURABLE_REGIONS 3
 /* end of Memory protection */
 
 /* Utilities */
@@ -211,6 +240,8 @@
 
 /* JSON: JavaScript Object Notation, a lightweight data-interchange format */
 
+#define PKG_USING_CJSON
+#define PKG_USING_CJSON_V1717
 /* end of JSON: JavaScript Object Notation, a lightweight data-interchange format */
 
 /* XML: Extensible Markup Language */
@@ -299,6 +330,18 @@
 /* entertainment: terminal games and other interesting software packages */
 
 /* end of entertainment: terminal games and other interesting software packages */
+#define PKG_USING_LWGPS
+#define GPS_MODULE_BAUD_RATE 9600
+#define LWGPS_CFG_DOUBLE 0
+#define LWGPS_CFG_STATUS 0
+#define LWGPS_CFG_STATEMENT_GPGGA 1
+#define LWGPS_CFG_STATEMENT_GPGSA 1
+#define LWGPS_CFG_STATEMENT_GPRMC 1
+#define LWGPS_CFG_STATEMENT_GPGSV 1
+#define LWGPS_CFG_STATEMENT_GPGSV_SAT_DET 0
+#define LWGPS_CFG_STATEMENT_PUBX 0
+#define LWGPS_CFG_STATEMENT_PUBX_TIME 0
+#define PKG_USING_LWGPS_LATEST_VERSION
 /* end of miscellaneous packages */
 
 /* Arduino libraries */
@@ -354,6 +397,7 @@
 
 /* Onboard Peripheral Drivers */
 
+#define BSP_USING_NAND_FLASH
 /* end of Onboard Peripheral Drivers */
 
 /* On-chip Peripheral Drivers */
@@ -366,20 +410,35 @@
 #define BSP_USING_UART5
 #define BSP_USING_LPUART1
 #define BSP_USING_ADC
+#define BSP_USING_ADC1
+#define BSP_USING_SPI
+#define BSP_USING_SPI1
+#define BSP_USING_I2C
+#define BSP_USING_I2C1
+
+/* Notice: PB8 --> 24; PB9 --> 25 */
+
+#define BSP_I2C1_SCL_PIN 24
+#define BSP_I2C1_SDA_PIN 19
+#define BSP_USING_ONCHIP_RTC
+#define BSP_RTC_USING_LSE
+#define BSP_USING_CRC
+#define BSP_USING_ON_CHIP_FLASH
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */
 
+#define BSP_USING_DHARA
+/* end of Board extended module Drivers */
 /* end of Hardware Drivers Config */
 
-/* Encorteec Application Config */
+/* Encortec Application Config */
 
 /* Logging configuration */
 
 #define APP_USING_LOG
 #define APP_LOG_PRINT_CHANNEL
 #define APP_LOG_PRINT_TO_UART
-#define APP_LOG_PRINT_TO_FILE
 #define APP_LOG_LEVEL
 #define APP_LOG_LEVEL_DBG
 #define APP_LOG_LEVEL_INF
@@ -388,6 +447,12 @@
 #define APP_LOG_USING_TS
 #define APP_LOG_BUF_SIZE 512
 /* end of Logging configuration */
-/* end of Encorteec Application Config */
+
+/* STM32 Platform */
+
+#define SOC_STM32U535VE
+#define BOARD_STM32U535_NUCLEO
+/* end of STM32 Platform */
+/* end of Encortec Application Config */
 
 #endif

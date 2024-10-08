@@ -3,6 +3,10 @@
 #include <rtthread.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef APP_LOG_USING_TS
+#include <sys/time.h>
+#endif
+#include <stdio.h>
 
 #if defined APP_USING_LOG && defined APP_LOG_PRINT_CHANNEL
 
@@ -24,7 +28,7 @@ void app_log_deinit(void)
 {
     if(app_log_initilized) {
         rt_mutex_detach(&app_log_mutex);
-        memset(&app_log_mutex, 0, sizeof(app_log_mutex));
+        rt_memset(&app_log_mutex, 0, sizeof(app_log_mutex));
         app_log_initilized = 0;
     }
 }
@@ -45,10 +49,18 @@ static void app_log_print_to_file(const char *fmt, ...)
 }
 #endif
 
+#ifdef APP_LOG_USING_TS
 char *get_ts(void) {
-    return "20240808";
-    // TODO
+    static char ts_buf[20];
+    time_t cur_time;
+    struct tm *time_now;
+    time(&cur_time);
+    time_now = localtime(&cur_time);
+    rt_memset(ts_buf, 0, 20);
+    strftime(ts_buf, sizeof(ts_buf), "%Y-%m-%d %H:%M:%S", time_now);
+    return ts_buf;
 }
+#endif
 
 void app_log_print(const char *fmt, ...)
 {
@@ -60,7 +72,7 @@ void app_log_print(const char *fmt, ...)
 
         rt_mutex_take(&app_log_mutex, RT_WAITING_FOREVER);
 
-        rt_vsnprintf(app_log_buf, sizeof(app_log_buf) - 1, fmt, args);
+        vsnprintf(app_log_buf, sizeof(app_log_buf) - 1, fmt, args);
 
         #ifdef APP_LOG_PRINT_TO_UART
         rt_kprintf("%s", app_log_buf);

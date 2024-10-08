@@ -1,0 +1,15 @@
+from building import *
+import os
+
+cwd     = GetCurrentDir()
+CPPPATH = [cwd]
+CPPPATH += [cwd + "/src"]
+CPPPATH += [cwd + "/inc"]
+src     = Glob('src/*.c')
+# src     += Glob('.test/test_esp32.c')
+# src     += Glob('.test/test_nand_flash.c')
+src     += Glob('.test/file.c')
+
+libs = DefineGroup('libs', src, depend = [''], CPPPATH = CPPPATH)
+
+Return('libs')

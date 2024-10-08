@@ -8,11 +8,11 @@
  * 2018-11-06     SummerGift   first version
  */
 
+#include <string.h>
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
 #include "common.h"
-#include <string.h>
 
 /* Don't use api mapping method to let App call bootloader apis */
 // #include "api_map.h"

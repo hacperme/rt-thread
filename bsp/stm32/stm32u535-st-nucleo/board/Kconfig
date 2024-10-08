@@ -1,0 +1,208 @@
+menu "Hardware Drivers Config"
+
+menu "Onboard Peripheral Drivers"
+
+    menuconfig SOC_STM32U545RE
+        bool "SOC_STM32U545RE"
+        select SOC_SERIES_STM32U5
+        select RT_USING_COMPONENTS_INIT
+        select RT_USING_USER_MAIN
+        default y
+        if SOC_STM32U545RE
+            config BOARD_STM32U545_NUCLEO
+                bool "BOARD_STM32U545_NUCLEO"
+                select BOARD_SERIES_STM32_NUCLEO_64
+                default y
+        endif
+    
+    menuconfig SOC_STM32U535VE
+        bool "SOC_STM32U535VE"
+        select SOC_SERIES_STM32U5
+        select RT_USING_COMPONENTS_INIT
+        select RT_USING_USER_MAIN
+        default n
+        if SOC_STM32U535VE
+            config BOARD_STM32U535_NUCLEO
+                bool "BOARD_STM32U535_NUCLEO"
+                select BOARD_SERIES_STM32_NUCLEO_64
+                default n
+        endif
+
+    config  BSP_USING_NAND_FLASH
+        bool "Enable Nand Falsh"
+        select RT_USING_MTD_NAND
+        default n
+
+endmenu
+
+menu "On-chip Peripheral Drivers"
+
+    config BSP_USING_GPIO
+        bool "Enable GPIO"
+        select RT_USING_PIN
+        default y
+
+    menuconfig BSP_USING_UART
+        bool "Enable UART"
+        default y
+        select RT_USING_SERIAL
+        if BSP_USING_UART
+            config BSP_USING_UART1
+                bool "Enable UART1"
+                default y
+
+            config BSP_UART1_RX_USING_DMA
+                bool "Enable UART1 RX DMA"
+                depends on BSP_USING_UART1 && RT_SERIAL_USING_DMA
+                default n
+
+            config BSP_USING_UART3
+                bool "Enable UART3"
+                default y
+
+            config BSP_USING_UART4
+                bool "Enable UART4"
+                default y
+
+            config BSP_USING_UART5
+                bool "Enable UART5"
+                default y
+
+            config BSP_USING_LPUART1
+                bool "Enable LPUART1"
+                default y
+
+            config BSP_LPUART1_RX_USING_DMA
+                bool "Enable LPUART1 RX DMA"
+                depends on BSP_USING_LPUART1 && RT_SERIAL_USING_DMA
+                default n
+        endif
+
+    menuconfig BSP_USING_ADC
+        bool "Enable ADC"
+        default n
+        select RT_USING_ADC
+        if BSP_USING_ADC
+            config BSP_USING_ADC1
+                bool "Enable ADC1"
+                default n
+        endif
+
+    menuconfig BSP_USING_PWM
+        bool "Enable PWM"
+        default n
+        select RT_USING_PWM
+        if BSP_USING_PWM
+
+            menuconfig BSP_USING_PWM1
+                bool "Enable timer1 output PWM"
+                default n
+                if BSP_USING_PWM1
+                    config BSP_USING_PWM1_CH1
+                        bool "Enable PWM1 channel1"
+                        default n
+
+                    config BSP_USING_PWM1_CH2
+                        bool "Enable PWM1 channel2"
+                        default n
+
+                    config BSP_USING_PWM1_CH3
+                        bool "Enable PWM1 channel3"
+                        default n
+
+                    config BSP_USING_PWM1_CH4
+                        bool "Enable PWM1 channel4"
+                        default n
+                endif
+
+            menuconfig BSP_USING_PWM4
+                bool "Enable timer4 output PWM"
+                default n
+                if BSP_USING_PWM4
+                    config BSP_USING_PWM4_CH1
+                        bool "Enable PWM4 channel1"
+                        default n
+
+                    config BSP_USING_PWM4_CH2
+                        bool "Enable PWM4 channel2"
+                        default n
+
+                    config BSP_USING_PWM4_CH3
+                        bool "Enable PWM4 channel3"
+                        default n
+
+                    config BSP_USING_PWM4_CH4
+                        bool "Enable PWM4 channel4"
+                        default n
+                endif
+        endif
+
+    menuconfig BSP_USING_SPI
+        bool "Enable SPI BUS"
+        default n
+        select RT_USING_SPI
+        if BSP_USING_SPI
+            config BSP_USING_SPI1
+                bool "Enable SPI1 BUS"
+                default n
+
+            config BSP_SPI1_TX_USING_DMA
+                bool "Enable SPI1 TX DMA"
+                depends on BSP_USING_SPI1
+                default n
+
+            config BSP_SPI1_RX_USING_DMA
+                bool "Enable SPI1 RX DMA"
+                depends on BSP_USING_SPI1
+                default n
+        endif
+
+    menuconfig BSP_USING_I2C
+        bool "Enable I2C BUS"
+        default n
+        select RT_USING_I2C
+        select RT_USING_I2C_BITOPS
+        select RT_USING_PIN
+        if BSP_USING_I2C
+            menuconfig BSP_USING_I2C1
+                bool "Enable I2C1 BUS (software simulation)"
+                default y
+                if BSP_USING_I2C1
+                    comment "Notice: PB8 --> 24; PB9 --> 25"
+                    config BSP_I2C1_SCL_PIN
+                        int "i2c1 scl pin number"
+                        range 1 176
+                        default 24
+                    config BSP_I2C1_SDA_PIN
+                        int "I2C1 sda pin number"
+                        range 1 176
+                        default 25
+                endif
+        endif
+
+    menuconfig BSP_USING_ONCHIP_RTC
+        bool "Enable ONCHIP RTC"
+        default y
+        select RT_USING_PIN
+        if BSP_USING_ONCHIP_RTC
+            config BSP_RTC_USING_LSI
+                bool "Enable RTC USING LSI"
+                default n
+            config BSP_RTC_USING_LSE
+                bool "Enable RTC USING LSE"
+                default n
+        endif
+
+    source "$(BSP_DIR)/../libraries/HAL_Drivers/drivers/Kconfig"
+
+endmenu
+
+menu "Board extended module Drivers"
+
+    config BSP_USING_DHARA
+        bool "Enable dhara"
+        default n
+
+endmenu
+
+endmenu

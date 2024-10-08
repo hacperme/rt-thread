@@ -307,6 +307,9 @@ int dfs_elm_statfs(struct dfs_filesystem *fs, struct statfs *buf)
     RT_ASSERT(buf != RT_NULL);
 
     f = (FATFS *)fs->data;
+    // rt_kprintf("f->n_fatent=%ld\n", f->n_fatent);
+    // rt_kprintf("f->csize=%ld\n", f->csize);
+    // rt_kprintf("f->ssize=%ld\n", f->ssize);
 
     rt_snprintf(driver, sizeof(driver), "%d:", f->pdrv);
     res = f_getfree(driver, &fre_clust, &f);
@@ -316,6 +319,9 @@ int dfs_elm_statfs(struct dfs_filesystem *fs, struct statfs *buf)
     /* Get total sectors and free sectors */
     tot_sect = (f->n_fatent - 2) * f->csize;
     fre_sect = fre_clust * f->csize;
+
+    // rt_kprintf("tot_sect=%ld\n", tot_sect);
+    // rt_kprintf("fre_sect=%ld\n", fre_sect);
 
     buf->f_bfree = fre_sect;
     buf->f_blocks = tot_sect;

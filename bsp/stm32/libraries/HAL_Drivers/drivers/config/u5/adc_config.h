@@ -23,7 +23,7 @@ extern "C" {
     {                                                               \
        .Instance                   = ADC1,                          \
        .Init.ClockPrescaler        = ADC_CLOCK_ASYNC_DIV4,          \
-       .Init.Resolution            = ADC_RESOLUTION_12B,            \
+       .Init.Resolution            = ADC_RESOLUTION_14B,            \
        .Init.DataAlign             = ADC_DATAALIGN_RIGHT,           \
        .Init.ScanConvMode          = ADC_SCAN_DISABLE,              \
        .Init.EOCSelection          = ADC_EOC_SINGLE_CONV,           \

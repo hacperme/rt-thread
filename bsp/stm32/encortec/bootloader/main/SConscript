@@ -1,10 +1,11 @@
 from building import *
 import os
+from rtconfig import SDK_ROOT
 
 cwd     = GetCurrentDir()
 CPPPATH = [
     cwd,
-    os.path.abspath('../../../common')
+    os.path.join(SDK_ROOT, 'common'),
 ]
 
 src     = Glob('*.c')

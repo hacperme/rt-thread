@@ -2,28 +2,27 @@
  * linker script for STM32L4XX with GNU ld
  */
 
-BOOTLOADER_ROM_SIZE = 256K;
-APP_ROM_SIZE = 256K;
+BOOTLOADER_ROM_SIZE = 384K;
+APP_ROM_SIZE = 128K;
 
-BOOTLOADER_SRAM1_SIZE = 32K;
-APP_SRAM1_SIZE = 160K;
+BOOTLOADER_RAM_SIZE = 32K;
+APP_RAM_SIZE = 32K;
 
-HEAP_RAM2_SIZE = 64K;
+HEAP_RAM_SIZE = 192K;
 
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
 {
-    ROM (rx) : ORIGIN = 0x08000000, LENGTH = 512K     /* 512KB flash */
-    SRAM1 (rw) : ORIGIN = 0x20000000, LENGTH =  192K  /* 192KB sram1 */
-    SRAM2 (rw) : ORIGIN = 0x20030000, LENGTH =  64K   /* 64KB sram2 */
+    ROM (rx) : ORIGIN = 0x08000000, LENGTH = BOOTLOADER_ROM_SIZE
+    SRAM (rw) : ORIGIN = 0x20000000, LENGTH =  BOOTLOADER_RAM_SIZE
 }
 ENTRY(Reset_Handler)
 _system_stack_size = 0x400;
 
 SECTIONS
 {
-    ASSERT(BOOTLOADER_ROM_SIZE + APP_ROM_SIZE <= LENGTH(ROM), "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
-    ASSERT(BOOTLOADER_SRAM1_SIZE + APP_SRAM1_SIZE <= LENGTH(SRAM1), "The combined RAM partitions of the Bootloader and App (excluding the heap area) exceed the total size of SRAM1.")
+    ASSERT(BOOTLOADER_ROM_SIZE + APP_ROM_SIZE <= 512K, "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
+    ASSERT(BOOTLOADER_RAM_SIZE + APP_RAM_SIZE + HEAP_RAM_SIZE <= 256K, "The combined RAM partitions of the Bootloader, App and heap exceed the total RAM size.")
 
     .text :
     {
@@ -55,7 +54,10 @@ SECTIONS
         KEEP(build\kernel\components\drivers\sensor\v2\sensor.o(.text*))
         KEEP(build\kernel\components\drivers\serial\serial.o(.text*))
         KEEP(build\kernel\components\drivers\spi\spi_dev.o(.text*))
+        KEEP(build\kernel\components\drivers\spi\spi_core.o(.text*))
         KEEP(build\kernel\components\drivers\watchdog\watchdog.o(.text*))
+        KEEP(build\kernel\components\drivers\hwcrypto\hw_crc.o(.text*))
+        KEEP(build\kernel\components\drivers\hwcrypto\hwcrypto.o(.text*))
         KEEP(build\kernel\components\finsh\cmd.o(.text*))
         KEEP(build\kernel\components\finsh\msh.o(.text*))
         KEEP(build\kernel\components\finsh\msh_parse.o(.text*))
@@ -81,6 +83,11 @@ SECTIONS
         KEEP(build\kernel\src\signal.o(.text*))
         KEEP(build\kernel\src\thread.o(.text*))
         KEEP(build\kernel\src\timer.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr_ex.o(.text*))
+        KEEP(build\board\drivers\fatfs_nand_flash\drv_nand_flash.o(.text*))
+        KEEP(build\board\drivers\fatfs_nand_flash\drv_fatfs_dhara_nand.o(.text*))
+        KEEP(build\kernel\components\dfs\dfs_v1\src\dfs_posix.o(.text*))
         *(.text)                        /* remaining code */
         *(.text.*)                      /* remaining code */
         *(.rodata)                      /* read-only data (constants) */
@@ -149,17 +156,17 @@ SECTIONS
         . = ALIGN(4);
         /* This is used by the startup in order to initialize the .data secion */
         _edata = . ;
-    } > SRAM1
+    } > SRAM
 
     PROVIDE ( __bootloader_rom_start = ORIGIN(ROM) );
-    PROVIDE ( __bootloader_rom_end = ORIGIN(ROM) + BOOTLOADER_ROM_SIZE );
+    PROVIDE ( __bootloader_rom_end = ORIGIN(ROM) + LENGTH(ROM) );
 
     PROVIDE ( __bootloader_rom_occupied_end = LOADADDR(.data) + SIZEOF(.data) );
 
     ASSERT(__bootloader_rom_occupied_end  <= __bootloader_rom_end, "Bootloader ROM data exceeds bootloader ROM end.")
 
     PROVIDE ( __app_rom_start = __bootloader_rom_end );
-    PROVIDE ( __app_rom_end = ORIGIN(ROM) + LENGTH(ROM));
+    PROVIDE ( __app_rom_end = __app_rom_start + APP_ROM_SIZE);
 
     .stack :
     {
@@ -168,7 +175,7 @@ SECTIONS
         . = . + _system_stack_size;
         . = ALIGN(4);
         _estack = .;
-    } > SRAM1
+    } > SRAM
 
     __bss_start = .;
     .bss :
@@ -186,24 +193,24 @@ SECTIONS
         _ebss = . ;
 
         *(.bss.init)
-    } > SRAM1
+    } > SRAM
 
     __bss_end = .;
 
-    PROVIDE ( __bootloader_ram_start = ORIGIN(SRAM1) );
-    PROVIDE ( __bootloader_ram_end = ORIGIN(SRAM1) + BOOTLOADER_SRAM1_SIZE );
+    PROVIDE ( __bootloader_ram_start = ORIGIN(SRAM) );
+    PROVIDE ( __bootloader_ram_end = ORIGIN(SRAM) + LENGTH(SRAM) );
 
     PROVIDE ( __bootloader_ram_occupied_end = __bss_end );
 
     ASSERT(__bootloader_ram_occupied_end  <= __bootloader_ram_end, "Bootloader RAM data exceeds bootloader RAM end.")
 
     PROVIDE ( __app_ram_start = __bootloader_ram_end );
-    PROVIDE ( __app_ram_end = ORIGIN(SRAM1) + LENGTH(SRAM1));
+    PROVIDE ( __app_ram_end = __app_ram_start + APP_RAM_SIZE);
 
-    _end = ORIGIN(SRAM2);
+    _end = __app_ram_end;
 
     PROVIDE ( __heap_start = _end );
-    PROVIDE ( __heap_end = __heap_start + LENGTH(SRAM2));
+    PROVIDE ( __heap_end = __heap_start + HEAP_RAM_SIZE);
 
     /* Stabs debugging sections.  */
     .stab          0 : { *(.stab) }
