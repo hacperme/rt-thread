@@ -188,6 +188,7 @@ rt_weak void rt_hw_board_init(void)
 
     /* System clock initialization */
     SystemClock_Config();
+    // MX_ICACHE_Init();
 
 #if defined(RT_USING_HEAP)
     /* Heap initialization */

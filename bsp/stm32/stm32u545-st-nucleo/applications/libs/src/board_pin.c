@@ -1,0 +1,274 @@
+/*
+ * @FilePath: board_pin.c
+ * @Author: Jack Sun (jack.sun@quectel.com)
+ * @brief     : <Description>
+ * @version   : v1.0.0
+ * @Date: 2024-08-07 09:21:32
+ * @copyright : Copyright (c) 2024
+ */
+#include "board_pin.h"
+
+#define DBG_SECTION_NAME "BOARD_PIN"
+#define DBG_LEVEL DBG_LOG
+#include <rtdbg.h>
+
+void sensor_pwron_pin_init(void)
+{
+    rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t sensor_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(SENSOR_PWRON_PIN, mode);
+    return rt_pin_read(SENSOR_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void pwrctrl_pwr_wkup3_init(void)
+{
+    rt_pin_mode(PWRCTRL_PWR_WKUP3, PIN_MODE_INPUT_PULLDOWN);
+}
+
+void pwrctrl_pwr_wkup3_irq(void *args)
+{
+    LOG_D("pwrctrl_pwr_wkup3_irq");
+}
+
+rt_err_t pwrctrl_pwr_wkup3_irq_enable(void)
+{
+    rt_err_t res;
+    res = rt_pin_attach_irq(PWRCTRL_PWR_WKUP3, PIN_IRQ_MODE_RISING_FALLING, pwrctrl_pwr_wkup3_irq, RT_NULL);
+    LOG_D("rt_pin_attach_irq PWRCTRL_PWR_WKUP3 PIN_IRQ_MODE_RISING_FALLING res=%d", res);
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+    res = rt_pin_irq_enable(PWRCTRL_PWR_WKUP3, PIN_IRQ_ENABLE);
+    LOG_D("rt_pin_irq_enable PWRCTRL_PWR_WKUP3 PIN_IRQ_ENABLE res=%d", res);
+    /* Power harvster/tracker monitor wakeup pin irq enable. */
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+#ifdef SOC_STM32U545RE
+    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN4_HIGH_2);
+#else
+    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN3_HIGH_0);
+#endif
+    return res;
+}
+
+void nbiot_pwron_pin_init(void)
+{
+    rt_pin_mode(NBIOT_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t nbiot_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(NBIOT_PWRON_PIN, mode);
+    return rt_pin_read(NBIOT_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void esp32_pwron_pin_init(void)
+{
+    rt_pin_mode(ESP32_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t esp32_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(ESP32_PWRON_PIN, mode);
+    return rt_pin_read(ESP32_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void esp32_en_pin_init(void)
+{
+    rt_pin_mode(ESP32_EN_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t esp32_en_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(ESP32_EN_PIN, mode);
+    return rt_pin_read(ESP32_EN_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void esp32_download_pin_init(void)
+{
+    rt_pin_mode(ESP32_DOWNLOAD_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t esp32_download_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(ESP32_DOWNLOAD_PIN, mode);
+    return rt_pin_read(ESP32_DOWNLOAD_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void sim_select_pin_init(void)
+{
+    rt_pin_mode(SIM_SELECT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t sim_select_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(SIM_SELECT_PIN, mode);
+    return rt_pin_read(SIM_SELECT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void nb_cat1_rf_pin_init(void)
+{
+    rt_pin_mode(NB_CAT1_RF_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t nb_cat1_rf_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(NB_CAT1_RF_PIN, mode);
+    return rt_pin_read(NB_CAT1_RF_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void intn_ext_ant_pin_init(void)
+{
+    rt_pin_mode(INTN_EXT_ANT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t intn_ext_ant_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(INTN_EXT_ANT_PIN, mode);
+    return rt_pin_read(INTN_EXT_ANT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void antenna_active_pin_init(void)
+{
+    rt_pin_mode(ANTENNA_ACTIVE_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t antenna_active_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(ANTENNA_ACTIVE_PIN, mode);
+    return rt_pin_read(ANTENNA_ACTIVE_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void flash_pwron_pin_init(void)
+{
+    rt_pin_mode(FLASH_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t flash_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(FLASH_PWRON_PIN, mode);
+    return rt_pin_read(FLASH_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_pwron_pin_init(void)
+{
+    rt_pin_mode(CAT1_PWRON_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_pwron_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_PWRON_PIN, mode);
+    return rt_pin_read(CAT1_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_boot_pin_init(void)
+{
+    rt_pin_mode(CAT1_BOOT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_boot_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_BOOT_PIN, mode);
+    return rt_pin_read(CAT1_BOOT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_status_pin_init(void)
+{
+    rt_pin_mode(CAT1_STATUS_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_status_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_STATUS_PIN, mode);
+    return rt_pin_read(CAT1_STATUS_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_reset_stm_pin_init(void)
+{
+    rt_pin_mode(CAT1_RESET_STM_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_reset_stm_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_RESET_STM_PIN, mode);
+    return rt_pin_read(CAT1_RESET_STM_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_pwrkey_stm_pin_init(void)
+{
+    rt_pin_mode(CAT1_PWRKEY_STM_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_pwrkey_stm_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_PWRKEY_STM_PIN, mode);
+    return rt_pin_read(CAT1_PWRKEY_STM_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_psm_ind_stm_pin_init(void)
+{
+    rt_pin_mode(CAT1_PSM_IND_STM_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_psm_ind_stm_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_PSM_IND_STM_PIN, mode);
+    return rt_pin_read(CAT1_PSM_IND_STM_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void cat1_psm_int_stm_pin_init(void)
+{
+    rt_pin_mode(CAT1_PSM_INT_STM_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t cat1_psm_int_stm_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(CAT1_PSM_INT_STM_PIN, mode);
+    return rt_pin_read(CAT1_PSM_INT_STM_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+void nbiot_boot_pin_init(void)
+{
+    rt_pin_mode(NBIOT_BOOT_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t nbiot_boot_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(NBIOT_BOOT_PIN, mode);
+    return rt_pin_read(NBIOT_BOOT_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
+int board_pins_init(void)
+{
+    rt_err_t res = RT_EOK;
+
+    sensor_pwron_pin_init();
+    pwrctrl_pwr_wkup3_init();
+    nbiot_pwron_pin_init();
+    esp32_pwron_pin_init();
+    esp32_en_pin_init();
+    esp32_download_pin_init();
+    sim_select_pin_init();
+    nb_cat1_rf_pin_init();
+    intn_ext_ant_pin_init();
+    antenna_active_pin_init();
+    flash_pwron_pin_init();
+    cat1_pwron_pin_init();
+    cat1_boot_pin_init();
+    cat1_status_pin_init();
+    cat1_reset_stm_pin_init();
+    cat1_pwrkey_stm_pin_init();
+    cat1_psm_ind_stm_pin_init();
+    cat1_psm_int_stm_pin_init();
+    nbiot_boot_pin_init();
+
+    return res;
+}
+
+INIT_BOARD_EXPORT(board_pins_init);

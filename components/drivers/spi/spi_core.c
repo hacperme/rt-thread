@@ -57,10 +57,12 @@ rt_err_t rt_spi_bus_attach_device_cspin(struct rt_spi_device *device,
     bus = rt_device_find(bus_name);
     if (bus != RT_NULL && bus->type == RT_Device_Class_SPIBUS)
     {
+        LOG_I("rt_device_find bus_name %s success.", bus_name);
         device->bus = (struct rt_spi_bus *)bus;
 
         /* initialize spidev device */
         result = rt_spidev_device_init(device, name);
+        LOG_I("rt_spidev_device_init deivce %s res %d", name, result);
         if (result != RT_EOK)
             return result;
 
@@ -74,6 +76,7 @@ rt_err_t rt_spi_bus_attach_device_cspin(struct rt_spi_device *device,
         device->cs_pin = cs_pin;
         return RT_EOK;
     }
+    LOG_E("rt_device_find bus_name %s failed.", bus_name);
 
     /* not found the host bus */
     return -RT_ERROR;

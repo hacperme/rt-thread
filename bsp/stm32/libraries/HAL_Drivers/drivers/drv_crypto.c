@@ -27,7 +27,7 @@ struct stm32_hwcrypto_device
 
 #if defined(BSP_USING_CRC)
 
-#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1)
+#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
 static struct hwcrypto_crc_cfg  crc_backup_cfg;
 
 static int reverse_bit(rt_uint32_t n)
@@ -47,12 +47,12 @@ static rt_uint32_t _crc_update(struct hwcrypto_crc *ctx, const rt_uint8_t *in, r
     rt_uint32_t result = 0;
     struct stm32_hwcrypto_device *stm32_hw_dev = (struct stm32_hwcrypto_device *)ctx->parent.device->user_data;
 
-#if defined(SOC_SERIES_STM32L4)|| defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1)
+#if defined(SOC_SERIES_STM32L4)|| defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
     CRC_HandleTypeDef *HW_TypeDef = (CRC_HandleTypeDef *)(ctx->parent.contex);
 #endif
 
     rt_mutex_take(&stm32_hw_dev->mutex, RT_WAITING_FOREVER);
-#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1)
+#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
     if (memcmp(&crc_backup_cfg, &ctx->crc_cfg, sizeof(struct hwcrypto_crc_cfg)) != 0)
     {
         if (HW_TypeDef->Init.DefaultPolynomialUse == DEFAULT_POLYNOMIAL_DISABLE)
@@ -86,7 +86,7 @@ static rt_uint32_t _crc_update(struct hwcrypto_crc *ctx, const rt_uint8_t *in, r
 
         switch(ctx ->crc_cfg.width)
         {
-#if defined(CRC_POLYLENGTH_7B) && defined(CRC_POLYLENGTH_8B) && defined(CRC_POLYLENGTH_16B) && defined(CRC_POLYLENGTH_32B)
+#if defined(CRC_POLYLENGTH_7B) && defined(CRC_POLYLENGTH_8B) && defined(CRC_POLYLENGTH_16B) && defined(CRC_POLYLENGTH_32B) || defined(SOC_SERIES_STM32U5)
         case 7:
             HW_TypeDef->Init.CRCLength = CRC_POLYLENGTH_7B;
             break;
@@ -136,7 +136,7 @@ static rt_uint32_t _crc_update(struct hwcrypto_crc *ctx, const rt_uint8_t *in, r
 
     result = HAL_CRC_Accumulate(ctx->parent.contex, (rt_uint32_t *)in, length);
 
-#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1)
+#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
     if (HW_TypeDef->Init.OutputDataInversionMode)
     {
         ctx ->crc_cfg.last_val = reverse_bit(result);
@@ -190,7 +190,7 @@ static rt_err_t _hash_update(struct hwcrypto_hash *ctx, const rt_uint8_t *in, rt
     struct stm32_hwcrypto_device *stm32_hw_dev = (struct stm32_hwcrypto_device *)ctx->parent.device->user_data;
     rt_mutex_take(&stm32_hw_dev->mutex, RT_WAITING_FOREVER);
 
-#if defined(SOC_SERIES_STM32MP1)
+#if defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
     HASH_HandleTypeDef *HW_TypeDef = (HASH_HandleTypeDef *)(ctx->parent.contex);
     /* Start HASH computation using DMA transfer */
     switch (ctx->parent.type)
@@ -238,7 +238,7 @@ static rt_err_t _hash_finish(struct hwcrypto_hash *ctx, rt_uint8_t *out, rt_size
     rt_uint32_t result = RT_EOK;
     struct stm32_hwcrypto_device *stm32_hw_dev = (struct stm32_hwcrypto_device *)ctx->parent.device->user_data;
     rt_mutex_take(&stm32_hw_dev->mutex, RT_WAITING_FOREVER);
-#if defined(SOC_SERIES_STM32MP1)
+#if defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
     HASH_HandleTypeDef *HW_TypeDef = (HASH_HandleTypeDef *)(ctx->parent.contex);
     /* Get the computed digest value */
     switch (ctx->parent.type)
@@ -293,7 +293,7 @@ static rt_err_t _cryp_crypt(struct hwcrypto_symmetric *ctx,
     struct stm32_hwcrypto_device *stm32_hw_dev = (struct stm32_hwcrypto_device *)ctx->parent.device->user_data;
     rt_mutex_take(&stm32_hw_dev->mutex, RT_WAITING_FOREVER);
 
-#if defined(SOC_SERIES_STM32MP1)
+#if defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
     CRYP_HandleTypeDef *HW_TypeDef = (CRYP_HandleTypeDef *)(ctx->parent.contex);
 
     switch (ctx->parent.type)
@@ -428,7 +428,7 @@ static rt_err_t _crypto_create(struct rt_hwcrypto_ctx *ctx)
 #else
         hcrc->Instance = CRC;
 #endif
-#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1)
+#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
         hcrc->Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_DISABLE;
         hcrc->Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_DISABLE;
         hcrc->Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_BYTE;

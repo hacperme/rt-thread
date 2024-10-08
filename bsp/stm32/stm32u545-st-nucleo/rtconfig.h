@@ -1,8 +1,8 @@
 #ifndef RT_CONFIG_H__
 #define RT_CONFIG_H__
 
-#define SOC_STM32U545RE
-#define BOARD_STM32U545_NUCLEO
+#define SOC_STM32U535RE
+#define BOARD_STM32U535_NUCLEO
 
 /* RT-Thread Kernel */
 
@@ -20,6 +20,7 @@
 #define RT_USING_TIMER_SOFT
 #define RT_TIMER_THREAD_PRIO 4
 #define RT_TIMER_THREAD_STACK_SIZE 1024
+#define RT_USING_CPU_USAGE_TRACER
 
 /* kservice optimization */
 
@@ -50,10 +51,13 @@
 #define RT_USING_HEAP
 /* end of Memory Management */
 #define RT_USING_DEVICE
+#define RT_USING_DEVICE_OPS
+#define RT_USING_SCHED_THREAD_CTX
 #define RT_USING_CONSOLE
-#define RT_CONSOLEBUF_SIZE 512
+#define RT_CONSOLEBUF_SIZE 2048
 #define RT_CONSOLE_DEVICE_NAME "lpuart1"
 #define RT_VER_NUM 0x50200
+#define RT_USING_STDC_ATOMIC
 #define RT_BACKTRACE_LEVEL_MAX_NR 32
 /* end of RT-Thread Kernel */
 #define RT_USING_HW_ATOMIC
@@ -66,14 +70,14 @@
 
 #define RT_USING_COMPONENTS_INIT
 #define RT_USING_USER_MAIN
-#define RT_MAIN_THREAD_STACK_SIZE 2048
+#define RT_MAIN_THREAD_STACK_SIZE 8192
 #define RT_MAIN_THREAD_PRIORITY 10
 #define RT_USING_MSH
 #define RT_USING_FINSH
 #define FINSH_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
 #define FINSH_THREAD_PRIORITY 20
-#define FINSH_THREAD_STACK_SIZE 4096
+#define FINSH_THREAD_STACK_SIZE 8192
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 5
 #define FINSH_USING_SYMTAB
@@ -85,7 +89,19 @@
 
 /* DFS: device virtual file system */
 
+#define RT_USING_DFS
+#define DFS_USING_POSIX
+#define DFS_USING_WORKDIR
+#define DFS_FD_MAX 16
+#define RT_USING_DFS_V1
+#define DFS_FILESYSTEMS_MAX 4
+#define DFS_FILESYSTEM_TYPES_MAX 4
+#define RT_USING_DFS_DEVFS
 /* end of DFS: device virtual file system */
+#define RT_USING_FAL
+#define FAL_DEBUG_CONFIG
+#define FAL_DEBUG 1
+#define FAL_PART_HAS_TABLE_CFG
 
 /* Device Drivers */
 
@@ -96,13 +112,34 @@
 #define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
-#define RT_SERIAL_RB_BUFSZ 64
+#define RT_SERIAL_RB_BUFSZ 2048
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_ADC
+#define RT_USING_NULL
+#define RT_USING_ZERO
+#define RT_USING_RANDOM
 #define RT_USING_PWM
+#define RT_USING_MTD_NOR
+#define RT_USING_PM
+#define PM_TICKLESS_THRESHOLD_TIME 2
+#define PM_ENABLE_DEBUG
+#define RT_USING_RTC
+#define RT_USING_ALARM
 #define RT_USING_SPI
+#define RT_USING_WDT
+#define RT_USING_SENSOR
+#define RT_USING_SENSOR_V2
+#define RT_USING_SENSOR_CMD
+#define RT_USING_HWCRYPTO
+#define RT_HWCRYPTO_DEFAULT_NAME "hwcryto"
+#define RT_HWCRYPTO_IV_MAX_SIZE 16
+#define RT_HWCRYPTO_KEYBIT_MAX_SIZE 256
+#define RT_HWCRYPTO_USING_CRC
+#define RT_HWCRYPTO_USING_CRC_07
+#define RT_HWCRYPTO_USING_CRC_04C11DB7
 #define RT_USING_PIN
+#define RT_USING_KTIME
 /* end of Device Drivers */
 
 /* C/C++ and POSIX layer */
@@ -112,7 +149,7 @@
 /* Timezone and Daylight Saving Time */
 
 #define RT_LIBC_USING_LIGHT_TZ_DST
-#define RT_LIBC_TZ_DEFAULT_HOUR 8
+#define RT_LIBC_TZ_DEFAULT_HOUR 0
 #define RT_LIBC_TZ_DEFAULT_MIN 0
 #define RT_LIBC_TZ_DEFAULT_SEC 0
 /* end of Timezone and Daylight Saving Time */
@@ -120,6 +157,11 @@
 
 /* POSIX (Portable Operating System Interface) layer */
 
+#define RT_USING_POSIX_FS
+#define RT_USING_POSIX_DEVIO
+#define RT_USING_POSIX_DELAY
+#define RT_USING_POSIX_CLOCK
+#define RT_USING_POSIX_TIMER
 
 /* Interprocess Communication (IPC) */
 
@@ -128,10 +170,18 @@
 
 /* end of Interprocess Communication (IPC) */
 /* end of POSIX (Portable Operating System Interface) layer */
+#define RT_USING_CPLUSPLUS
 /* end of C/C++ and POSIX layer */
 
 /* Network */
 
+#define RT_USING_AT
+#define AT_DEBUG
+#define AT_USING_CLIENT
+#define AT_CLIENT_NUM_MAX 2
+#define AT_USING_CLI
+#define AT_PRINT_RAW_CMD
+#define AT_SW_VERSION_NUM 0x10301
 /* end of Network */
 
 /* Memory protection */
@@ -146,6 +196,7 @@
 
 /* Utilities */
 
+#define RT_USING_RESOURCE_ID
 /* end of Utilities */
 
 /* Using USB legacy version */
@@ -198,6 +249,8 @@
 
 /* JSON: JavaScript Object Notation, a lightweight data-interchange format */
 
+#define PKG_USING_CJSON
+#define PKG_USING_CJSON_V1717
 /* end of JSON: JavaScript Object Notation, a lightweight data-interchange format */
 
 /* XML: Extensible Markup Language */
@@ -224,6 +277,18 @@
 
 /* enhanced kernel services */
 
+#define PKG_USING_RT_VSNPRINTF_FULL
+#define PKG_VSNPRINTF_SUPPORT_DECIMAL_SPECIFIERS
+#define PKG_VSNPRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS
+#define PKG_VSNPRINTF_SUPPORT_WRITEBACK_SPECIFIER
+#define PKG_VSNPRINTF_SUPPORT_LONG_LONG
+#define PKG_VSNPRINTF_CHECK_FOR_NUL_IN_FORMAT_SPECIFIER
+#define PKG_VSNPRINTF_INTEGER_BUFFER_SIZE 32
+#define PKG_VSNPRINTF_DECIMAL_BUFFER_SIZE 32
+#define PKG_VSNPRINTF_DEFAULT_FLOAT_PRECISION 6
+#define PKG_VSNPRINTF_MAX_INTEGRAL_DIGITS_FOR_DECIMAL 9
+#define PKG_VSNPRINTF_LOG10_TAYLOR_TERMS 4
+#define PKG_USING_RT_VSNPRINTF_FULL_LATEST_VERSION
 /* end of enhanced kernel services */
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
@@ -237,6 +302,17 @@
 /* Micrium: Micrium software products porting for RT-Thread */
 
 /* end of Micrium: Micrium software products porting for RT-Thread */
+#define PKG_USING_PERF_COUNTER
+#define PKG_USING_PERF_COUNTER_V2241
+#define PKG_USING_LITTLEFS
+#define PKG_USING_LITTLEFS_LATEST_VERSION
+#define LFS_READ_SIZE 2048
+#define LFS_PROG_SIZE 2048
+#define LFS_BLOCK_SIZE 8192
+#define LFS_CACHE_SIZE 2048
+#define LFS_BLOCK_CYCLES 100
+#define LFS_THREADSAFE
+#define LFS_LOOKAHEAD_MAX 8
 /* end of system packages */
 
 /* peripheral libraries and drivers */
@@ -286,10 +362,30 @@
 /* entertainment: terminal games and other interesting software packages */
 
 /* end of entertainment: terminal games and other interesting software packages */
+#define PKG_USING_LWGPS
+#define GPS_MODULE_BAUD_RATE 115200
+#define LWGPS_CFG_DOUBLE 0
+#define LWGPS_CFG_STATUS 0
+#define LWGPS_CFG_STATEMENT_GPGGA 1
+#define LWGPS_CFG_STATEMENT_GPGSA 1
+#define LWGPS_CFG_STATEMENT_GPRMC 1
+#define LWGPS_CFG_STATEMENT_GPGSV 1
+#define LWGPS_CFG_STATEMENT_GPGSV_SAT_DET 0
+#define LWGPS_CFG_STATEMENT_PUBX 0
+#define LWGPS_CFG_STATEMENT_PUBX_TIME 0
+#define PKG_USING_LWGPS_LATEST_VERSION
 /* end of miscellaneous packages */
 
 /* Arduino libraries */
 
+#define PKG_USING_RTDUINO
+#define RTDUINO_THREAD_SIZE 2048
+#define RTDUINO_THREAD_PRIO 30
+#define RTDUINO_SUPPORT_HIGH_PRECISION_MICROS
+#define RTDUINO_USING_WIRE
+#define RTDUINO_WIRE_BUFFER_LENGTH 32
+#define RTDUINO_USING_SPI
+#define PKG_USING_RTDUINO_LATEST_VERSION
 
 /* Projects and Demos */
 
@@ -297,6 +393,8 @@
 
 /* Sensors */
 
+#define PKG_USING_ARDUINO_ADAFRUIT_SENSOR
+#define PKG_USING_ARDUINO_ADAFRUIT_SENSOR_LATEST_VERSION
 /* end of Sensors */
 
 /* Display */
@@ -327,6 +425,8 @@
 
 /* Signal IO */
 
+#define PKG_USING_ARDUINO_ADAFRUIT_BUSIO
+#define PKG_USING_ARDUINO_ADAFRUIT_BUSIO_LATEST_VERSION
 /* end of Signal IO */
 
 /* Uncategorized */
@@ -352,6 +452,21 @@
 #define BSP_USING_UART4
 #define BSP_USING_UART5
 #define BSP_USING_LPUART1
+#define BSP_USING_ADC
+#define BSP_USING_ADC1
+#define BSP_USING_SPI
+#define BSP_USING_SPI1
+#define BSP_USING_I2C
+#define BSP_USING_I2C1
+
+/* Notice: PB8 --> 24; PB9 --> 25 */
+
+#define BSP_I2C1_SCL_PIN 24
+#define BSP_I2C1_SDA_PIN 19
+#define BSP_USING_ONCHIP_RTC
+#define BSP_RTC_USING_LSE
+#define BSP_USING_CRC
+#define BSP_USING_ON_CHIP_FLASH
 /* end of On-chip Peripheral Drivers */
 
 /* Board extended module Drivers */

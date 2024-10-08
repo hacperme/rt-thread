@@ -11,6 +11,9 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
+// #include "on_chip_flash.h"
+// #include "board_pin.h"
+// #include "lpm.h"
 
 #define DBG_SECTION_NAME "main"
 #define DBG_LEVEL DBG_LOG
@@ -18,13 +21,8 @@
 // #define DBG_LEVEL DBG_WARNING
 // #define DBG_LEVEL DBG_ERROR
 #include <rtdbg.h>
-
-/* defined the LED2 pin: PA5 */
-#define LED2_PIN    GET_PIN(A, 5)
-
-void led_toggle(void) {
-    rt_pin_write(LED2_PIN, !rt_pin_read(LED2_PIN));
-}
+#include "dfs.h"
+#include "drv_dfs.h"
 
 extern char __bootloader_rom_start[];
 extern char __bootloader_rom_end[];
@@ -43,10 +41,6 @@ extern char __heap_end[];
 
 int main(void)
 {
-    int count = 1;
-    /* set LED2 pin mode to output */
-    rt_pin_mode(LED2_PIN, PIN_MODE_OUTPUT);
-
     LOG_I("__bootloader_rom_start: %p\r\n", __bootloader_rom_start);
     LOG_I("__bootloader_rom_end: %p\r\n", __bootloader_rom_end);
     LOG_I("__bootloader_rom_occupied_end: %p\r\n", __bootloader_rom_occupied_end);
@@ -62,12 +56,11 @@ int main(void)
     LOG_I("__heap_start: %p\r\n", __heap_start);
     LOG_I("__heap_end: %p\r\n", __heap_end);
 
-    while (count++)
-    {
-        led_toggle();
-        LOG_D("hello, world!\r\n");
-        rt_thread_mdelay(500);
-    }
+    int res = rt_hw_fs_mount();
+    LOG_I("rt_hw_fs_mount %s", res == RT_EOK ? "success" : "failed");
+
+    extern void main_business_entry(void);
+    // main_business_entry();
 
     return RT_EOK;
 }

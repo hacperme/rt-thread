@@ -101,6 +101,9 @@ if GetDepend(['BSP_USING_ON_CHIP_FLASH', 'SOC_SERIES_STM32H7']):
 if GetDepend(['BSP_USING_ON_CHIP_FLASH', 'SOC_SERIES_STM32WB']):
     src += [os.path.join('drv_flash', 'drv_flash_wb.c')]
 
+if GetDepend(['BSP_USING_ON_CHIP_FLASH', 'SOC_SERIES_STM32U5']):
+    src += [os.path.join('drv_flash', 'drv_flash_u5.c')]
+
 if GetDepend('RT_USING_HWCRYPTO'):
     src += ['drv_crypto.c']
 
@@ -122,10 +125,16 @@ if GetDepend(['BSP_USING_PULSE_ENCODER']):
 if GetDepend(['BSP_USING_USBH']):
     src += ['drv_usbh.c']
 
+if GetDepend(['RT_USING_DFS']):
+    src += ['drv_dfs.c']
+
 path += [os.path.join(cwd, 'config')]
 
 if GetDepend('BSP_USING_ON_CHIP_FLASH'):
     path += [os.path.join(cwd, 'drv_flash')]
+
+if GetDepend(['RT_USING_WDT']):
+    src += ['drv_wdt.c']
 
 group = DefineGroup('Drivers', src, depend = [''], CPPPATH = path)
 
