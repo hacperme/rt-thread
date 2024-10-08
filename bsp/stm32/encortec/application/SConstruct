@@ -73,8 +73,6 @@ CPPPATH = [
     os.path.join(SDK_ROOT, "application", "logging"),
 ]
 
-# driver_list = os.listdir(os.path.join(SDK_ROOT, "application/board/driver"))
-# driver_cpppath = [os.path.join(SDK_ROOT, "application/board/driver", i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, "application/board/driver", i))]
 driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/tools"),
     os.path.join(SDK_ROOT, "application/board/driver/adxl372"),
@@ -89,6 +87,11 @@ driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
 ]
 CPPPATH += driver_cpppath
+
+cloud_cppptah = [
+    os.path.join(SDK_ROOT, "application/board/cloud"),
+]
+CPPPATH += cloud_cppptah
 
 lwgps_cpp_path = [
     os.path.join(SDK_ROOT, "application/packages/lwgps-latest"),
@@ -131,11 +134,13 @@ logging/logging.c
 """
 )
 
+
 # driver_c_files = [os.path.join("board/driver", i, "%s.c" % i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, "application/board/driver", i))]
 driver_c_files = [
     "board/driver/tools/tools.c",
     "board/driver/adxl372/adxl372.c",
     "board/driver/at_client_http/at_client_http.c",
+    "board/driver/at_client_http/at_client_ssl.c",
     "board/driver/data_save_as_file/data_save_as_file.c",
     "board/driver/fdc1004/fdc1004.c",
     "board/driver/gnss/gnss.c",
@@ -145,7 +150,17 @@ driver_c_files = [
     "board/driver/voltage/voltage.c",
     "board/driver/watch_dog/watch_dog.c",
 ]
+
+cloud_c_files = [
+    "board/cloud/business.c",
+    "board/cloud/control.c",
+    "board/cloud/example.c",
+    "board/cloud/nbiot.c",
+    "board/cloud/settings.c",
+]
 app_c_files += driver_c_files
+
+app_c_files += cloud_c_files
 
 app_c_files += lwgps_c_files
 
