@@ -86,6 +86,7 @@ driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/tmp116"),
     os.path.join(SDK_ROOT, "application/board/driver/voltage"),
     os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
+    os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
 ]
 CPPPATH += driver_cpppath
 
