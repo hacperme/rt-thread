@@ -101,9 +101,6 @@ int board_pins_init(void)
     return res;
 }
 
-INIT_BOARD_EXPORT(board_pins_init);
-
-
 rt_err_t antenna_active()
 {
     rt_err_t result = antenna_active_pin_enable(PIN_HIGH);

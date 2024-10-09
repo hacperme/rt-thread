@@ -71,6 +71,12 @@ int application_start(int argc, char *argv[]) {
     // rt_thread_mdelay(10);
     // test_rtc();
 
+    extern void data_save_as_file_test();
+    data_save_as_file_test();
+
+    // extern void main_business_entry(void);
+    // main_business_entry();
+
     return 0;
 }
 #endif

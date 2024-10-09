@@ -80,6 +80,7 @@ int external_devices_init()
     rt_err_t res = RT_EOK;
 
     //TODO: check file system `GNSS.reported`
+    sensor_pwron_pin_enable(PIN_HIGH);
     nbiot_power_off();
     cat1_power_off();
     esp32_power_off();
@@ -284,7 +285,7 @@ int nbiot_wait_server_connect_ready()
     }
     else {
         nbiot_lwm2m_deregister();
-        struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 86400, 1, 1, 1};
+        struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 180, 1, 1, 1};
         if (! set_lwm2m_config_flag && nbiot_check_lwm2m_config(&config) != RT_EOK) {
             if (nbiot_set_lwm2m_config(&config) == RT_EOK) {
                 set_lwm2m_config_flag = 1;
@@ -489,20 +490,20 @@ int cat1_upload_file()
     rt_err_t result = RT_EOK;
     log_debug("cat1 upload file, Cat1FileUpload: %d", server_ctrl_data.Cat1FileUpload);
 
-    char *file_name = NULL;
-    while (file_name = get_oldest_file_name(&fs)) {
-        log_debug("file name is: %s", file_name);
-        // 需要上报
-        // if (at_http_upload_file_chunked(file_name) == -1) {
-        if (at_https_upload_file(file_name) == -1) {
-            log_debug("at http upload file failed");
-            return CAT1_UPLOAD_FILE_FAILED;
-        }
-        else {
-            delete_oldest_file(&fs);
-            log_debug("at http upload '%s' success", file_name);
-        }
-    }
+    // char *file_name = NULL;
+    // while (file_name = get_oldest_file_name(&fs)) {
+    //     log_debug("file name is: %s", file_name);
+    //     // 需要上报
+    //     // if (at_http_upload_file_chunked(file_name) == -1) {
+    //     if (at_https_upload_file(file_name) == -1) {
+    //         log_debug("at http upload file failed");
+    //         return CAT1_UPLOAD_FILE_FAILED;
+    //     }
+    //     else {
+    //         delete_oldest_file(&fs);
+    //         log_debug("at http upload '%s' success", file_name);
+    //     }
+    // }
 
     return CAT1_UPLOAD_FILE_SUCCESS;
 }
@@ -579,7 +580,7 @@ void save_sensor_data()
     snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "\r\n");
 
     // log_debug("sensor_data_buffer:\r\n%s", sensor_data_buffer);
-    data_save_as_file(&fs, sensor_data_buffer, strlen(sensor_data_buffer), false);
+    data_save_as_file(&fs, sensor_data_buffer, strlen(sensor_data_buffer), true, false);
     memset(sensor_data_buffer, 0, sizeof(sensor_data_buffer));
 
     log_debug("read_acc_xyz_result: %d", read_acc_xyz_result);
@@ -609,7 +610,7 @@ void save_sensor_data()
             // log_debug("temp_buf: %s", temp_buf);
             // 循环写三轴数据
             if (strlen(sensor_data_buffer) + length > sizeof(sensor_data_buffer)) {
-                if (data_save_as_file(&fs, sensor_data_buffer, strlen(sensor_data_buffer), false) == 0) {
+                if (data_save_as_file(&fs, sensor_data_buffer, strlen(sensor_data_buffer), true, true) == 0) {
                     log_debug("Data saved successfully.");
                     rt_memset(sensor_data_buffer, 0, sizeof(sensor_data_buffer));
                     snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), temp_buf);
@@ -672,7 +673,9 @@ void main_business_entry(void)
     log_debug("start tick ms: %d", start_tick_ms);
 
     sm_init();
-    data_save_as_file_init(&fs, 24 * 1024);
+    data_save_as_file_init(&fs, 0, ".dat", "/data", -1);
+
+    board_pins_init();
 
     while (1)
     {
@@ -689,6 +692,7 @@ void main_business_entry(void)
                 break;
             case COLLECT_SENSOR_DATA:
                 collect_sensor_data();
+                sensor_pwron_pin_enable(PIN_LOW);
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
@@ -812,4 +816,3 @@ void main_business_entry(void)
         }
     }
 }
-MSH_CMD_EXPORT(main_business_entry, main_business_entry);
