@@ -30,22 +30,30 @@ startup_path_prefix = SDK_LIB
 if rtconfig.PLATFORM in ['gcc']:
     if GetDepend(["SOC_STM32U535VE"]):
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u535xx.s']
+    elif GetDepend(["SOC_STM32U575VI"]):
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u575xx.s']
     else:
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u545xx.s']
 elif rtconfig.PLATFORM in ['armcc', 'armclang']:
     if GetDepend(["SOC_STM32U535VE"]):
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/arm/startup_stm32u535xx.s']
+    elif GetDepend(["SOC_STM32U575VI"]):
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u575xx.s']
     else:
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/arm/startup_stm32u545xx.s']
 elif rtconfig.PLATFORM in ['iccarm']:
     if GetDepend(["SOC_STM32U535VE"]):
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/iar/startup_stm32u535xx.s']
+    elif GetDepend(["SOC_STM32U575VI"]):
+        src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/gcc/startup_stm32u575xx.s']
     else:
         src += [startup_path_prefix + '/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Source/Templates/iar/startup_stm32u545xx.s']
 
 # You can select chips from the list above
 if GetDepend(["SOC_STM32U535VE"]):
     CPPDEFINES = ['STM32U535xx']
+elif GetDepend(["SOC_STM32U575VI"]):
+    CPPDEFINES = ['STM32U575xx']
 else:
     CPPDEFINES = ['STM32U545xx']
 group = DefineGroup('Drivers', src, depend = [''], CPPPATH = path, CPPDEFINES = CPPDEFINES)

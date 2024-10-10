@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <sys/statfs.h>
 #include <stdio.h>
+#include "stm32u5xx_hal.h"
 
 typedef rt_err_t (*rt_thread_init_api_ptr_t)(struct rt_thread *thread, const char *name, void (*entry)(void *parameter), void *parameter, void *stack_start, rt_uint32_t stack_size, rt_uint8_t priority, rt_uint32_t tick);
 typedef rt_err_t (*rt_thread_detach_api_ptr_t)(rt_thread_t thread);
@@ -297,4 +298,8 @@ typedef char *(*getcwd_api_ptr_t)(char *buf, size_t size);
 typedef int (*rmdir_api_ptr_t)(const char *path);
 typedef int (*access_api_ptr_t)(const char *path, int mode);
 typedef int (*stat_api_ptr_t)(const char *path, struct stat *buf);
+typedef void (*HAL_SYSCFG_VREFBUF_VoltageScalingConfig_api_ptr_t)(uint32_t VoltageScaling);
+typedef void (*HAL_SYSCFG_VREFBUF_HighImpedanceConfig_api_ptr_t)(uint32_t Mode);
+typedef void (*HAL_SYSCFG_DisableVREFBUF_api_ptr_t)(void);
+typedef HAL_StatusTypeDef (*HAL_SYSCFG_EnableVREFBUF_api_ptr_t)(void);
 #endif

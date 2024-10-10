@@ -64,11 +64,11 @@ int application_start(int argc, char *argv[]) {
     // extern rt_err_t test_temp116(void);
     // test_temp116();
 
-    // extern void test_read_voltage(int argc, char *argv[]);
-    // test_read_voltage(argc, argv);
+    extern void test_read_voltage(int argc, char *argv[]);
+    test_read_voltage(argc, argv);
 
     // extern void test_rtc(void);
-    // rt_thread_mdelay(10);
+    // rt_thread_mdelay(5 * 1000);
     // test_rtc();
 
     return 0;
