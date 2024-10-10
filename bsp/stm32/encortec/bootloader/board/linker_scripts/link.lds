@@ -83,6 +83,7 @@ SECTIONS
         KEEP(build\kernel\src\signal.o(.text*))
         KEEP(build\kernel\src\thread.o(.text*))
         KEEP(build\kernel\src\timer.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr_ex.o(.text*))
         KEEP(build\board\drivers\fatfs_nand_flash\drv_nand_flash.o(.text*))

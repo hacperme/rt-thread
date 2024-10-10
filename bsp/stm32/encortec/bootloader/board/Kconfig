@@ -59,6 +59,10 @@ menu "On-chip Peripheral Drivers"
             config BSP_USING_ADC1
                 bool "Enable ADC1"
                 default n
+
+            config BSP_USING_VERFBUF
+                bool "Enable VERFBUF"
+                default n
         endif
 
     menuconfig BSP_USING_PWM

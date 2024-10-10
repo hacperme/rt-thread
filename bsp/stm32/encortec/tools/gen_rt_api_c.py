@@ -43,11 +43,12 @@ def gen_rt_api_c(rt_api_typedef_h_file, rt_api_c_file):
         file.write('#include "common.h"\n')
         file.write('#include <stdio.h>\n')
         file.write('#include <stdarg.h>\n')
+        file.write('#include <stddef.h>\n')
         file.write('#include "rt_api_addr.h"\n')
         file.write('#include "rt_api_typedef.h"\n')
         file.write('#include "rttypes.h"\n')
         file.write('#include "logging.h"\n')
-        file.write('#include <stddef.h>\n')
+        file.write('#include "stm32u5xx_hal.h"\n')
         file.write('#include <sys/stat.h>\n\n')
 
         for return_type, func_type, params in function_pointer_types:
