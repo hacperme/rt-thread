@@ -193,7 +193,8 @@ rt_err_t test_temp116(void)
         log_info("tmp116_read_device_id addr=0x%02X %s dev_id=0x%02X", addrs[i], res != RT_EOK ? "failed" : "success", dev_id);
     }
 
-    while (1)
+    rt_uint8_t cnt = 10;
+    while (cnt > 0)
     {
         for (rt_uint8_t i = 0; i < 2; i ++)
         {
@@ -204,6 +205,7 @@ rt_err_t test_temp116(void)
             // log_info(msg);
         }
         rt_thread_mdelay(500);
+        cnt--;
     }
 
     return res;

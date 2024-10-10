@@ -391,7 +391,6 @@
 /* end of RT-Thread online packages */
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32U5
-#define BOARD_SERIES_STM32_NUCLEO_64
 
 /* Hardware Drivers Config */
 
@@ -411,6 +410,7 @@
 #define BSP_USING_LPUART1
 #define BSP_USING_ADC
 #define BSP_USING_ADC1
+#define BSP_USING_VERFBUF
 #define BSP_USING_SPI
 #define BSP_USING_SPI1
 #define BSP_USING_I2C
@@ -450,8 +450,7 @@
 
 /* STM32 Platform */
 
-#define SOC_STM32U535VE
-#define BOARD_STM32U535_NUCLEO
+#define SOC_STM32U575VI
 /* end of STM32 Platform */
 /* end of Encortec Application Config */
 

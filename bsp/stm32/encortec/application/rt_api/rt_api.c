@@ -1,11 +1,12 @@
 #include "common.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include "rt_api_addr.h"
 #include "rt_api_typedef.h"
 #include "rttypes.h"
 #include "logging.h"
-#include <stddef.h>
+#include "stm32u5xx_hal.h"
 #include <sys/stat.h>
 
 rt_err_t rt_thread_init(struct rt_thread *thread, const char *name, void (*entry)(void *parameter), void *parameter, void *stack_start, rt_uint32_t stack_size, rt_uint8_t priority, rt_uint32_t tick) {
@@ -1262,5 +1263,21 @@ int access(const char *path, int mode) {
 
 int stat(const char *path, struct stat *buf) {
     return ((stat_api_ptr_t)(stat_addr))(path, buf);
+}
+
+void HAL_SYSCFG_VREFBUF_VoltageScalingConfig(uint32_t VoltageScaling) {
+    return ((HAL_SYSCFG_VREFBUF_VoltageScalingConfig_api_ptr_t)(HAL_SYSCFG_VREFBUF_VoltageScalingConfig_addr))(VoltageScaling);
+}
+
+void HAL_SYSCFG_VREFBUF_HighImpedanceConfig(uint32_t Mode) {
+    return ((HAL_SYSCFG_VREFBUF_HighImpedanceConfig_api_ptr_t)(HAL_SYSCFG_VREFBUF_HighImpedanceConfig_addr))(Mode);
+}
+
+void HAL_SYSCFG_DisableVREFBUF(void) {
+    return ((HAL_SYSCFG_DisableVREFBUF_api_ptr_t)(HAL_SYSCFG_DisableVREFBUF_addr))();
+}
+
+HAL_StatusTypeDef HAL_SYSCFG_EnableVREFBUF(void) {
+    return ((HAL_SYSCFG_EnableVREFBUF_api_ptr_t)(HAL_SYSCFG_EnableVREFBUF_addr))();
 }
 

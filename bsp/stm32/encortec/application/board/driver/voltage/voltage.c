@@ -17,6 +17,7 @@
 #define VBAT_ADC_CHANNEL RT_ADC_INTERN_CH_VBAT
 static rt_adc_device_t adc_dev = RT_NULL;
 
+#ifdef BSP_USING_VERFBUF
 static void verfbuf_disable(void)
 {
     HAL_SYSCFG_DisableVREFBUF();
@@ -40,7 +41,7 @@ static rt_err_t verfbuf_enable(void)
         cnt--;
     } while (ret != HAL_OK && cnt > 0);
     etime = rt_tick_get_millisecond();
-    
+
     res = ret == HAL_OK ? RT_EOK : RT_ERROR;
     log_debug("HAL_SYSCFG_EnableVREFBUF %s", (res != RT_EOK ? "falied" : "success"));
     if (res != RT_EOK)
@@ -49,6 +50,7 @@ static rt_err_t verfbuf_enable(void)
     }
     return res;
 }
+#endif
 
 static rt_err_t adc_read_channel_vol(rt_int8_t channel, rt_uint32_t *value)
 {
@@ -80,6 +82,7 @@ static rt_err_t adc_read_channel_vol(rt_int8_t channel, rt_uint32_t *value)
     return res;
 }
 
+#ifdef BSP_USING_VERFBUF
 static rt_err_t adc_read_vol(rt_int8_t channel, float *value)
 {
     rt_err_t res;
@@ -104,44 +107,48 @@ static rt_err_t adc_read_vol(rt_int8_t channel, float *value)
 
     return res;
 }
+#else
+static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint16_t *value)
+{
+    rt_err_t res;
+    rt_adc_device_t adc_dev;
+    rt_uint16_t vol = 0;
 
-// static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint16_t *value)
-// {
-//     rt_err_t res;
-//     rt_adc_device_t adc_dev;
-//     rt_uint16_t vol = 0;
+    adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
+    log_error("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
+    res = !adc_dev ? RT_ERROR : RT_EOK;
+    if (res != RT_EOK)
+    {
+        return res;
+    }
 
-//     adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
-//     log_error("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
-//     res = !adc_dev ? RT_ERROR : RT_EOK;
-//     if (res != RT_EOK)
-//     {
-//         return res;
-//     }
+    /* vref 3305 */
+    vol = rt_adc_voltage(adc_dev, channel);
+    log_debug("rt_adc_voltage channel %d value %d", channel, vol);
+    res = vol > 0 ? RT_EOK : RT_ERROR;
+    if (res == RT_EOK)
+    {
+        *value = vol;
+    }
 
-//     /* vref 3305 */
-//     vol = rt_adc_voltage(adc_dev, channel);
-//     log_debug("rt_adc_voltage channel %d value %d", channel, vol);
-//     res = vol > 0 ? RT_EOK : RT_ERROR;
-//     if (res == RT_EOK)
-//     {
-//         *value = vol;
-//     }
-
-//     return res;
-// }
+    return res;
+}
+#endif
 
 rt_err_t cur_vol_read(rt_uint16_t *value)
 {
     rt_err_t res = RT_EOK;
-    // res = adc_vol_read((rt_int8_t)CUR_ADC_CHANNEL, value);
 
+#ifdef BSP_USING_VERFBUF
     float vol;
     res = adc_read_vol(CUR_ADC_CHANNEL, &vol);
     if (res == RT_EOK)
     {
         *value = (rt_uint16_t)(vol * 1000);
     }
+#else
+    res = adc_vol_read((rt_int8_t)CUR_ADC_CHANNEL, value);
+#endif
 
     return res;
 }
@@ -149,14 +156,17 @@ rt_err_t cur_vol_read(rt_uint16_t *value)
 rt_err_t vcap_vol_read(rt_uint16_t *value)
 {
     rt_err_t res = RT_EOK;
-    // res = adc_vol_read((rt_int8_t)VCAP_ADC_CHANNEL, value);
 
+#ifdef BSP_USING_VERFBUF
     float vol;
     res = adc_read_vol(VCAP_ADC_CHANNEL, &vol);
     if (res == RT_EOK)
     {
         *value = (rt_uint16_t)(vol * 1000);
     }
+#else
+    res = adc_vol_read((rt_int8_t)VCAP_ADC_CHANNEL, value);
+#endif
 
     return res;
 }
@@ -164,14 +174,18 @@ rt_err_t vcap_vol_read(rt_uint16_t *value)
 rt_err_t vbat_vol_read(rt_uint16_t *value)
 {
     rt_err_t res = RT_EOK;
-    // res = adc_vol_read((rt_int8_t)VBAT_ADC_CHANNEL, value);
-    // *value *= 4;
+
+#ifdef BSP_USING_VERFBUF
     float vol;
     res = adc_read_vol(VBAT_ADC_CHANNEL, &vol);
     if (res == RT_EOK)
     {
         *value = (rt_uint16_t)(vol * 4 * 1000);
     }
+#else
+    res = adc_vol_read((rt_int8_t)VBAT_ADC_CHANNEL, value);
+    *value *= 4;
+#endif
 
     return res;
 }
@@ -181,20 +195,35 @@ void test_read_voltage(int argc, char *argv[])
 {
     rt_err_t res;
     rt_uint16_t cur_vol = 0, vcap_vol = 0, vbat_vol = 0, vrefint_vol = 0;
+
+#ifdef BSP_USING_VERFBUF
+    res = verfbuf_enable();
+    log_debug("verfbuf_enable %s", res == RT_EOK ? "success" : "failed");
+#endif
+
     res = cur_vol_read(&cur_vol);
     log_debug("cur_vol_read %s, cur_vol %dmv", res == RT_EOK ? "success" : "failed", cur_vol);
     res = vcap_vol_read(&vcap_vol);
     log_debug("vcap_vol_read %s, vcap_vol %dmv", res == RT_EOK ? "success" : "failed", vcap_vol);
     res = vbat_vol_read(&vbat_vol);
     log_debug("vbat_vol_read %s, vbat_vol %dmv", res == RT_EOK ? "success" : "failed", vbat_vol);
+
+#ifdef BSP_USING_VERFBUF
+    verfbuf_disable();
+    log_debug("verfbuf_disable");
+#endif
 }
 
 // MSH_CMD_EXPORT(test_read_voltage, TEST READ voltage);
 
 static void test_adc_read(int argc, char *argv[])
 {
+#ifdef BSP_USING_VERFBUF
     rt_err_t res;
     float vol;
+
+    res = verfbuf_enable();
+    log_debug("verfbuf_enable %s", res == RT_EOK ? "success" : "failed");
 
     res = adc_read_vol(CUR_ADC_CHANNEL, &vol);
     log_debug("ADC READ CUR_ADC_CHANNEL=%d vol=%f", res, vol);
@@ -205,6 +234,10 @@ static void test_adc_read(int argc, char *argv[])
     res = adc_read_vol(VBAT_ADC_CHANNEL, &vol);
     vol *= 4;
     log_debug("ADC READ VBAT_ADC_CHANNEL=%d vol=%f", res, vol);
+
+    verfbuf_disable();
+    log_debug("verfbuf_disable");
+#endif
 }
 
 // MSH_CMD_EXPORT(test_adc_read, test adc read);

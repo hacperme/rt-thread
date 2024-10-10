@@ -284,3 +284,7 @@ getcwd
 rmdir
 access
 stat
+HAL_SYSCFG_VREFBUF_VoltageScalingConfig
+HAL_SYSCFG_VREFBUF_HighImpedanceConfig
+HAL_SYSCFG_DisableVREFBUF
+HAL_SYSCFG_EnableVREFBUF

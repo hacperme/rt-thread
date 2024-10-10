@@ -1,28 +1,48 @@
 /*
  * linker script for STM32L4XX with GNU ld
  */
+FLASH_ORIGIN = 0x08000000;
+FLASH_BANK1_SIZE = 1024K;
+FLASH_BANK2_SIZE = 1024K;
 
-BOOTLOADER_ROM_SIZE = 328K;
-APP_ROM_SIZE = 184K;
+SRAM1_ORIGIN = 0x20000000;
+SRAM1_SIZE = 192K;
+SRAM2_ORIGIN = 0x20030000;
+SRAM2_SIZE = 64K;
+SRAM3_ORIGIN = 0x20040000;
+SRAM3_SIZE = 512K;
 
-BOOTLOADER_RAM_SIZE = 24K;
-APP_RAM_SIZE = 40K;
+SRAM4_ORIGIN = 0x28000000;
+SRAM4_SIZE = 16K;
 
-HEAP_RAM_SIZE = 192K;
+BACK_SRAM_ORIGIN = 0x40036400;
+BACK_SRAM_SIZE = 2K;
+
+FLASH_ROM_SIZE = FLASH_BANK1_SIZE + FLASH_BANK2_SIZE;
+FLASH_RAM_SIZE = SRAM1_SIZE + SRAM2_SIZE + SRAM3_SIZE;
+
+BOOTLOADER_ROM_SIZE = 512K;
+DATA_ROM_SIZE = 16K;
+APP_ROM_SIZE = 760K;
+
+BOOTLOADER_RAM_SIZE = 64K;
+APP_RAM_SIZE = 64K;
+
+HEAP_RAM_SIZE = 640K;
 
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
 {
-    ROM (rx) : ORIGIN = 0x08000000, LENGTH = BOOTLOADER_ROM_SIZE
-    SRAM (rw) : ORIGIN = 0x20000000, LENGTH =  BOOTLOADER_RAM_SIZE
+    ROM (rx) : ORIGIN = FLASH_ORIGIN, LENGTH = BOOTLOADER_ROM_SIZE + DATA_ROM_SIZE
+    SRAM (rw) : ORIGIN = SRAM1_ORIGIN, LENGTH = BOOTLOADER_RAM_SIZE
 }
 ENTRY(Reset_Handler)
 _system_stack_size = 0x400;
 
 SECTIONS
 {
-    ASSERT(BOOTLOADER_ROM_SIZE + APP_ROM_SIZE <= 512K, "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
-    ASSERT(BOOTLOADER_RAM_SIZE + APP_RAM_SIZE + HEAP_RAM_SIZE <= 256K, "The combined RAM partitions of the Bootloader, App and heap exceed the total RAM size.")
+    ASSERT(BOOTLOADER_ROM_SIZE + DATA_ROM_SIZE + APP_ROM_SIZE <= FLASH_ROM_SIZE - APP_ROM_SIZE, "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
+    ASSERT(BOOTLOADER_RAM_SIZE + APP_RAM_SIZE + HEAP_RAM_SIZE <= FLASH_RAM_SIZE, "The combined RAM partitions of the Bootloader, App and heap exceed the total RAM size.")
 
     .text :
     {
@@ -83,6 +103,7 @@ SECTIONS
         KEEP(build\kernel\src\signal.o(.text*))
         KEEP(build\kernel\src\thread.o(.text*))
         KEEP(build\kernel\src\timer.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr_ex.o(.text*))
         KEEP(build\board\drivers\fatfs_nand_flash\drv_nand_flash.o(.text*))

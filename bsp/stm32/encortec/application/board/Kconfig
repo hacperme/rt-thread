@@ -48,31 +48,32 @@ endmenu
 
 menu "STM32 Platform"
 
-    config SOC_STM32U545RE
-        bool "SOC_STM32U545RE"
-        select SOC_SERIES_STM32U5
-        select RT_USING_COMPONENTS_INIT
-        select RT_USING_USER_MAIN
-        default y
+    choice
+        prompt "Select STM32 Platform"
+        default SOC_STM32U575VI
 
-    config BOARD_STM32U545_NUCLEO
-        bool "BOARD_STM32U545_NUCLEO"
-        select SOC_STM32U545RE
-        select BOARD_SERIES_STM32_NUCLEO_64
-        default y
+        config SOC_STM32U545RE
+            bool "SOC_STM32U545RE"
+            select SOC_SERIES_STM32U5
+            select RT_USING_COMPONENTS_INIT
+            select RT_USING_USER_MAIN
+            default n
 
-    config SOC_STM32U535VE
-        bool "SOC_STM32U535VE"
-        select SOC_SERIES_STM32U5
-        select RT_USING_COMPONENTS_INIT
-        select RT_USING_USER_MAIN
-        default n
+        config SOC_STM32U535VE
+            bool "SOC_STM32U535VE"
+            select SOC_SERIES_STM32U5
+            select RT_USING_COMPONENTS_INIT
+            select RT_USING_USER_MAIN
+            default n
 
-    config BOARD_STM32U535_NUCLEO
-        bool "BOARD_STM32U535_NUCLEO"
-        select SOC_STM32U535VE
-        select BOARD_SERIES_STM32_NUCLEO_64
-        default n
+        config SOC_STM32U575VI
+            bool "SOC_STM32U575VI"
+            select SOC_SERIES_STM32U5
+            select RT_USING_COMPONENTS_INIT
+            select RT_USING_USER_MAIN
+            default y
+
+    endchoice
 
 endmenu
 
