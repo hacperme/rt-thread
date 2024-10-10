@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include "settings.h"
 #include <math.h>
+#include <dirent.h>
 
 #include "logging.h"
 // #define DBG_TAG "business"
@@ -478,8 +479,20 @@ enum cat1_upload_file_status {
     CAT1_UPLOAD_FILE_ERROR
 };
 
-static int cat1_upload_file_retry_times = 0;
+int split_string_in_place(char *s)
+{
+    int lines = 0;
+    while (*s != '\0') {
+        if (*s == ',') {
+            *s = '\0';
+            lines++;
+        }
+        s++;
+    }
+    return lines + 1;
+}
 
+static int cat1_upload_file_retry_times = 0;
 extern int at_https_upload_file(const char *filename);
 int cat1_upload_file()
 {
@@ -491,20 +504,60 @@ int cat1_upload_file()
 
     rt_err_t result = RT_EOK;
 
-    // char *file_name = NULL;
-    // while (file_name = get_oldest_file_name(&fs)) {
-    //     log_debug("file name is: %s", file_name);
-    //     // 需要上报
-    //     // if (at_http_upload_file_chunked(file_name) == -1) {
-    //     if (at_https_upload_file(file_name) == -1) {
-    //         log_debug("at http upload file failed");
-    //         return CAT1_UPLOAD_FILE_FAILED;
-    //     }
-    //     else {
-    //         delete_oldest_file(&fs);
-    //         log_debug("at http upload '%s' success", file_name);
-    //     }
-    // }
+    char parent_dir[20] = {0};
+    memset(parent_dir, 0, sizeof(parent_dir));
+    if (server_ctrl_data.Cat1_File_Upload_File_Type == 1) {  // 数据文件
+        strcat(parent_dir, "/data");
+    }
+    else if (server_ctrl_data.Cat1_File_Upload_File_Type == 2) { // 系统文件
+        strcat(parent_dir, "/log");
+    }
+    else {
+
+    }
+
+    log_debug("cat1 upload file parent_dir dir: %s", parent_dir);
+    int nums = split_string_in_place(server_ctrl_data.Cat1_File_Upload_File_Times);
+    log_debug("got sub dir nums: %d", nums);
+
+    char *sub_dir = server_ctrl_data.Cat1_File_Upload_File_Times;
+    char target_dir[128] = {0};
+    char upload_file_path[128] = {0};
+    DIR *dir;
+    struct dirent *ent;
+    for (int i=1; i <= nums; i++) {
+        log_debug("got sub_dir %d: %s", i, sub_dir);
+        if (!strlen(sub_dir)) {
+            continue;
+        }
+
+        memset(target_dir, 0, sizeof(target_dir));
+        sprintf(target_dir, "%s/%s", parent_dir, sub_dir);
+        log_debug("got target dir: %s", target_dir);
+
+        // 遍历文件 for test
+        // list_files(target_dir);
+        log_debug("----- uploading dir \"%s\" files: ------", target_dir);
+        if ((dir = opendir(target_dir)) != NULL) {
+            while ((ent = readdir(dir)) != NULL) {
+                memset(upload_file_path, 0, sizeof(upload_file_path));
+                sprintf(upload_file_path, "%s/%s", target_dir, ent->d_name);
+                log_debug("uploading file \"%s\", %d Bytes", upload_file_path, get_file_size(upload_file_path));
+
+                if (at_https_upload_file(upload_file_path) == -1) {
+                    log_debug("at https upload file failed");
+                }
+                else {
+                    log_debug("at https upload \"%s\" success", upload_file_path);
+                }
+
+            }
+            closedir(dir);
+        }
+        log_debug("----- uploading dir \"%s\" completed ------", target_dir);
+
+        sub_dir += (strlen(sub_dir) + 1);
+    }
 
     return CAT1_UPLOAD_FILE_SUCCESS;
 }
@@ -625,6 +678,9 @@ void save_sensor_data()
             }
         }
     }
+
+    // 删除超过30天的文件
+    delete_old_dirs(&fs);
 }
 
 static rt_mq_t sm_mq = NULL;

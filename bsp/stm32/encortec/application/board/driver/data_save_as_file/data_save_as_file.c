@@ -321,11 +321,15 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
 }
 
 void list_files(const char *path) {
+    char temp[128] = {0};
     DIR *dir;
     struct dirent *ent;
+    rt_kprintf("----- list dir \"%s\": ------\n", path);
     if ((dir = opendir(path)) != NULL) {
         while ((ent = readdir(dir)) != NULL) {
-            rt_kprintf("%s    %d Bytes\r\n", ent->d_name, get_file_size(ent->d_name));
+            memset(temp, 0, sizeof(temp));
+            sprintf(temp, "%s/%s", path, ent->d_name);
+            rt_kprintf("%s    %d Bytes\r\n", ent->d_name, get_file_size(temp));
         }
         closedir(dir);
     }
@@ -421,7 +425,7 @@ void delete_old_dirs(struct FileSystem *fs)
         log_debug("oldest_dir timestamp: %d\n", timestamp);
 
         if (cur_timestamp - timestamp > fs->save_period * 86400) {
-            log_debug("oldest_dir \"%s\" over 30 days, will be deleted", oldest_dir);
+            log_debug("oldest_dir \"%s\" expired, will be deleted", oldest_dir);
             sprintf(temp_path, "%s/%s", fs->base, oldest_dir);
             delete_directory(temp_path);
             data_save_as_file_info_refresh(fs);
