@@ -710,19 +710,19 @@ rt_err_t nbiot_report_ctrl_data(const char *data, rt_size_t length)
     rt_thread_mdelay(500);  // After the > response, it is recommended for the MCU to wait for 500 ms before sending the data.
 
     rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-    QIOT_DATA_RECV_EVENT_CODE = -1;
+    QIOT_DATA_SEND_EVENT_CODE = -1;
     rt_mutex_release(&qiot_event_mutex);
     at_client_obj_send(client, data, length);
     at_client_obj_send(client, "\x1A", 1);
 
     for (int i=0; i < 30; i++) {
         rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-        if (QIOT_DATA_RECV_EVENT_CODE == -1) {
+        if (QIOT_DATA_SEND_EVENT_CODE == -1) {
             rt_mutex_release(&qiot_event_mutex);
             rt_thread_mdelay(1000);
             continue;
         }
-        if (QIOT_DATA_RECV_EVENT_CODE == 10210) {
+        if (QIOT_DATA_SEND_EVENT_CODE == 10210) {
             rt_mutex_release(&qiot_event_mutex);
             at_delete_resp(resp);
             return RT_EOK;
@@ -781,20 +781,19 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
             log_debug("recv ctrl data from server: %s", data);
             cJSON *root = cJSON_Parse(data);
             if (root != NULL) {
-                log_debug("cJSON: %s", cJSON_Print(root));
                 cJSON *collect_interval_item = cJSON_GetObjectItem(root, "12");
                 if (collect_interval_item != NULL) {
                     log_debug("key: %s, value: %d", collect_interval_item->string, collect_interval_item->valueint);
                     server_ctrl_data_ptr->CollectInterval = collect_interval_item->valueint;
                     got_collect_interval_item_flag = 1;
                 }
-                cJSON *cat1_upload_file_item = cJSON_GetObjectItem(root, "13");
+                cJSON *cat1_upload_file_item = cJSON_GetObjectItem(root, "21");
                 if (cat1_upload_file_item != NULL) {
                     log_debug("key: %s, value: %d", cat1_upload_file_item->string, cat1_upload_file_item->valueint);
-                    server_ctrl_data_ptr->Cat1FileUpload = cat1_upload_file_item->valueint;
+                    server_ctrl_data_ptr->Esp32_AP_Switch = cat1_upload_file_item->valueint;
                     got_cat1_upload_file_item = 1;
                 }
-                cJSON_free(root);
+                cJSON_Delete(root);
             }
         }
         
@@ -895,4 +894,73 @@ rt_err_t nbiot_set_qiotlocext(char *nmea_string)
     log_error("set qiotlocext result: %d\n", result);
     at_delete_resp(resp);
     return result;
+}
+
+//NOTE: Returns a heap allocated string, you are required to free it after use.
+char *create_monitor_with_helpers(void)
+{
+    const unsigned int resolution_numbers[3][2] = {
+        {1280, 720},
+        {1920, 1080},
+        {3840, 2160}
+    };
+    char *string = NULL;
+    cJSON *resolutions = NULL;
+    size_t index = 0;
+
+    cJSON *monitor = cJSON_CreateObject();
+
+    cJSON_AddBoolToObject(monitor, "13", 0);
+    cJSON_AddBoolToObject(monitor, "14", 1);
+
+    cJSON *wifi_config = cJSON_CreateObject();
+    cJSON_AddStringToObject(wifi_config, "1", "encortec-411986");
+    cJSON_AddStringToObject(wifi_config, "2", "123456");
+    cJSON_AddItemToObject(monitor, "3", wifi_config);
+
+    if (cJSON_AddStringToObject(monitor, "name", "Awesome 4K") == NULL)
+    {
+        goto end;
+    }
+
+    resolutions = cJSON_AddArrayToObject(monitor, "resolutions");
+    if (resolutions == NULL)
+    {
+        goto end;
+    }
+
+    for (index = 0; index < (sizeof(resolution_numbers) / (2 * sizeof(int))); ++index)
+    {
+        cJSON *resolution = cJSON_CreateObject();
+
+        if (cJSON_AddNumberToObject(resolution, "width", resolution_numbers[index][0]) == NULL)
+        {
+            goto end;
+        }
+
+        if (cJSON_AddNumberToObject(resolution, "height", resolution_numbers[index][1]) == NULL)
+        {
+            goto end;
+        }
+
+        cJSON_AddItemToArray(resolutions, resolution);
+    }
+
+    // string = cJSON_Print(monitor);
+    string = cJSON_PrintUnformatted(monitor);
+    if (string == NULL)
+    {
+        fprintf(stderr, "Failed to print monitor.\n");
+    }
+
+end:
+    cJSON_Delete(monitor);
+    return string;
+}
+
+void test_cJSON()
+{
+    rt_kprintf("--------- test cJSON --------\n");
+    rt_kprintf("parse string:\n%s\n", create_monitor_with_helpers());
+    rt_kprintf("-----------------------------\n");
 }

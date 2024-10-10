@@ -325,12 +325,28 @@ int nbiot_report_ctrl_data_to_server()
     nbiot_report_ctrl_retry_times += 1;
 
     log_debug("nbiot report ctrl data to server");
-    char data[128] = {0};
-    snprintf(data, 128, "{\"12\":%d,\"13\":false}", settings_params->collect_interval);
-    if (nbiot_report_ctrl_data(data, rt_strlen(data)) == RT_EOK) {
+
+    cJSON *data = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data, "12", settings_params->collect_interval);  // Cat1 Collect Interval
+
+    // WIFI_Config
+    cJSON *wifi_config = cJSON_CreateObject();
+    cJSON_AddStringToObject(wifi_config, "1", "encortec-411986");
+    cJSON_AddStringToObject(wifi_config, "2", "123456");
+    cJSON_AddItemToObject(data, "3", wifi_config);
+
+    cJSON_AddBoolToObject(data, "21", 0);  // ESP32 AP Switch
+    
+    char *data_string = cJSON_PrintUnformatted(data);
+    cJSON_Delete(data);
+
+    rt_err_t result = nbiot_report_ctrl_data(data_string, rt_strlen(data_string));
+    free(data_string);
+
+    if (result == RT_EOK) {
         nbiot_recv_ctrl_data(64, &server_ctrl_data);  // read ctrl data from server
         log_debug("server_ctrl_data.CollectInterval: %d", server_ctrl_data.CollectInterval);
-        log_debug("server_ctrl_data.Cat1FileUpload: %d", server_ctrl_data.Cat1FileUpload);
+        log_debug("server_ctrl_data.Esp32_AP_Switch: %d", server_ctrl_data.Esp32_AP_Switch);
         log_debug("report ctrl data to server success, goto, report sensor data");
         settings_params_t p = {0};
         if (server_ctrl_data.CollectInterval != 0) {
@@ -377,49 +393,32 @@ int nbiot_report_sensor_data_to_server()
         log_debug("nmea_buf char is NULL");
     }
 
-    char data_string[1024] = {0};
-    if (wakeup_source_flag != RTC_SOURCE) {
-        snprintf(
-            data_string, 
-            sizeof(data_string), 
-            "{" \
-            "\"1\":%f,\"5\":%f,\"11\":%f,\"2\":%f,\"6\":%f,\"7\":%f,\"8\":%f," \
-            "\"9\":%f,\"10\":%f,\"15\":%f,\"16\":%d,\"17\":%d,\"18\":%d,\"14\":%d," \
-            "\"20\":%d,\"21\":%s,\"3\":{\"1\":\"%s\",\"2\":\"%s\"}" \
-            "}",
-            sensor_data.temp1, 
-            sensor_data.temp2, 
-            sensor_data.temp3, 
-            sensor_data.humi, 
-            sensor_data.lat, 
-            sensor_data.lng, 
-            sensor_data.acc_x, 
-            sensor_data.acc_y, 
-            sensor_data.acc_z,
-            sensor_data.water_level,
-            sensor_data.cur_vol,
-            sensor_data.vcap_vol,
-            sensor_data.vbat_vol,
-            wakeup_source_flag,
-            21,
-            "true",
-            "abcdefghij",
-            "0213456789"
-        );
-    }
-    else {
-        snprintf(
-            data_string, 
-            sizeof(data_string), 
-            "{\"1\":%f,\"5\":%f,\"11\":%f,\"2\":%f,\"14\":%d}",
-            sensor_data.temp1, 
-            sensor_data.temp2, 
-            sensor_data.temp3, 
-            sensor_data.humi,
-            wakeup_source_flag
-        );
-    }
-    if (nbiot_report_model_data(data_string, rt_strlen(data_string)) == RT_EOK) {
+    cJSON *data = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data, "1", sensor_data.temp1);  // Rail temperature 1
+    cJSON_AddNumberToObject(data, "5", sensor_data.temp2);  // Rail temperature 2
+    cJSON_AddNumberToObject(data, "11", sensor_data.temp3);  // Air temperature
+    cJSON_AddNumberToObject(data, "2", sensor_data.humi);  // Humidity
+    cJSON_AddNumberToObject(data, "14", wakeup_source_flag);  // Wake up Source Flag
+    
+    // Acceleration
+    cJSON *acc = cJSON_CreateObject();
+    cJSON_AddNumberToObject(acc, "1", sensor_data.acc_x);
+    cJSON_AddNumberToObject(acc, "2", sensor_data.acc_y);
+    cJSON_AddNumberToObject(acc, "3", sensor_data.acc_z);
+    cJSON_AddItemToObject(data, "19", acc);
+
+    cJSON_AddNumberToObject(data, "15", sensor_data.water_level);  // Water Level
+    cJSON_AddNumberToObject(data, "16", sensor_data.cur_vol);  // Conversion voltage
+    cJSON_AddNumberToObject(data, "17", sensor_data.vcap_vol);  // Capacitance voltage
+    cJSON_AddNumberToObject(data, "18", sensor_data.vbat_vol);  // Battery voltage
+    cJSON_AddNumberToObject(data, "20", 26);  // NB RSSI
+
+    char *data_string = cJSON_PrintUnformatted(data);
+    rt_err_t result = nbiot_report_model_data(data_string, rt_strlen(data_string));
+    cJSON_Delete(data);
+    free(data_string);
+
+    if (result == RT_EOK) {
         return NBIOT_REPORT_SENSOR_DATA_SUCCESS;
     }
     else {
@@ -488,7 +487,6 @@ int cat1_upload_file()
     cat1_upload_file_retry_times += 1;
 
     rt_err_t result = RT_EOK;
-    log_debug("cat1 upload file, Cat1FileUpload: %d", server_ctrl_data.Cat1FileUpload);
 
     // char *file_name = NULL;
     // while (file_name = get_oldest_file_name(&fs)) {
