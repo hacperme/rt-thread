@@ -328,6 +328,7 @@ int nbiot_report_ctrl_data_to_server()
 
     cJSON *data = cJSON_CreateObject();
     cJSON_AddNumberToObject(data, "12", settings_params->collect_interval);  // Cat1 Collect Interval
+    cJSON_AddStringToObject(data, "4", "null");  // Cat1 File Upload
 
     // WIFI_Config
     cJSON *wifi_config = cJSON_CreateObject();
@@ -347,6 +348,8 @@ int nbiot_report_ctrl_data_to_server()
         nbiot_recv_ctrl_data(64, &server_ctrl_data);  // read ctrl data from server
         log_debug("server_ctrl_data.CollectInterval: %d", server_ctrl_data.CollectInterval);
         log_debug("server_ctrl_data.Esp32_AP_Switch: %d", server_ctrl_data.Esp32_AP_Switch);
+        log_debug("server_ctrl_data.Cat1_File_Upload_File_Times: %s", server_ctrl_data.Cat1_File_Upload_File_Times);
+        log_debug("server_ctrl_data.Cat1_File_Upload_File_Type: %d", server_ctrl_data.Cat1_File_Upload_File_Type);
         log_debug("report ctrl data to server success, goto, report sensor data");
         settings_params_t p = {0};
         if (server_ctrl_data.CollectInterval != 0) {

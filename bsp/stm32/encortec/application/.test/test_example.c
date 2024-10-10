@@ -76,10 +76,7 @@ int application_start(int argc, char *argv[]) {
 
     extern void main_business_entry(void);
     main_business_entry();
-
-    // extern void test_cJSON(void);
-    // test_cJSON();
-
+    
     return 0;
 }
 #endif

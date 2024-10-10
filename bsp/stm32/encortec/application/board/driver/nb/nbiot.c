@@ -1,6 +1,7 @@
 #include "nbiot.h"
 #include <stdio.h>
 #include "cJSON.h"
+#include <string.h>
 
 #include "logging.h"
 // #define DBG_TAG "nbiot"
@@ -756,7 +757,9 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
 
     int retry_times = 0;
     int got_collect_interval_item_flag = 0;
-    int got_cat1_upload_file_item = 0;
+    int got_cat1_upload_file_type = 0;
+    int got_cat1_upload_file_times = 0;
+    int got_esp32_ap_switch_item_flag = 0;
     while (1) {
         int cur_len = 0;
         int remain_len = 0;
@@ -787,17 +790,29 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
                     server_ctrl_data_ptr->CollectInterval = collect_interval_item->valueint;
                     got_collect_interval_item_flag = 1;
                 }
-                cJSON *cat1_upload_file_item = cJSON_GetObjectItem(root, "21");
-                if (cat1_upload_file_item != NULL) {
-                    log_debug("key: %s, value: %d", cat1_upload_file_item->string, cat1_upload_file_item->valueint);
-                    server_ctrl_data_ptr->Esp32_AP_Switch = cat1_upload_file_item->valueint;
-                    got_cat1_upload_file_item = 1;
+                cJSON *esp32_ap_switch_item = cJSON_GetObjectItem(root, "21");
+                if (esp32_ap_switch_item != NULL) {
+                    log_debug("key: %s, value: %d", esp32_ap_switch_item->string, esp32_ap_switch_item->valueint);
+                    server_ctrl_data_ptr->Esp32_AP_Switch = esp32_ap_switch_item->valueint;
+                    got_esp32_ap_switch_item_flag = 1;
+                }
+                cJSON *cat1_upload_file_times = cJSON_GetObjectItem(root, "4");
+                if (cat1_upload_file_times != NULL) {
+                    log_debug("key: %s, value: %s", cat1_upload_file_times->string, cat1_upload_file_times->valuestring);
+                    strcat(server_ctrl_data_ptr->Cat1_File_Upload_File_Times, cat1_upload_file_times->valuestring);
+                    got_cat1_upload_file_times = 1;
+                }
+                cJSON *cat1_upload_file_type = cJSON_GetObjectItem(root, "6");
+                if (cat1_upload_file_type != NULL) {
+                    log_debug("key: %s, value: %d", cat1_upload_file_type->string, cat1_upload_file_type->valueint);
+                    server_ctrl_data_ptr->Cat1_File_Upload_File_Type = cat1_upload_file_type->valueint;
+                    got_cat1_upload_file_type = 1;
                 }
                 cJSON_Delete(root);
             }
         }
         
-        if (got_cat1_upload_file_item && got_collect_interval_item_flag) {
+        if (got_collect_interval_item_flag && got_esp32_ap_switch_item_flag && got_cat1_upload_file_times && got_cat1_upload_file_type) {
             log_debug("got cat1_upload_file_item and collect_interval_item");
             break;
         }
