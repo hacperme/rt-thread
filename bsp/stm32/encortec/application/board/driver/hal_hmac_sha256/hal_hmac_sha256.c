@@ -18,6 +18,11 @@ static rt_uint8_t hal_hmac_sha256_init_over = 0;
 rt_err_t hal_hmac_sha256_init(void)
 {
     rt_err_t res = RT_ERROR;
+    if (hal_hmac_sha256_init_over == 1)
+    {
+        res = RT_EOK;
+        return res;
+    }
 
     res = rt_mutex_init(&hal_hmac_sha256_mutex, "hhs256", RT_IPC_FLAG_PRIO);
     hal_hmac_sha256_init_over = res == RT_EOK ? 1 : 0;
@@ -45,6 +50,21 @@ rt_err_t hal_hmac_sha256(rt_uint8_t *key, rt_uint32_t key_length, rt_uint8_t *in
     rt_err_t res = RT_ERROR;
     if (hal_hmac_sha256_init_over == 0)
     {
+        return res;
+    }
+    if (key == RT_NULL || (key != RT_NULL && key_length == 0))
+    {
+        res = RT_EINVAL;
+        return res;
+    }
+    if (input == RT_NULL || (input != RT_NULL && input_length == 0))
+    {
+        res = RT_EINVAL;
+        return res;
+    }
+    if (output == RT_NULL)
+    {
+        res = RT_EINVAL;
         return res;
     }
 
