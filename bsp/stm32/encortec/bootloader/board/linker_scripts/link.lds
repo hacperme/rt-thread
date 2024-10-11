@@ -106,6 +106,7 @@ SECTIONS
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr_ex.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_hash.o(.text*))
         KEEP(build\board\drivers\fatfs_nand_flash\drv_nand_flash.o(.text*))
         KEEP(build\board\drivers\fatfs_nand_flash\drv_fatfs_dhara_nand.o(.text*))
         KEEP(build\kernel\components\dfs\dfs_v1\src\dfs_posix.o(.text*))

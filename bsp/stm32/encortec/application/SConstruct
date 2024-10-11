@@ -86,7 +86,7 @@ driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/tmp116"),
     os.path.join(SDK_ROOT, "application/board/driver/voltage"),
     os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
-    os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
+    os.path.join(SDK_ROOT, "application/board/driver/hal_hmac_sha256"),
 ]
 CPPPATH += driver_cpppath
 
@@ -154,6 +154,7 @@ driver_c_files = [
     "board/driver/cat1/hmac_sha256.c",
     "board/driver/cat1/sha256.c",
     "board/driver/nb/nbiot.c",
+    "board/driver/hal_hmac_sha256/hal_hmac_sha256.c",
 ]
 
 cloud_c_files = [

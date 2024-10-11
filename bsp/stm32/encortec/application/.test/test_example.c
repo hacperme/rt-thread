@@ -28,26 +28,29 @@ static fdnfs_init_status_e mnt_status;
 int application_start(int argc, char *argv[]) {
     app_log_init();
 
-    rt_err_t res;
-    res = rt_sem_init(&mnt_sem, "mntsem", 0, RT_IPC_FLAG_PRIO);
-    log_debug("rt_sem_init mntsem res=%d", res);
-    if (res != RT_EOK)
-    {
-        return -1;
-    }
+    // rt_err_t res;
+    // res = rt_sem_init(&mnt_sem, "mntsem", 0, RT_IPC_FLAG_PRIO);
+    // log_debug("rt_sem_init mntsem res=%d", res);
+    // if (res != RT_EOK)
+    // {
+    //     return -1;
+    // }
 
-    fatfs_dhara_nand_init(fatfs_dhara_nand_mnt_cb, &mnt_status);
+    // fatfs_dhara_nand_init(fatfs_dhara_nand_mnt_cb, &mnt_status);
 
-    res = rt_sem_take(&mnt_sem, RT_WAITING_FOREVER);
+    // res = rt_sem_take(&mnt_sem, RT_WAITING_FOREVER);
 
-    if (res == RT_EOK)
-    {
-        // extern void data_save_as_file_test();
-        // data_save_as_file_test();
+    // if (res == RT_EOK)
+    // {
+    //     // extern void data_save_as_file_test();
+    //     // data_save_as_file_test();
 
-        extern void test_fs_option(void);
-        test_fs_option();
-    }
+    //     extern void test_fs_option(void);
+    //     test_fs_option();
+    // }
+
+    extern void test_hal_hmac_sha256(void);
+    test_hal_hmac_sha256();
 
     // extern void test_adxl372(int argc, char **argv);
     // test_adxl372(argc, argv);
@@ -64,8 +67,8 @@ int application_start(int argc, char *argv[]) {
     // extern rt_err_t test_temp116(void);
     // test_temp116();
 
-    extern void test_read_voltage(int argc, char *argv[]);
-    test_read_voltage(argc, argv);
+    // extern void test_read_voltage(int argc, char *argv[]);
+    // test_read_voltage(argc, argv);
 
     // extern void test_rtc(void);
     // rt_thread_mdelay(5 * 1000);

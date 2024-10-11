@@ -302,4 +302,7 @@ typedef void (*HAL_SYSCFG_VREFBUF_VoltageScalingConfig_api_ptr_t)(uint32_t Volta
 typedef void (*HAL_SYSCFG_VREFBUF_HighImpedanceConfig_api_ptr_t)(uint32_t Mode);
 typedef void (*HAL_SYSCFG_DisableVREFBUF_api_ptr_t)(void);
 typedef HAL_StatusTypeDef (*HAL_SYSCFG_EnableVREFBUF_api_ptr_t)(void);
+typedef HAL_StatusTypeDef (*HAL_HASH_Init_api_ptr_t)(HASH_HandleTypeDef *hhash);
+typedef HAL_StatusTypeDef (*HAL_HASH_DeInit_api_ptr_t)(HASH_HandleTypeDef *hhash);
+typedef HAL_StatusTypeDef (*HAL_HMACEx_SHA256_Start_api_ptr_t)(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout);
 #endif

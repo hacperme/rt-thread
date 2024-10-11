@@ -1281,3 +1281,15 @@ HAL_StatusTypeDef HAL_SYSCFG_EnableVREFBUF(void) {
     return ((HAL_SYSCFG_EnableVREFBUF_api_ptr_t)(HAL_SYSCFG_EnableVREFBUF_addr))();
 }
 
+HAL_StatusTypeDef HAL_HASH_Init(HASH_HandleTypeDef *hhash) {
+    return ((HAL_HASH_Init_api_ptr_t)(HAL_HASH_Init_addr))(hhash);
+}
+
+HAL_StatusTypeDef HAL_HASH_DeInit(HASH_HandleTypeDef *hhash) {
+    return ((HAL_HASH_DeInit_api_ptr_t)(HAL_HASH_DeInit_addr))(hhash);
+}
+
+HAL_StatusTypeDef HAL_HMACEx_SHA256_Start(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout) {
+    return ((HAL_HMACEx_SHA256_Start_api_ptr_t)(HAL_HMACEx_SHA256_Start_addr))(hhash, pInBuffer, Size, pOutBuffer, Timeout);
+}
+
