@@ -146,7 +146,7 @@ rt_err_t nbiot_at_client_init(void)
 
     return result;
 }
-MSH_CMD_EXPORT(nbiot_at_client_init, nbiot_at_client_init);
+// MSH_CMD_EXPORT(nbiot_at_client_init, nbiot_at_client_init);
 
 rt_err_t nbiot_disable_sleep_mode()
 {
@@ -181,7 +181,7 @@ ERROR:
     at_delete_resp(resp);
     return result;
 }
-MSH_CMD_EXPORT(nbiot_disable_sleep_mode, nbiot_disable_sleep_mode);
+// MSH_CMD_EXPORT(nbiot_disable_sleep_mode, nbiot_disable_sleep_mode);
 
 rt_err_t nbiot_enable_sleep_mode()
 {
@@ -210,7 +210,7 @@ rt_err_t nbiot_enable_sleep_mode()
     at_delete_resp(resp);
     return result;
 }
-MSH_CMD_EXPORT(nbiot_enable_sleep_mode, nbiot_enable_sleep_mode);
+// MSH_CMD_EXPORT(nbiot_enable_sleep_mode, nbiot_enable_sleep_mode);
 
 rt_err_t nbiot_enable_echo(int enable)
 {
@@ -561,7 +561,7 @@ rt_err_t nbiot_lwm2m_register()
     at_delete_resp(resp);
     return RT_ERROR;
 }
-MSH_CMD_EXPORT(nbiot_lwm2m_register, nbiot_lwm2m_register);
+// MSH_CMD_EXPORT(nbiot_lwm2m_register, nbiot_lwm2m_register);
 
 rt_err_t nbiot_lwm2m_deregister()
 {
@@ -591,7 +591,7 @@ rt_err_t nbiot_lwm2m_deregister()
     at_delete_resp(resp);
     return result;
 }
-MSH_CMD_EXPORT(nbiot_lwm2m_deregister, nbiot_lwm2m_deregister);
+// MSH_CMD_EXPORT(nbiot_lwm2m_deregister, nbiot_lwm2m_deregister);
 
 rt_err_t nbiot_check_qiotstate(int retry_times)
 {
@@ -628,7 +628,7 @@ rt_err_t nbiot_check_qiotstate(int retry_times)
     at_delete_resp(resp);  // after at_resp_parse_line_args, delete resp will cause dump
     return RT_ERROR;
 }
-MSH_CMD_EXPORT(nbiot_check_qiotstate, nbiot_check_qiotstate);
+// MSH_CMD_EXPORT(nbiot_check_qiotstate, nbiot_check_qiotstate);
 
 rt_err_t nbiot_report_model_data(const char *data, rt_size_t length)
 {
