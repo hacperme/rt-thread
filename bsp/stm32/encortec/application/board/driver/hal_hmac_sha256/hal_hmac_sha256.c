@@ -96,4 +96,18 @@ void test_hal_hmac_sha256(void)
             log_debug("%02X", output_buf[i]);
         }
     }
+
+    for (i = 0; i < 32; i++)
+    {
+        input_buf[i] = i + 32;
+    }
+    res = hal_hmac_sha256(key_buf, 4, input_buf, 32, output_buf);
+    log_debug("hal_hmac_sha256 %s", res == RT_EOK ? "success" : "failed");
+    if (res == RT_EOK)
+    {
+        for (i = 0; i < 32; i++)
+        {
+            log_debug("%02X", output_buf[i]);
+        }
+    }
 }
