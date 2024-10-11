@@ -81,4 +81,6 @@ rt_err_t nbiot_get_current_datetime(datetime_t dt);
 
 rt_err_t nbiot_set_qiotlocext(char *nmea_string);
 
+rt_err_t get_nbiot_imei(char *output);
+
 #endif

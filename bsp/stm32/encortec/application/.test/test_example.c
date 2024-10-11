@@ -74,15 +74,12 @@ int application_start(int argc, char *argv[]) {
     // extern void data_save_as_file_test();
     // data_save_as_file_test();
 
-    // extern void main_business_entry(void);
-    // main_business_entry();
+    extern void main_business_entry(void);
+    main_business_entry();
 
     // extern void list_files(const char *path);
     // list_files("/data/20241010");
 
-    extern int delete_directory(const char *dir);
-    delete_directory("/data");
-    
     return 0;
 }
 #endif

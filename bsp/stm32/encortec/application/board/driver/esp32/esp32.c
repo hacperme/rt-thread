@@ -13,7 +13,7 @@ static struct at_urc esp32_urc_table[] = {
     {"+QIOTEVT: ", "\r\n", es32_urc_example_handler},
 };
 
-rt_err_t nbiot_at_client_init(void)
+rt_err_t esp32_at_client_init(void)
 {
     rt_err_t result = RT_EOK;
 
@@ -53,4 +53,206 @@ rt_err_t nbiot_at_client_init(void)
     return result;
 }
 
+// AT+CWSAP=<ssid>,<pwd>,<chl>,<ecn>[,<max conn>][,<ssid hidden>]
+rt_err_t esp32_cwsap(const char *ssid, const char *pwd, int chl, int ecn, int max_conn, int ssid_hidden)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
 
+    client = at_client_get(ESP32_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("esp32 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_debug("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(
+        client, 
+        resp, 
+        "AT+CWSAP=%s,%s,%d,%d,%d,%d",
+        ssid, pwd, chl, ecn, max_conn, ssid_hidden
+    );
+    if (result != RT_EOK) {
+        log_debug("at_obj_exec_cmd AT+CWSAP failed");
+        goto ERROR;
+    }
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}
+
+// AT+CWINIT=<init>
+rt_err_t esp32_cwinit(int flag)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get(ESP32_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("esp32 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_debug("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(
+        client, 
+        resp, 
+        "AT+CWINIT=%d",
+        flag
+    );
+    if (result != RT_EOK) {
+        log_debug("at_obj_exec_cmd AT+CWINIT failed");
+        goto ERROR;
+    }
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}
+
+// AT+CWMODE=<mode>[,<auto_connect>]
+rt_err_t esp32_cwmode(int mode, int auto_connect)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get(ESP32_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("esp32 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_debug("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(
+        client, 
+        resp, 
+        "AT+CWMODE=%d,%d",
+        mode, auto_connect
+    );
+    if (result != RT_EOK) {
+        log_debug("at_obj_exec_cmd AT+CWMODE failed");
+        goto ERROR;
+    }
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}
+
+// AT+QDK=<dk_str>
+rt_err_t esp32_qdk(const char *dk_str)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get(ESP32_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("esp32 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_debug("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(
+        client, 
+        resp, 
+        "AT+QDK=%s",
+        dk_str
+    );
+    if (result != RT_EOK) {
+        log_debug("at_obj_exec_cmd AT+QDK failed");
+        goto ERROR;
+    }
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}
+
+// AT+QTRANSF=<start>
+rt_err_t esp32_qtransf(int start)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get(ESP32_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("esp32 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_debug("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(
+        client, 
+        resp, 
+        "AT+QTRANSF=%d",
+        start
+    );
+    if (result != RT_EOK) {
+        log_debug("at_obj_exec_cmd AT+QTRANSF failed");
+        goto ERROR;
+    }
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}
+
+// AT+QOTA=<ota_file_path>
+rt_err_t esp32_qota(const char *ota_file_path)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get(ESP32_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("esp32 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_debug("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(
+        client, 
+        resp, 
+        "AT+QOTA=%s",
+        ota_file_path
+    );
+    if (result != RT_EOK) {
+        log_debug("at_obj_exec_cmd AT+QOTA failed");
+        goto ERROR;
+    }
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}

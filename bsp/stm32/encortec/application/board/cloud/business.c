@@ -317,6 +317,7 @@ enum nbiot_report_ctrl_data_status {
     NBIOT_REPORT_CTRL_DATA_RETRY
 };
 
+char nbiot_imei_string[16] = {0};
 int nbiot_report_ctrl_data_to_server()
 {
     if (nbiot_report_ctrl_retry_times >= 3) {
@@ -332,9 +333,18 @@ int nbiot_report_ctrl_data_to_server()
     cJSON_AddStringToObject(data, "4", "null");  // Cat1 File Upload
 
     // WIFI_Config
+    if (strlen(nbiot_imei_string) == 0) {
+        if (get_nbiot_imei(nbiot_imei_string) != RT_EOK) {
+            memset(nbiot_imei_string, 0, sizeof(nbiot_imei_string));
+            memcpy(nbiot_imei_string, "123456", 6);
+        }
+    }
+    char ssid_string[64] = {0};
+    sprintf(ssid_string, "encortec-%s", nbiot_imei_string + 9);
+    char pwd_string[64] = "123456";
     cJSON *wifi_config = cJSON_CreateObject();
-    cJSON_AddStringToObject(wifi_config, "1", "encortec-411986");
-    cJSON_AddStringToObject(wifi_config, "2", "123456");
+    cJSON_AddStringToObject(wifi_config, "1", ssid_string);
+    cJSON_AddStringToObject(wifi_config, "2", pwd_string);
     cJSON_AddItemToObject(data, "3", wifi_config);
 
     cJSON_AddBoolToObject(data, "21", 0);  // ESP32 AP Switch
