@@ -241,7 +241,9 @@ static rt_err_t gnss_power_on(void)
 
 static rt_err_t gnss_power_off(void)
 {
-    return gnss_pwron_pin_enable(0);
+    rt_err_t res = gnss_pwron_pin_enable(0);
+    log_debug("gnss_power_off %s", res == RT_EOK ? "success" : "failed");
+    return res;
 }
 
 static rt_err_t swith_gnss_source(rt_uint8_t mode)
@@ -420,7 +422,6 @@ rt_err_t gnss_close(void)
 
 #ifdef SOC_STM32U535VE
     res = gnss_power_off();
-    log_debug("gnss_power_off %s", res == RT_EOK ? "success" : "failed");
 #endif
 
     return res;
