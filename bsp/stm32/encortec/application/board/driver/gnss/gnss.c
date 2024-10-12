@@ -227,9 +227,9 @@ static void gnss_thread_entry(void *parameter)
     rt_memset(&NMEA_ITEMS, 0, sizeof(NMEA_ITEMS));
     rt_enter_critical();
     res = rt_sem_release(&GNSS_THD_SUSPEND_SEM);
-    // log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
     res = rt_thread_suspend(rt_thread_self());
-    // log_debug("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
     rt_schedule();
     rt_exit_critical();
 }
@@ -420,6 +420,7 @@ rt_err_t gnss_close(void)
 
 #ifdef SOC_STM32U535VE
     res = gnss_power_off();
+    log_debug("gnss_power_off %s", res == RT_EOK ? "success" : "failed");
 #endif
 
     return res;
