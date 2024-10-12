@@ -43,6 +43,7 @@
         "control.h": "c",
         "stdlib.h": "c",
         "string.h": "c",
-        "lpm.h": "c"
+        "lpm.h": "c",
+        "cjson.h": "c"
     }
 }

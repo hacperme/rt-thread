@@ -45,4 +45,8 @@ rt_err_t cat1_init();
 
 void cat1_deinit();
 
+rt_err_t antenna_type_switch();
+
+enum AntennaType get_current_antenna_no();
+
 #endif

@@ -123,6 +123,19 @@ rt_err_t antenna_type_select(enum AntennaType antenna_type)
     return result;
 }
 
+enum AntennaType current_antenna = MAIN_ANT;
+rt_err_t antenna_type_switch()
+{
+    enum AntennaType temp = current_antenna == MAIN_ANT ? REMPTE_ANT : MAIN_ANT;
+    antenna_type_select(temp);
+}
+
+enum AntennaType get_current_antenna_no()
+{
+    log_debug("current antenna no: %d\n", current_antenna);
+    return current_antenna;
+}
+
 rt_err_t antenna_switch_to_module(enum ModuleType switch_to)
 {
     // Selects source of RF to antennas - Low for NB-IoT (BC660K), High for Cat1 (EG916)
@@ -173,7 +186,7 @@ void sim_deinit()
 void nbiot_init()
 {
     nbiot_at_client_init();
-    antenna_init(NBIOT_MODULE, MAIN_ANT);
+    antenna_init(NBIOT_MODULE, current_antenna);
     sim_init(NBIOT_MODULE, SIM1);
     nbiot_power_on();
     nbiot_disable_sleep_mode();
@@ -228,7 +241,7 @@ rt_err_t cat1_init()
     rt_err_t result = RT_EOK;
 
     at_ssl_client_init();
-    antenna_init(CAT1_MODULE, MAIN_ANT);
+    antenna_init(CAT1_MODULE, current_antenna);
     sim_init(CAT1_MODULE, SIM2);
 
     result = cat1_power_ctrl(1);
