@@ -317,6 +317,7 @@ enum nbiot_report_ctrl_data_status {
     NBIOT_REPORT_CTRL_DATA_RETRY
 };
 
+extern cJSON *read_json_obj_from_file(const char *file_path);
 char nbiot_imei_string[16] = {0};
 int nbiot_report_ctrl_data_to_server()
 {
@@ -330,7 +331,7 @@ int nbiot_report_ctrl_data_to_server()
 
     cJSON *data = cJSON_CreateObject();
     cJSON_AddNumberToObject(data, "12", settings_params->collect_interval);  // Cat1 Collect Interval
-    cJSON_AddStringToObject(data, "4", "null");  // Cat1 File Upload
+    cJSON_AddStringToObject(data, "24", "300");  // Cat1 File Upload
 
     // WIFI_Config
     if (strlen(nbiot_imei_string) == 0) {
@@ -347,9 +348,16 @@ int nbiot_report_ctrl_data_to_server()
     cJSON_AddStringToObject(wifi_config, "2", pwd_string);
     cJSON_AddItemToObject(data, "3", wifi_config);
 
-    cJSON_AddBoolToObject(data, "21", 0);  // ESP32 AP Switch
-    
+    // upload files
+    cJSON *file_upload_event = read_json_obj_from_file("/upload_files.json");
+    if (file_upload_event) {
+        log_debug("no upload json files");
+        cJSON_AddItemToObject(data, "22", file_upload_event);
+        remove("/upload_files.json");
+    }
+
     char *data_string = cJSON_PrintUnformatted(data);
+    log_debug("data_string: %s", data_string);
     cJSON_Delete(data);
 
     rt_err_t result = nbiot_report_ctrl_data(data_string, rt_strlen(data_string));
@@ -361,6 +369,7 @@ int nbiot_report_ctrl_data_to_server()
         log_debug("server_ctrl_data.Esp32_AP_Switch: %d", server_ctrl_data.Esp32_AP_Switch);
         log_debug("server_ctrl_data.Cat1_File_Upload_File_Times: %s", server_ctrl_data.Cat1_File_Upload_File_Times);
         log_debug("server_ctrl_data.Cat1_File_Upload_File_Type: %d", server_ctrl_data.Cat1_File_Upload_File_Type);
+        log_debug("server_ctrl_data.Cat1_File_Upload_Switch: %d", server_ctrl_data.Cat1_File_Upload_Switch);
         log_debug("report ctrl data to server success, goto, report sensor data");
         settings_params_t p = {0};
         if (server_ctrl_data.CollectInterval != 0) {
@@ -414,18 +423,20 @@ int nbiot_report_sensor_data_to_server()
     cJSON_AddNumberToObject(data, "2", sensor_data.humi);  // Humidity
     cJSON_AddNumberToObject(data, "14", wakeup_source_flag);  // Wake up Source Flag
     
-    // Acceleration
-    cJSON *acc = cJSON_CreateObject();
-    cJSON_AddNumberToObject(acc, "1", sensor_data.acc_x);
-    cJSON_AddNumberToObject(acc, "2", sensor_data.acc_y);
-    cJSON_AddNumberToObject(acc, "3", sensor_data.acc_z);
-    cJSON_AddItemToObject(data, "19", acc);
+    if (wakeup_source_flag != RTC_SOURCE) {
+        // Acceleration
+        cJSON *acc = cJSON_CreateObject();
+        cJSON_AddNumberToObject(acc, "1", sensor_data.acc_x);
+        cJSON_AddNumberToObject(acc, "2", sensor_data.acc_y);
+        cJSON_AddNumberToObject(acc, "3", sensor_data.acc_z);
+        cJSON_AddItemToObject(data, "19", acc);
 
-    cJSON_AddNumberToObject(data, "15", sensor_data.water_level);  // Water Level
-    cJSON_AddNumberToObject(data, "16", sensor_data.cur_vol);  // Conversion voltage
-    cJSON_AddNumberToObject(data, "17", sensor_data.vcap_vol);  // Capacitance voltage
-    cJSON_AddNumberToObject(data, "18", sensor_data.vbat_vol);  // Battery voltage
-    cJSON_AddNumberToObject(data, "20", 26);  // NB RSSI
+        cJSON_AddNumberToObject(data, "15", sensor_data.water_level);  // Water Level
+        cJSON_AddNumberToObject(data, "16", sensor_data.cur_vol);  // Conversion voltage
+        cJSON_AddNumberToObject(data, "17", sensor_data.vcap_vol);  // Capacitance voltage
+        cJSON_AddNumberToObject(data, "18", sensor_data.vbat_vol);  // Battery voltage
+        cJSON_AddNumberToObject(data, "20", 26);  // NB RSSI
+    }
 
     char *data_string = cJSON_PrintUnformatted(data);
     rt_err_t result = nbiot_report_model_data(data_string, rt_strlen(data_string));
@@ -504,6 +515,7 @@ int split_string_in_place(char *s)
 
 static int cat1_upload_file_retry_times = 0;
 extern int at_https_upload_file(const char *filename);
+extern void save_json_obj_to_file(const char *file_path, cJSON *root);
 int cat1_upload_file()
 {
     if (cat1_upload_file_retry_times >= 3) {
@@ -516,10 +528,10 @@ int cat1_upload_file()
 
     char parent_dir[20] = {0};
     memset(parent_dir, 0, sizeof(parent_dir));
-    if (server_ctrl_data.Cat1_File_Upload_File_Type == 1) {  // 数据文件
+    if (server_ctrl_data.Cat1_File_Upload_File_Type == 0) {  // 数据文件
         strcat(parent_dir, "/data");
     }
-    else if (server_ctrl_data.Cat1_File_Upload_File_Type == 2) { // 系统文件
+    else if (server_ctrl_data.Cat1_File_Upload_File_Type == 1) { // 系统文件
         strcat(parent_dir, "/log");
     }
     else {
@@ -535,6 +547,11 @@ int cat1_upload_file()
     char upload_file_path[128] = {0};
     DIR *dir;
     struct dirent *ent;
+    cJSON *root = cJSON_CreateObject();
+    cJSON *array = cJSON_CreateArray();
+    char upload_file_name[64] = {0};
+    cJSON *temp_obj;
+
     for (int i=1; i <= nums; i++) {
         log_debug("got sub_dir %d: %s", i, sub_dir);
         if (!strlen(sub_dir)) {
@@ -559,8 +576,16 @@ int cat1_upload_file()
                 }
                 else {
                     log_debug("at https upload \"%s\" success", upload_file_path);
+                    remove(upload_file_path);
+                    memset(upload_file_name, 0, sizeof(upload_file_name));
+                    sprintf(upload_file_name, "%s/%s", "iot-encortec", ent->d_name);
+        
+                    temp_obj = cJSON_CreateObject();
+                    cJSON_AddStringToObject(temp_obj, "1", sub_dir);
+                    cJSON_AddStringToObject(temp_obj, "2", upload_file_name);
+                    cJSON_AddNumberToObject(temp_obj, "3", server_ctrl_data.Cat1_File_Upload_File_Type);
+                    cJSON_AddItemToArray(array, temp_obj);
                 }
-
             }
             closedir(dir);
         }
@@ -568,6 +593,12 @@ int cat1_upload_file()
 
         sub_dir += (strlen(sub_dir) + 1);
     }
+
+    if (cJSON_GetArraySize(array) > 0) {
+        cJSON_AddItemToObject(root, "23", array);
+        save_json_obj_to_file("/upload_files.json", root);
+    }
+    cJSON_Delete(root);
 
     return CAT1_UPLOAD_FILE_SUCCESS;
 }
@@ -882,4 +913,68 @@ void main_business_entry(void)
                 break;
         }
     }
+}
+
+
+#include "esp32.h"
+void test_esp32()
+{
+    extern void nand_to_esp32(void);
+    nand_to_esp32();
+
+    esp32_power_pin_init();
+    esp32_power_on();
+
+    esp32_at_client_init();
+
+}
+
+cJSON *read_json_obj_from_file(const char *file_path)
+{
+    FILE *fd = NULL;
+    int length = 0;
+
+    fd = fopen(file_path, "rb");
+    if (!fd) {
+        log_debug("open file \"%s\" failed", file_path);
+        return NULL;
+    }
+    
+    fseek(fd, 0, SEEK_END);
+    length = ftell(fd);
+    fseek(fd, 0, SEEK_SET);
+    log_debug("got \"%s\" file length: %d", file_path, length);
+
+    char *json_string = (char *)malloc(length + 1);
+    memset(json_string, 0, length + 1);
+    fread(json_string, 1, length, fd);
+    log_debug("read json string: %s\n", json_string);
+    fclose(fd);
+
+    cJSON *root = cJSON_Parse(json_string);
+
+    free(json_string);
+    return root;
+}
+
+void save_json_obj_to_file(const char *file_path, cJSON *root)
+{
+    FILE *fd = NULL;
+    char *data = NULL;
+    fd = fopen(file_path, "wb");
+    if (fd) {
+        data = cJSON_PrintUnformatted(root);
+        fwrite(data, 1, strlen(data), fd);
+        fclose(fd);
+    }
+}
+
+
+void test_read_json()
+{
+    cJSON *file_upload_event = read_json_obj_from_file("/upload_files.json");
+    char *json_string = cJSON_Print(file_upload_event);
+    rt_kprintf("file upload event:\n%s", json_string);
+    free(json_string);
+    cJSON_Delete(file_upload_event);
 }

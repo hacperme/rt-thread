@@ -74,11 +74,26 @@ int application_start(int argc, char *argv[]) {
     // extern void data_save_as_file_test();
     // data_save_as_file_test();
 
-    extern void main_business_entry(void);
-    main_business_entry();
+    // extern int delete_directory(const char *dir);
+    // delete_directory("/data");
+
+    // extern void main_business_entry(void);
+    // main_business_entry();
 
     // extern void list_files(const char *path);
     // list_files("/data/20241010");
+
+    // for esp32 烧录
+    // extern void esp32_power_pin_init(void);
+    // extern rt_err_t esp32_start_download(void);
+    // esp32_power_pin_init();
+    // esp32_start_download();
+
+    // extern void test_esp32(void);
+    // test_esp32();
+
+    // extern void test_read_json(void);
+    // test_read_json();
 
     return 0;
 }

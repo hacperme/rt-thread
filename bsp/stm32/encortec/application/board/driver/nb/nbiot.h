@@ -41,6 +41,7 @@ struct ServerCtrlData {
     int Esp32_AP_Switch;
     char Cat1_File_Upload_File_Times[128];
     int Cat1_File_Upload_File_Type;
+    int Cat1_File_Upload_Switch;
 };
 
 /* init AT client */

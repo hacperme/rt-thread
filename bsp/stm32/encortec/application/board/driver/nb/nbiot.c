@@ -757,9 +757,9 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
 
     int retry_times = 0;
     int got_collect_interval_item_flag = 0;
-    int got_cat1_upload_file_type = 0;
-    int got_cat1_upload_file_times = 0;
+    int got_cat1_upload_file = 0;
     int got_esp32_ap_switch_item_flag = 0;
+    cJSON *temp;
     while (1) {
         int cur_len = 0;
         int remain_len = 0;
@@ -796,23 +796,30 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
                     server_ctrl_data_ptr->Esp32_AP_Switch = esp32_ap_switch_item->valueint;
                     got_esp32_ap_switch_item_flag = 1;
                 }
-                cJSON *cat1_upload_file_times = cJSON_GetObjectItem(root, "4");
-                if (cat1_upload_file_times != NULL) {
-                    log_debug("key: %s, value: %s", cat1_upload_file_times->string, cat1_upload_file_times->valuestring);
-                    strcat(server_ctrl_data_ptr->Cat1_File_Upload_File_Times, cat1_upload_file_times->valuestring);
-                    got_cat1_upload_file_times = 1;
-                }
-                cJSON *cat1_upload_file_type = cJSON_GetObjectItem(root, "6");
-                if (cat1_upload_file_type != NULL) {
-                    log_debug("key: %s, value: %d", cat1_upload_file_type->string, cat1_upload_file_type->valueint);
-                    server_ctrl_data_ptr->Cat1_File_Upload_File_Type = cat1_upload_file_type->valueint;
-                    got_cat1_upload_file_type = 1;
+                cJSON *cat1_file_upload = cJSON_GetObjectItem(root, "13");
+                if (cat1_file_upload != NULL) {
+                    temp = cJSON_GetObjectItem(cat1_file_upload, "1");
+                    if (temp) {
+                        log_debug("key: %s, value: %s", temp->string, temp->valuestring);
+                        strcat(server_ctrl_data_ptr->Cat1_File_Upload_File_Times, temp->valuestring);
+                    }
+                    temp = cJSON_GetObjectItem(cat1_file_upload, "2");
+                    if (temp) {
+                        log_debug("key: %s, value: %d", temp->string, temp->valueint);
+                        server_ctrl_data_ptr->Cat1_File_Upload_File_Type = temp->valueint;
+                    }
+                    temp = cJSON_GetObjectItem(cat1_file_upload, "3");
+                    if (temp) {
+                        log_debug("key: %s, value: %d", temp->string, temp->valueint);
+                        server_ctrl_data_ptr->Cat1_File_Upload_Switch = temp->valueint;
+                    }
+                    got_cat1_upload_file = 1;
                 }
                 cJSON_Delete(root);
             }
         }
         
-        if (got_collect_interval_item_flag && got_esp32_ap_switch_item_flag && got_cat1_upload_file_times && got_cat1_upload_file_type) {
+        if (got_collect_interval_item_flag && got_esp32_ap_switch_item_flag && got_cat1_upload_file) {
             log_debug("got cat1_upload_file_item and collect_interval_item");
             break;
         }
