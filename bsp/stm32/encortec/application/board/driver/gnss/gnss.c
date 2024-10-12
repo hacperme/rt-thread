@@ -188,7 +188,7 @@ static void gnss_parse_nmea(char *nmea)
 
 static void gnss_thread_entry(void *parameter)
 {
-    // log_debug("gnss_thread_entry start.");
+    log_debug("gnss_thread_entry start.");
     rt_err_t res;
     do {
         res = rt_sem_take(&GNSS_THD_SUSPEND_SEM, RT_WAITING_NO);
@@ -200,6 +200,7 @@ static void gnss_thread_entry(void *parameter)
         // log_debug("rt_mutex_take GNSS_LOCK %s", res == RT_EOK ? "success" : "failed");
         if (res == RT_EOK)
         {
+            log_debug("query gnss data.");
             rt_memset(nmea, 0, GNSS_BUFF_SIZE);
             if (rt_device_read(GNSS_SERIAL, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
@@ -229,7 +230,7 @@ static void gnss_thread_entry(void *parameter)
     res = rt_sem_release(&GNSS_THD_SUSPEND_SEM);
     log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
     res = rt_thread_suspend(rt_thread_self());
-    log_debug("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_thread_suspend gnss_thread_entry rt_thread_self %s", res == RT_EOK ? "success" : "failed");
     rt_schedule();
     rt_exit_critical();
 }
