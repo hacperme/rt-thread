@@ -76,6 +76,9 @@ int application_start(int argc, char *argv[]) {
 
     extern void main_business_entry(void);
     main_business_entry();
+
+    // extern void esp_data_stransf_example(void);
+    // esp_data_stransf_example();
     
     return 0;
 }
