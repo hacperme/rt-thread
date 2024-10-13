@@ -45,6 +45,7 @@ enum {
     CAT1_INIT,
     CAT1_WAIT_NETWORK_RDY,
     CAT1_UPLOAD_FILE,
+    ESP32_WIFI_TRANSFER_DATA,
     SLEEP,
 };
 
@@ -319,6 +320,8 @@ enum nbiot_report_ctrl_data_status {
 
 extern cJSON *read_json_obj_from_file(const char *file_path);
 char nbiot_imei_string[16] = {0};
+char ssid_string[64] = {0};
+char pwd_string[64] = "1234567890";
 int nbiot_report_ctrl_data_to_server()
 {
     if (nbiot_report_ctrl_retry_times >= 3) {
@@ -341,9 +344,7 @@ int nbiot_report_ctrl_data_to_server()
             memcpy(nbiot_imei_string, "123456", 6);
         }
     }
-    char ssid_string[64] = {0};
     sprintf(ssid_string, "encortec-%s", nbiot_imei_string + 9);
-    char pwd_string[64] = "123456";
     cJSON *wifi_config = cJSON_CreateObject();
     cJSON_AddStringToObject(wifi_config, "1", ssid_string);
     cJSON_AddStringToObject(wifi_config, "2", pwd_string);
@@ -746,6 +747,7 @@ static void sm_init(void) {
     // sm_set_initial_status(CAT1_INIT);
 }
 
+extern rt_err_t esp32_wifi_transfer();
 void main_business_entry(void)
 {
     rt_err_t result;
@@ -874,7 +876,7 @@ void main_business_entry(void)
                 break;
             case CAT1_INIT:
                 if (cat1_init() != RT_EOK) {
-                    sm_set_status(SLEEP);
+                    sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 else {
                     sm_set_status(CAT1_WAIT_NETWORK_RDY);
@@ -893,17 +895,21 @@ void main_business_entry(void)
                 }
                 else if (rv == CAT1_NETWORK_ERROR) {
                     cat1_deinit();
-                    sm_set_status(SLEEP);
+                    sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 break;
             case CAT1_UPLOAD_FILE:
                 rv = cat1_upload_file();
                 if (rv == CAT1_UPLOAD_FILE_SUCCESS || rv == CAT1_UPLOAD_FILE_ERROR) {
-                    sm_set_status(SLEEP);
+                    sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 else {
                     sm_set_status(CAT1_UPLOAD_FILE);
                 }
+                break;
+            case ESP32_WIFI_TRANSFER_DATA:
+                esp32_wifi_transfer();
+                sm_set_status(SLEEP);
                 break;
             case SLEEP:
                 stm32_sleep();
@@ -915,18 +921,92 @@ void main_business_entry(void)
     }
 }
 
+extern rt_err_t esp_wait_rdy();
+extern rt_err_t esp_wait_stop();
+extern bool esp_at_init(void);
+extern void nand_to_esp32(void);
+extern rt_err_t esp32_transf_data(const char* ssid, size_t ssid_len, const char* psw, size_t psw_len, const char* dk_str, size_t dk_len);
+rt_err_t esp32_wifi_transfer()
+{
+    rt_err_t result = RT_EOK;
+    if (server_ctrl_data.Esp32_AP_Switch) {
+        nand_to_esp32();
+        esp_at_init();
+        esp32_power_pin_init();
+        esp32_power_on();
+
+        if (esp_wait_rdy() != 0) {
+            log_debug("can not wait esp32 ready");
+            return RT_ERROR;
+        }
+        log_debug("esp wait rdy");
+
+        result = esp32_transf_data(
+            ssid_string, strlen(ssid_string),
+            pwd_string, strlen(pwd_string),
+            nbiot_imei_string, strlen(nbiot_imei_string)
+        );
+        // result = esp32_transf_data(
+        //     "ESP_TEST", strlen("ESP_TEST"),
+        //     "1234567890", strlen("1234567890"),
+        //     "THIS IS DT TEST", strlen("THIS IS DT TEST")
+        // );
+        if (result != RT_EOK) {
+            log_debug("esp32_transf_data error");
+            return result;
+        }
+        esp_wait_stop();
+    }
+}
 
 #include "esp32.h"
-void test_esp32()
+rt_err_t esp32_wifi_transfer2()
 {
-    extern void nand_to_esp32(void);
-    nand_to_esp32();
+    rt_err_t result = RT_EOK;
 
-    esp32_power_pin_init();
-    esp32_power_on();
+    if (server_ctrl_data.Esp32_AP_Switch) {
 
-    esp32_at_client_init();
+        extern void nand_to_esp32(void);
+        nand_to_esp32();
 
+        esp32_at_client_init();
+
+        esp32_power_pin_init();
+        esp32_power_on();
+
+        if (wait_esp32_ready(rt_tick_from_millisecond(10000)) != RT_EOK) {
+            log_debug("can not wait esp32 rdy");
+            return RT_ERROR;
+        }
+
+        result = esp32_cwinit(1);
+        if (result != RT_EOK) {
+            return result;
+        }
+
+        // result = esp32_cwsap(ssid_string, pwd_string);
+        result = esp32_cwsap("ESP_TEST", "1234567890");
+        if (result != RT_EOK) {
+            return result;
+        }
+
+        result = esp32_qdk(nbiot_imei_string);
+        if (result != RT_EOK) {
+            return result;
+        }
+
+        result = esp32_qtransf(1);
+        if (result != RT_EOK) {
+            return result;
+        }
+
+        wait_esp32_finished(RT_WAITING_FOREVER);  // for test
+        log_debug("wait esp32 finished");
+
+        esp32_power_off();
+    }
+
+    return result;
 }
 
 cJSON *read_json_obj_from_file(const char *file_path)
@@ -967,14 +1047,4 @@ void save_json_obj_to_file(const char *file_path, cJSON *root)
         fwrite(data, 1, strlen(data), fd);
         fclose(fd);
     }
-}
-
-
-void test_read_json()
-{
-    cJSON *file_upload_event = read_json_obj_from_file("/upload_files.json");
-    char *json_string = cJSON_Print(file_upload_event);
-    rt_kprintf("file upload event:\n%s", json_string);
-    free(json_string);
-    cJSON_Delete(file_upload_event);
 }

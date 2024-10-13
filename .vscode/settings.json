@@ -44,6 +44,7 @@
         "stdlib.h": "c",
         "string.h": "c",
         "lpm.h": "c",
-        "cjson.h": "c"
+        "cjson.h": "c",
+        "esp32.h": "c"
     }
 }

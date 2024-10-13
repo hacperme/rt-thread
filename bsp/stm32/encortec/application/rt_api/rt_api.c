@@ -1,11 +1,12 @@
 #include "common.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include "rt_api_addr.h"
 #include "rt_api_typedef.h"
 #include "rttypes.h"
 #include "logging.h"
-#include <stddef.h>
+#include "stm32u5xx_hal.h"
 #include <sys/stat.h>
 
 rt_err_t rt_thread_init(struct rt_thread *thread, const char *name, void (*entry)(void *parameter), void *parameter, void *stack_start, rt_uint32_t stack_size, rt_uint8_t priority, rt_uint32_t tick) {

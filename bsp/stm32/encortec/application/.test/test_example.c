@@ -74,27 +74,21 @@ int application_start(int argc, char *argv[]) {
     // extern void data_save_as_file_test();
     // data_save_as_file_test();
 
-    // extern int delete_directory(const char *dir);
-    // delete_directory("/data");
+    extern int delete_directory(const char *dir);
+    delete_directory("/data");
 
-    // extern void list_files(const char *path);
-    // list_files("/data/20241012");
+    extern void main_business_entry(void);
+    main_business_entry();
 
-    // extern void main_business_entry(void);
-    // main_business_entry();
+    // extern void esp_data_stransf_example(void);
+    // esp_data_stransf_example();
 
-    // for esp32 烧录
+    // for test
     // extern void esp32_power_pin_init(void);
     // extern rt_err_t esp32_start_download(void);
     // esp32_power_pin_init();
     // esp32_start_download();
-
-    // extern void test_esp32(void);
-    // test_esp32();
-
-    // extern void test_read_json(void);
-    // test_read_json();
-
-    return 0;
+    // extern rt_err_t esp32_wifi_transfer();
+    // esp32_wifi_transfer();
 }
 #endif

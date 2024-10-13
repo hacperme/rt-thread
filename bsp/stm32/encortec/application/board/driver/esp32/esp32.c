@@ -4,14 +4,36 @@
 
 #define ESP32_AT_UART_NAME "uart5"
 
-void es32_urc_example_handler(struct at_client *client, const char *data, rt_size_t size)
-{
+static rt_sem_t esp32_finished_sem;
+static rt_sem_t esp_32_rdy_sem;
 
+int IS_ESP32_READY = 0;
+void esp32_ready_handler(struct at_client *client, const char *data, rt_size_t size)
+{
+    log_debug("got esp32 ready flag");
+    rt_sem_release(esp_32_rdy_sem);
+}
+
+void esp32_finished_handler(struct at_client *client, const char *data, rt_size_t size)
+{
+    log_debug("got esp32 finished flag");
+    rt_sem_release(esp32_finished_sem);
 }
 
 static struct at_urc esp32_urc_table[] = {
-    {"+QIOTEVT: ", "\r\n", es32_urc_example_handler},
+    {"ready", "\r\n", esp32_ready_handler},
+    {"finished", "\r\n", esp32_finished_handler},
 };
+
+rt_err_t wait_esp32_ready(rt_int32_t time)
+{
+    return rt_sem_take(esp_32_rdy_sem, time);
+}
+
+rt_err_t wait_esp32_finished(rt_int32_t time)
+{
+    return rt_sem_take(esp32_finished_sem, time);
+}
 
 rt_err_t esp32_at_client_init(void)
 {
@@ -37,12 +59,8 @@ rt_err_t esp32_at_client_init(void)
     }
     log_debug("esp32 at set urc success.");
 
-    // result = rt_mutex_init(&qiot_event_mutex, "qiot_event_mutex", RT_IPC_FLAG_FIFO);
-    // if (result != RT_EOK) {
-    //     log_error("qiot_event_mutex init failed: %d\n", result);
-    //     return result;
-    // }
-    // log_debug("qiot_event_mutex init success.");
+    esp_32_rdy_sem = rt_sem_create("rdy_sem", 0, RT_IPC_FLAG_PRIO);
+    esp32_finished_sem = rt_sem_create("finished_sem", 0, RT_IPC_FLAG_PRIO);
 
     // cclk_data_urc_queue = rt_mq_create("cclk_data_urc_queue", 64, 1, RT_IPC_FLAG_FIFO);
     // if (cclk_data_urc_queue == RT_NULL) {
@@ -54,7 +72,7 @@ rt_err_t esp32_at_client_init(void)
 }
 
 // AT+CWSAP=<ssid>,<pwd>,<chl>,<ecn>[,<max conn>][,<ssid hidden>]
-rt_err_t esp32_cwsap(const char *ssid, const char *pwd, int chl, int ecn, int max_conn, int ssid_hidden)
+rt_err_t esp32_cwsap(const char *ssid, const char *pwd)
 {
     rt_err_t result = RT_EOK;
     at_client_t client = RT_NULL;
@@ -74,8 +92,8 @@ rt_err_t esp32_cwsap(const char *ssid, const char *pwd, int chl, int ecn, int ma
     result = at_obj_exec_cmd(
         client, 
         resp, 
-        "AT+CWSAP=%s,%s,%d,%d,%d,%d",
-        ssid, pwd, chl, ecn, max_conn, ssid_hidden
+        "AT+CWSAP=\"%s\",\"%s\",5,3",
+        ssid, pwd
     );
     if (result != RT_EOK) {
         log_debug("at_obj_exec_cmd AT+CWSAP failed");
@@ -176,7 +194,7 @@ rt_err_t esp32_qdk(const char *dk_str)
     result = at_obj_exec_cmd(
         client, 
         resp, 
-        "AT+QDK=%s",
+        "AT+QDK=\"%s\"",
         dk_str
     );
     if (result != RT_EOK) {
