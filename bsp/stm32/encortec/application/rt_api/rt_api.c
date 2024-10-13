@@ -1264,4 +1264,3 @@ int access(const char *path, int mode) {
 int stat(const char *path, struct stat *buf) {
     return ((stat_api_ptr_t)(stat_addr))(path, buf);
 }
-
