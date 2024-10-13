@@ -133,7 +133,7 @@ rt_err_t antenna_type_switch()
 enum AntennaType get_current_antenna_no()
 {
     log_debug("current antenna no: %d\n", current_antenna);
-    return current_antenna;
+    return current_antenna == MAIN_ANT ? 0 : 1;
 }
 
 rt_err_t antenna_switch_to_module(enum ModuleType switch_to)

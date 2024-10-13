@@ -332,7 +332,7 @@ int nbiot_report_ctrl_data_to_server()
     cJSON *data = cJSON_CreateObject();
     cJSON_AddNumberToObject(data, "12", settings_params->collect_interval);  // Cat1 Collect Interval
     cJSON_AddStringToObject(data, "24", "300");  // Cat1 File Upload
-    cJSON_AddStringToObject(data, "4", get_current_antenna_no());  // Antennae No
+    cJSON_AddNumberToObject(data, "4", get_current_antenna_no());  // Antennae No
 
     // WIFI_Config
     if (strlen(nbiot_imei_string) == 0) {

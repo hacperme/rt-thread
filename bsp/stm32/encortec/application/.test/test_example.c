@@ -77,11 +77,11 @@ int application_start(int argc, char *argv[]) {
     // extern int delete_directory(const char *dir);
     // delete_directory("/data");
 
-    extern void list_files(const char *path);
-    list_files("/data/20241012");
+    // extern void list_files(const char *path);
+    // list_files("/data/20241012");
 
-    extern void main_business_entry(void);
-    main_business_entry();
+    // extern void main_business_entry(void);
+    // main_business_entry();
 
     // for esp32 烧录
     // extern void esp32_power_pin_init(void);
