@@ -366,7 +366,7 @@ int nbiot_report_ctrl_data_to_server()
     free(data_string);
 
     if (result == RT_EOK) {
-        nbiot_recv_ctrl_data(64, &server_ctrl_data);  // read ctrl data from server
+        nbiot_recv_ctrl_data(256, &server_ctrl_data);  // read ctrl data from server
         log_debug("server_ctrl_data.CollectInterval: %d", server_ctrl_data.CollectInterval);
         log_debug("server_ctrl_data.Esp32_AP_Switch: %d", server_ctrl_data.Esp32_AP_Switch);
         log_debug("server_ctrl_data.Cat1_File_Upload_File_Times: %s", server_ctrl_data.Cat1_File_Upload_File_Times);
@@ -529,10 +529,10 @@ int cat1_upload_file()
 
     char parent_dir[20] = {0};
     memset(parent_dir, 0, sizeof(parent_dir));
-    if (server_ctrl_data.Cat1_File_Upload_File_Type == 0) {  // 数据文件
+    if (server_ctrl_data.Cat1_File_Upload_File_Type == 1) {  // 数据文件
         strcat(parent_dir, "/data");
     }
-    else if (server_ctrl_data.Cat1_File_Upload_File_Type == 1) { // 系统文件
+    else if (server_ctrl_data.Cat1_File_Upload_File_Type == 2) { // 系统文件
         strcat(parent_dir, "/log");
     }
     else {
@@ -982,56 +982,6 @@ rt_err_t esp32_wifi_transfer()
     }
 
     return RT_EOK;
-}
-
-#include "esp32.h"
-rt_err_t esp32_wifi_transfer2()
-{
-    rt_err_t result = RT_EOK;
-
-    if (server_ctrl_data.Esp32_AP_Switch) {
-
-        extern void nand_to_esp32(void);
-        nand_to_esp32();
-
-        esp32_at_client_init();
-
-        esp32_power_pin_init();
-        esp32_power_on();
-
-        if (wait_esp32_ready(rt_tick_from_millisecond(10000)) != RT_EOK) {
-            log_debug("can not wait esp32 rdy");
-            return RT_ERROR;
-        }
-
-        result = esp32_cwinit(1);
-        if (result != RT_EOK) {
-            return result;
-        }
-
-        // result = esp32_cwsap(ssid_string, pwd_string);
-        result = esp32_cwsap("ESP_TEST", "1234567890");
-        if (result != RT_EOK) {
-            return result;
-        }
-
-        result = esp32_qdk(nbiot_imei_string);
-        if (result != RT_EOK) {
-            return result;
-        }
-
-        result = esp32_qtransf(1);
-        if (result != RT_EOK) {
-            return result;
-        }
-
-        wait_esp32_finished(RT_WAITING_FOREVER);  // for test
-        log_debug("wait esp32 finished");
-
-        esp32_power_off();
-    }
-
-    return result;
 }
 
 cJSON *read_json_obj_from_file(const char *file_path)

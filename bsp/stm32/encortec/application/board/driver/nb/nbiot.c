@@ -749,7 +749,7 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
         return RT_ERROR;
     }
 
-    at_response_t resp = at_create_resp(128, 2, rt_tick_from_millisecond(3000));
+    at_response_t resp = at_create_resp(512, 2, rt_tick_from_millisecond(3000));
     if (resp == RT_NULL) {
         log_error("create resp failed.");
         return RT_ERROR;
