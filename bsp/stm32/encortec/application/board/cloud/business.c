@@ -611,10 +611,6 @@ void stm32_sleep()
     rt_sem_take(stm32_sleep_ack_sem, rt_tick_from_millisecond(1000));
     log_debug("go into sleep");
 
-    esp32_power_off();
-    gnss_close();
-    cat1_deinit();
-
     end_tick_ms = rt_tick_get_millisecond();
     log_debug("start tick ms: %d", start_tick_ms);
     log_debug("end tick ms: %d", end_tick_ms);
@@ -793,6 +789,7 @@ void main_business_entry(void)
             case COLLECT_SENSOR_DATA:
                 collect_sensor_data();
                 sensor_pwron_pin_enable(PIN_LOW);
+                // gnss_close();
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
@@ -901,6 +898,7 @@ void main_business_entry(void)
             case CAT1_UPLOAD_FILE:
                 rv = cat1_upload_file();
                 if (rv == CAT1_UPLOAD_FILE_SUCCESS || rv == CAT1_UPLOAD_FILE_ERROR) {
+                    cat1_deinit();
                     sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 else {
@@ -956,6 +954,7 @@ rt_err_t esp32_wifi_transfer()
             return result;
         }
         esp_wait_stop();
+        esp32_power_off();
     }
 }
 
