@@ -291,3 +291,6 @@ HAL_SYSCFG_EnableVREFBUF
 HAL_HASH_Init
 HAL_HASH_DeInit
 HAL_HMACEx_SHA256_Start
+rt_sched_lock
+rt_sched_unlock
+rt_sched_unlock_n_resched

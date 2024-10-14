@@ -1293,3 +1293,15 @@ HAL_StatusTypeDef HAL_HMACEx_SHA256_Start(HASH_HandleTypeDef *hhash, uint8_t *pI
     return ((HAL_HMACEx_SHA256_Start_api_ptr_t)(HAL_HMACEx_SHA256_Start_addr))(hhash, pInBuffer, Size, pOutBuffer, Timeout);
 }
 
+rt_err_t rt_sched_lock(rt_sched_lock_level_t *plvl) {
+    return ((rt_sched_lock_api_ptr_t)(rt_sched_lock_addr))(plvl);
+}
+
+rt_err_t rt_sched_unlock(rt_sched_lock_level_t level) {
+    return ((rt_sched_unlock_api_ptr_t)(rt_sched_unlock_addr))(level);
+}
+
+rt_err_t rt_sched_unlock_n_resched(rt_sched_lock_level_t level) {
+    return ((rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_unlock_n_resched_addr))(level);
+}
+

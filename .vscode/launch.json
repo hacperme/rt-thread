@@ -9,7 +9,7 @@
             "servertype": "jlink",
             "interface": "swd",
             "device": "STM32U535VE",
-            "svdFile": "${workspaceRoot}/.vscode/STM32U535.svd",
+            "svdFile": "${workspaceRoot}/.vscode/STM32U575.svd",
             "liveWatch": {
                 "enabled": true,
                 "samplesPerSecond": 4

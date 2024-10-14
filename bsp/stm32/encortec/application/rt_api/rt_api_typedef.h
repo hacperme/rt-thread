@@ -305,4 +305,7 @@ typedef HAL_StatusTypeDef (*HAL_SYSCFG_EnableVREFBUF_api_ptr_t)(void);
 typedef HAL_StatusTypeDef (*HAL_HASH_Init_api_ptr_t)(HASH_HandleTypeDef *hhash);
 typedef HAL_StatusTypeDef (*HAL_HASH_DeInit_api_ptr_t)(HASH_HandleTypeDef *hhash);
 typedef HAL_StatusTypeDef (*HAL_HMACEx_SHA256_Start_api_ptr_t)(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout);
+typedef rt_err_t (*rt_sched_lock_api_ptr_t)(rt_sched_lock_level_t *plvl);
+typedef rt_err_t (*rt_sched_unlock_api_ptr_t)(rt_sched_lock_level_t level);
+typedef rt_err_t (*rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_lock_level_t level);
 #endif

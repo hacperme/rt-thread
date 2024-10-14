@@ -287,6 +287,9 @@
 #define getcwd_addr 0x0801D791
 #define HAL_HMACEx_SHA256_Start_addr 0x080267D1
 #define at_vprintfln_addr 0x0803941D
+#define rt_sched_lock_addr 0x0803F19D
+#define rt_sched_unlock_addr 0x0803F1C7
+#define rt_sched_unlock_n_resched_addr 0x0803F1E1
 #define rt_system_scheduler_init_addr 0x0803F209
 #define rt_system_scheduler_start_addr 0x0803F251
 #define rt_schedule_addr 0x0803F28D

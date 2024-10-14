@@ -49,8 +49,8 @@ int application_start(int argc, char *argv[]) {
     //     test_fs_option();
     // }
 
-    extern void test_hal_hmac_sha256(void);
-    test_hal_hmac_sha256();
+    // extern void test_hal_hmac_sha256(void);
+    // test_hal_hmac_sha256();
 
     // extern void test_adxl372(int argc, char **argv);
     // test_adxl372(argc, argv);
@@ -58,8 +58,8 @@ int application_start(int argc, char *argv[]) {
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);
 
-    // extern void test_gnss(int argc, char **argv);
-    // test_gnss(argc, argv);
+    extern void test_gnss(int argc, char **argv);
+    test_gnss(argc, argv);
 
     // extern rt_err_t test_hdc3021(void);
     // test_hdc3021();

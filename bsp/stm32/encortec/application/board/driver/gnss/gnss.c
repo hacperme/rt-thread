@@ -221,17 +221,22 @@ static void gnss_thread_entry(void *parameter)
         // log_debug("rt_mutex_release GNSS_LOCK %s", res == RT_EOK ? "success" : "failed");
         rt_thread_mdelay(1000);
     }
-    // log_debug("Clear nmea, HGPS, NMEA_ITEMS");
+    log_debug("Clear nmea, HGPS, NMEA_ITEMS");
     rt_memset(nmea, 0, GNSS_BUFF_SIZE);
     rt_memset(&HGPS, 0, sizeof(HGPS));
     rt_memset(&NMEA_ITEMS, 0, sizeof(NMEA_ITEMS));
-    rt_enter_critical();
+    // rt_enter_critical();
+    // log_debug("rt_enter_critical");
+    rt_sched_lock_level_t slvl;
+    rt_sched_lock(&slvl);
     res = rt_sem_release(&GNSS_THD_SUSPEND_SEM);
-    // log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
+    rt_sched_unlock(slvl);
     res = rt_thread_suspend(rt_thread_self());
-    // log_debug("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
-    rt_schedule();
-    rt_exit_critical();
+    log_debug("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
+    // rt_schedule();
+    // log_debug("rt_schedule");
+    // rt_exit_critical();
 }
 
 static rt_err_t gnss_power_on(void)
@@ -241,7 +246,9 @@ static rt_err_t gnss_power_on(void)
 
 static rt_err_t gnss_power_off(void)
 {
-    return gnss_pwron_pin_enable(0);
+    rt_err_t res = gnss_pwron_pin_enable(0);
+    log_debug("gnss_pwron_pin_enable %s", res == RT_EOK ? "success" : "failed");
+    return res;
 }
 
 static rt_err_t swith_gnss_source(rt_uint8_t mode)
@@ -564,7 +571,7 @@ void test_gnss(int argc, char **argv)
     log_debug("gnss_open %s", res == RT_EOK ? "success" : "failed");
     rt_thread_mdelay(100); //at least 300 ms
 
-    rt_uint8_t cnt = 60;
+    rt_uint8_t cnt = 3;
     lwgps_t gnss_data = {0};
     nmea_item test_nmea_item = {0};
 
