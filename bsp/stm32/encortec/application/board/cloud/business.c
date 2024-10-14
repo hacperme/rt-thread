@@ -789,7 +789,7 @@ void main_business_entry(void)
             case COLLECT_SENSOR_DATA:
                 collect_sensor_data();
                 sensor_pwron_pin_enable(PIN_LOW);
-                // gnss_close();
+                gnss_close();
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
@@ -919,14 +919,19 @@ void main_business_entry(void)
     }
 }
 
+
 extern rt_err_t esp_wait_rdy();
-extern rt_err_t esp_wait_stop();
+extern rt_err_t esp_wait_start(rt_int32_t time);
+extern rt_err_t esp_wait_stop(rt_int32_t time);
+extern rt_err_t esp_wait_connected(rt_int32_t time);
+extern rt_err_t esp_wait_disconnected(rt_int32_t time);
 extern bool esp_at_init(void);
 extern void nand_to_esp32(void);
 extern rt_err_t esp32_transf_data(const char* ssid, size_t ssid_len, const char* psw, size_t psw_len, const char* dk_str, size_t dk_len);
 rt_err_t esp32_wifi_transfer()
 {
     rt_err_t result = RT_EOK;
+    server_ctrl_data.Esp32_AP_Switch = 1; // for test
     if (server_ctrl_data.Esp32_AP_Switch) {
         nand_to_esp32();
         esp_at_init();
@@ -939,23 +944,44 @@ rt_err_t esp32_wifi_transfer()
         }
         log_debug("esp wait rdy");
 
-        result = esp32_transf_data(
-            ssid_string, strlen(ssid_string),
-            pwd_string, strlen(pwd_string),
-            nbiot_imei_string, strlen(nbiot_imei_string)
-        );
         // result = esp32_transf_data(
-        //     "ESP_TEST", strlen("ESP_TEST"),
-        //     "1234567890", strlen("1234567890"),
-        //     "THIS IS DT TEST", strlen("THIS IS DT TEST")
+        //     ssid_string, strlen(ssid_string),
+        //     pwd_string, strlen(pwd_string),
+        //     nbiot_imei_string, strlen(nbiot_imei_string)
         // );
+        result = esp32_transf_data(
+            "ESP_TEST", strlen("ESP_TEST"),
+            "1234567890", strlen("1234567890"),
+            "THIS IS DT TEST", strlen("THIS IS DT TEST")
+        );
         if (result != RT_EOK) {
             log_debug("esp32_transf_data error");
             return result;
         }
-        esp_wait_stop();
+
+        if (esp_wait_connected(rt_tick_from_millisecond(300000)) == 0) {
+            log_debug("got esp_wait_connected");
+            // 如果 300s 内 app 连接wifi
+            if (esp_wait_start(rt_tick_from_millisecond(300000)) == 0) {
+                log_debug("got esp_wait_start");
+                // 如果 300s 内 开始传输
+                if (esp_wait_stop(RT_WAITING_FOREVER) == 0) {
+                    log_debug("got esp_wait_stop");
+                    esp32_power_off();
+                    return RT_EOK;
+                }
+            }
+            else {
+                log_debug("can not got esp_wait_start");
+            }
+        }
+        else {
+            log_debug("can not got esp_wait_connected");
+        }
         esp32_power_off();
     }
+
+    return RT_EOK;
 }
 
 #include "esp32.h"

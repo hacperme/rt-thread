@@ -29,6 +29,9 @@
 typedef struct
 {
     rt_sem_t _rdy;
+    rt_sem_t _connected;
+    rt_sem_t _disconnected;
+    rt_sem_t _start;
     rt_sem_t _stop;
 } qat_sem_s;
 
@@ -56,14 +59,34 @@ static void urc_func(struct at_client *client ,const char *data, rt_size_t size)
         rt_sem_release(_ql_at_sem._rdy);
     }
     else if (strncmp(data, "+AP_STOPPED", strlen("+AP_STOPPED")) == 0) {
-        LOG_E("send AP_STOPPED sem\n");
-        rt_sem_release(_ql_at_sem._stop);
+
+    }
+    else if (strncmp(data, "+STA_DISCONNECTED", strlen("+STA_DISCONNECTED")) == 0) {
+        rt_sem_release(_ql_at_sem._disconnected);
+    }
+    else if (strncmp(data, "+STA_CONNECTED", strlen("+STA_CONNECTED")) == 0) {
+        rt_sem_release(_ql_at_sem._connected);
     }
 }
 
-rt_err_t esp_wait_stop()
+rt_err_t esp_wait_start(rt_int32_t time)
 {
-    return rt_sem_take(_ql_at_sem._stop, RT_WAITING_FOREVER);
+    return rt_sem_take(_ql_at_sem._start, time);
+}
+
+rt_err_t esp_wait_stop(rt_int32_t time)
+{
+    return rt_sem_take(_ql_at_sem._stop, time);
+}
+
+rt_err_t esp_wait_connected(rt_int32_t time)
+{
+    return rt_sem_take(_ql_at_sem._connected, time);
+}
+
+rt_err_t esp_wait_disconnected(rt_int32_t time)
+{
+    return rt_sem_take(_ql_at_sem._disconnected, time);
 }
 
 static void dt_urc_func(struct at_client *client ,const char *data, rt_size_t size)
@@ -71,14 +94,19 @@ static void dt_urc_func(struct at_client *client ,const char *data, rt_size_t si
     LOG_E("dt urc data : %s, size:%d\n", data, size);
 	if(strncmp(data, "+DT:START", strlen("+DT:START")) == 0)
 	{
+        rt_sem_release(_ql_at_sem._start);
 	} else if (strncmp(data, "+DT:ERR", strlen("+DT:ERR")) == 0)
 	{
         at_client_t client_urc = at_client_get(ESP_UART_NUM);
         AT_SEND_CMD(client_urc, resp, "AT+QTRANSF=0", ;);
+        LOG_E("send +DT:ERR sem\n");
+        rt_sem_release(_ql_at_sem._stop);
 	} else if (strncmp(data, "+DT:SUCCESS", strlen("+DT:SUCCESS")) == 0)
 	{
         at_client_t client_urc = at_client_get(ESP_UART_NUM);
         AT_SEND_CMD(client_urc, resp, "AT+QTRANSF=0", ;);
+        LOG_E("send +DT:SUCCESS sem\n");
+        rt_sem_release(_ql_at_sem._stop);
 	}else if (strncmp(data, "+DT:CLOSE", strlen("+DT:CLOSE")) == 0) 
     {
     }
@@ -98,7 +126,10 @@ bool esp_at_init(void)
     }
 
     _ql_at_sem._rdy = rt_sem_create("rdy_sem", 0, RT_IPC_FLAG_PRIO);
+    _ql_at_sem._start = rt_sem_create("start_sem", 0, RT_IPC_FLAG_PRIO);
     _ql_at_sem._stop = rt_sem_create("stop_sem", 0, RT_IPC_FLAG_PRIO);
+    _ql_at_sem._connected = rt_sem_create("conn_sem", 0, RT_IPC_FLAG_PRIO);
+    _ql_at_sem._disconnected = rt_sem_create("disconn_sem", 0, RT_IPC_FLAG_PRIO);
 	
     LOG_I("AT Client1 (uart5) initialized success\n");
 	at_obj_set_urc_table(at_client_get(ESP_UART_NUM), urc_table, sizeof(urc_table) / sizeof(urc_table[0]));
