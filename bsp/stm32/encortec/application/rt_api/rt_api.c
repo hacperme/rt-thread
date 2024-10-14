@@ -1264,3 +1264,16 @@ int access(const char *path, int mode) {
 int stat(const char *path, struct stat *buf) {
     return ((stat_api_ptr_t)(stat_addr))(path, buf);
 }
+
+rt_err_t rt_sched_lock(rt_sched_lock_level_t *plvl) {
+    return ((rt_sched_lock_api_ptr_t)(rt_sched_lock_addr))(plvl);
+}
+
+rt_err_t rt_sched_unlock(rt_sched_lock_level_t level) {
+    return ((rt_sched_unlock_api_ptr_t)(rt_sched_unlock_addr))(level);
+}
+
+rt_err_t rt_sched_unlock_n_resched(rt_sched_lock_level_t level) {
+    return ((rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_unlock_n_resched_addr))(level);
+}
+

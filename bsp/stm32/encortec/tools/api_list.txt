@@ -284,3 +284,6 @@ getcwd
 rmdir
 access
 stat
+rt_sched_lock
+rt_sched_unlock
+rt_sched_unlock_n_resched

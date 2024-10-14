@@ -298,4 +298,7 @@ typedef char *(*getcwd_api_ptr_t)(char *buf, size_t size);
 typedef int (*rmdir_api_ptr_t)(const char *path);
 typedef int (*access_api_ptr_t)(const char *path, int mode);
 typedef int (*stat_api_ptr_t)(const char *path, struct stat *buf);
+typedef rt_err_t (*rt_sched_lock_api_ptr_t)(rt_sched_lock_level_t *plvl);
+typedef rt_err_t (*rt_sched_unlock_api_ptr_t)(rt_sched_lock_level_t level);
+typedef rt_err_t (*rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_lock_level_t level);
 #endif

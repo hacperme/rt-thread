@@ -280,6 +280,9 @@
 #define access_addr 0x0801B331
 #define getcwd_addr 0x0801B385
 #define at_vprintfln_addr 0x08036A41
+#define rt_sched_lock_addr 0x0803C765
+#define rt_sched_unlock_addr 0x0803C78F
+#define rt_sched_unlock_n_resched_addr 0x0803C7A9
 #define rt_system_scheduler_init_addr 0x0803C7D1
 #define rt_system_scheduler_start_addr 0x0803C819
 #define rt_schedule_addr 0x0803C855
