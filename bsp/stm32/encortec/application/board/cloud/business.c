@@ -931,7 +931,7 @@ extern rt_err_t esp32_transf_data(const char* ssid, size_t ssid_len, const char*
 rt_err_t esp32_wifi_transfer()
 {
     rt_err_t result = RT_EOK;
-    server_ctrl_data.Esp32_AP_Switch = 1; // for test
+    // server_ctrl_data.Esp32_AP_Switch = 1; // for test
     if (server_ctrl_data.Esp32_AP_Switch) {
         nand_to_esp32();
         esp_at_init();
@@ -944,16 +944,16 @@ rt_err_t esp32_wifi_transfer()
         }
         log_debug("esp wait rdy");
 
-        // result = esp32_transf_data(
-        //     ssid_string, strlen(ssid_string),
-        //     pwd_string, strlen(pwd_string),
-        //     nbiot_imei_string, strlen(nbiot_imei_string)
-        // );
         result = esp32_transf_data(
-            "ESP_TEST", strlen("ESP_TEST"),
-            "1234567890", strlen("1234567890"),
-            "THIS IS DT TEST", strlen("THIS IS DT TEST")
+            ssid_string, strlen(ssid_string),
+            pwd_string, strlen(pwd_string),
+            nbiot_imei_string, strlen(nbiot_imei_string)
         );
+        // result = esp32_transf_data(
+        //     "ESP_TEST", strlen("ESP_TEST"),
+        //     "1234567890", strlen("1234567890"),
+        //     "THIS IS DT TEST", strlen("THIS IS DT TEST")
+        // );
         if (result != RT_EOK) {
             log_debug("esp32_transf_data error");
             return result;

@@ -77,8 +77,8 @@ int application_start(int argc, char *argv[]) {
     // extern int delete_directory(const char *dir);
     // delete_directory("/data");
 
-    // extern void main_business_entry(void);
-    // main_business_entry();
+    extern void main_business_entry(void);
+    main_business_entry();
 
     // extern void esp_data_stransf_example(void);
     // esp_data_stransf_example();

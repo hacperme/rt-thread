@@ -46,16 +46,16 @@ static struct at_urc urc_table[] = {
     {"+STA_DISCONNECTED:", 		"\r\n",		urc_func},
     {"+AP_STARTED:", 		"\r\n",		urc_func},
     {"+AP_STOPPED:",   	"\r\n",     	urc_func},
-    {"ready",   	"\r\n",     	urc_func},
+    {"+ESPRDY",   	"\r\n",     	urc_func},
     {"+DT:", 		"\r\n",		dt_urc_func},};
 
 
 static void urc_func(struct at_client *client ,const char *data, rt_size_t size)
 {
     LOG_E("urc data : %s, size:%d\n", data, size);
-    if(strncmp(data, "ready", strlen("ready")) == 0)
+    if(strncmp(data, "+ESPRDY", strlen("+ESPRDY")) == 0)
     {
-        LOG_E("send ready sem\n");
+        LOG_E("send +ESPRDY sem\n");
         rt_sem_release(_ql_at_sem._rdy);
     }
     else if (strncmp(data, "+AP_STOPPED", strlen("+AP_STOPPED")) == 0) {
