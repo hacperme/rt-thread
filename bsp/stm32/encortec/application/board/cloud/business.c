@@ -430,7 +430,7 @@ int nbiot_report_sensor_data_to_server()
         cJSON_AddNumberToObject(acc, "3", sensor_data.acc_z);
         cJSON_AddItemToObject(data, "19", acc);
 
-        cJSON_AddNumberToObject(data, "15", sensor_data.water_level);  // Water Level
+        cJSON_AddNumberToObject(data, "15", isinf(sensor_data.water_level) ? 0 : sensor_data.water_level);  // Water Level
         cJSON_AddNumberToObject(data, "16", sensor_data.cur_vol);  // Conversion voltage
         cJSON_AddNumberToObject(data, "17", sensor_data.vcap_vol);  // Capacitance voltage
         cJSON_AddNumberToObject(data, "18", sensor_data.vbat_vol);  // Battery voltage
