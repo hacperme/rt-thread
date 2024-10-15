@@ -256,7 +256,11 @@ rt_err_t fdc1004_meas_data(struct rt_i2c_bus_device *iic_dev, float *value)
     res = fdc1004_meas_all_read(iic_dev, meas_done, measuerment, 4);
     if (res == RT_EOK)
     {
-        *value = ((float)(measuerment[0] - measuerment[3]) - FDC1004_CLEVEL0) / (float)(measuerment[1] - measuerment[2]);
+        res = measuerment[1] != measuerment[2] ? RT_EOK : RT_ERROR;
+        if (res == RT_EOK)
+        {
+            *value = ((float)(measuerment[0] - measuerment[3]) - FDC1004_CLEVEL0) / (float)(measuerment[1] - measuerment[2]);
+        }
     }
 
     return res;
