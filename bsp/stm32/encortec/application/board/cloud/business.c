@@ -281,31 +281,28 @@ int nbiot_wait_server_connect_ready()
     log_debug("nbiot wait server connect");
     rt_err_t result = RT_EOK;
 
-    if (nbiot_check_qiotstate() == RT_EOK) {
-        // server connect ok, goto report control data to server
-        return NBIOT_SERVER_CONNECT_RDY;
-    }
-    else {
-        nbiot_lwm2m_deregister();
-        struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 180, 1, 1, 1};
-        if (! set_lwm2m_config_flag && nbiot_check_lwm2m_config(&config) != RT_EOK) {
-            if (nbiot_set_lwm2m_config(&config) == RT_EOK) {
-                set_lwm2m_config_flag = 1;
-                log_debug("nbiot_set_lwm2m_config success");
-            }
-            else {
-                log_debug("nbiot_set_lwm2m_config failed");
-            }
-        }
-        // connect failed, but network ready
-        if (nbiot_check_network(1) == RT_EOK) {
-            nbiot_lwm2m_register();
-            return NBIOT_SERVER_CONNECT_RETRY;
+    nbiot_lwm2m_deregister();
+    struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 180, 1, 1, 1};
+    if (! set_lwm2m_config_flag && nbiot_check_lwm2m_config(&config) != RT_EOK) {
+        if (nbiot_set_lwm2m_config(&config) == RT_EOK) {
+            set_lwm2m_config_flag = 1;
+            log_debug("nbiot_set_lwm2m_config success");
         }
         else {
-            // connect failed and network not ready
-            return NBIOT_NETWORK_RETRY;
+            log_debug("nbiot_set_lwm2m_config failed");
         }
+    }
+    // connect failed, but network ready
+    if (nbiot_check_network(1) == RT_EOK) {
+        nbiot_lwm2m_register();
+        if (nbiot_check_qiotstate(30) == RT_EOK) {
+            return NBIOT_SERVER_CONNECT_RDY;
+        }
+        return NBIOT_SERVER_CONNECT_RETRY;
+    }
+    else {
+        // connect failed and network not ready
+        return NBIOT_NETWORK_RETRY;
     }
 }
 

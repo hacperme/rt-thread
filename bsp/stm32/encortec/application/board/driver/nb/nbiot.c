@@ -610,20 +610,20 @@ rt_err_t nbiot_check_qiotstate(int retry_times)
         return RT_ERROR;
     }
     
-    int state = -1;
-    result = at_obj_exec_cmd(client, resp, "AT+QIOTSTATE?");
-    if (result == RT_EOK) {
-        if (at_resp_parse_line_args(resp, 2, "+QIOTSTATE: %d", &state) > 0) {
-            log_debug("get qiotstate state: %d", state);
-            if (state == 8) {
-                at_delete_resp(resp);
-                return RT_EOK;
-            }
-            else {
-                at_delete_resp(resp);
-                return RT_ERROR;
+    while (retry_times) {
+        int state = -1;
+        result = at_obj_exec_cmd(client, resp, "AT+QIOTSTATE?");
+        if (result == RT_EOK) {
+            if (at_resp_parse_line_args(resp, 2, "+QIOTSTATE: %d", &state) > 0) {
+                log_debug("get qiotstate state: %d", state);
+                if (state == 8) {
+                    at_delete_resp(resp);
+                    return RT_EOK;
+                }
             }
         }
+        retry_times--;
+        rt_thread_mdelay(1000);
     }
     at_delete_resp(resp);  // after at_resp_parse_line_args, delete resp will cause dump
     return RT_ERROR;
