@@ -27,8 +27,10 @@
 extern char __bootloader_rom_start[];
 extern char __bootloader_rom_end[];
 extern char __bootloader_rom_occupied_end[];
-extern char __app_rom_start[];
-extern char __app_rom_end[];
+extern char __appa_rom_start[];
+extern char __appa_rom_end[];
+extern char __appb_rom_start[];
+extern char __appb_rom_end[];
 
 extern char __bootloader_ram_start[];
 extern char __bootloader_ram_end[];
@@ -41,13 +43,15 @@ extern char __heap_end[];
 
 int main(void)
 {
-    mbr_t *mbr = (mbr_t *)__app_rom_start;
+    app_header_t *app_header = (app_header_t *)__appa_rom_start;
 
     LOG_I("__bootloader_rom_start: %p", __bootloader_rom_start);
     LOG_I("__bootloader_rom_end: %p", __bootloader_rom_end);
     LOG_I("__bootloader_rom_occupied_end: %p", __bootloader_rom_occupied_end);
-    LOG_I("__app_rom_start: %p", __app_rom_start);
-    LOG_I("__app_rom_end: %p", __app_rom_end);
+    LOG_I("__appa_rom_start: %p", __appa_rom_start);
+    LOG_I("__appa_rom_end: %p", __appa_rom_end);
+    LOG_I("__appb_rom_start: %p", __appb_rom_start);
+    LOG_I("__appb_rom_end: %p", __appb_rom_end);
 
     LOG_I("__bootloader_ram_start: %p", __bootloader_ram_start);
     LOG_I("__bootloader_ram_end: %p", __bootloader_ram_end);
@@ -61,15 +65,15 @@ int main(void)
     /* Don't use api mapping method to let App call bootloader apis */
     // rt_api_map_init();
 
-    if(memcmp(mbr->app_magic_number, MBR_APP_MAGIC_NUMBER, sizeof(mbr->app_magic_number)) == 0) {
-        LOG_I("app_magic_number: %s", mbr->app_magic_number);
-        LOG_I("app_startup_entry: %p", mbr->app_startup_entry);
-        LOG_I("app_main_entry: %p", mbr->app_main_entry);
+    if(memcmp(app_header->app_magic_number, APP_HEADER_MAGIC_NUMBER, sizeof(app_header->app_magic_number)) == 0) {
+        LOG_I("app_magic_number: %s", app_header->app_magic_number);
+        LOG_I("app_startup_entry: %p", app_header->app_startup_entry);
+        LOG_I("app_main_entry: %p", app_header->app_main_entry);
 
         /* Don't use api mapping method to let App call bootloader apis */
         app_startup_params_t params = {NULL, NULL, NULL};
-        mbr->app_startup_entry(&params);
-        mbr->app_main_entry(0, NULL);
+        app_header->app_startup_entry(&params);
+        app_header->app_main_entry(0, NULL);
     } else {
         LOG_W("No application program.");
     }

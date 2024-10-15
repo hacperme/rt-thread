@@ -287,15 +287,15 @@
 #define getcwd_addr 0x0801D791
 #define HAL_HMACEx_SHA256_Start_addr 0x080267D1
 #define at_vprintfln_addr 0x0803941D
-#define rt_sched_lock_addr 0x0803F19D
-#define rt_sched_unlock_addr 0x0803F1C7
-#define rt_sched_unlock_n_resched_addr 0x0803F1E1
-#define rt_system_scheduler_init_addr 0x0803F209
-#define rt_system_scheduler_start_addr 0x0803F251
-#define rt_schedule_addr 0x0803F28D
-#define rt_exit_critical_safe_addr 0x0803F62D
-#define rt_enter_critical_addr 0x0803F641
-#define rt_exit_critical_addr 0x0803F67D
-#define rt_critical_level_addr 0x0803F6D5
+#define rt_sched_lock_addr 0x0803F1D5
+#define rt_sched_unlock_addr 0x0803F1FF
+#define rt_sched_unlock_n_resched_addr 0x0803F219
+#define rt_system_scheduler_init_addr 0x0803F241
+#define rt_system_scheduler_start_addr 0x0803F289
+#define rt_schedule_addr 0x0803F2C5
+#define rt_exit_critical_safe_addr 0x0803F665
+#define rt_enter_critical_addr 0x0803F679
+#define rt_exit_critical_addr 0x0803F6B5
+#define rt_critical_level_addr 0x0803F70D
 
 #endif /* __ENCORTEC_FUNCTION_ADDRESSES_H */

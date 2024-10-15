@@ -22,7 +22,7 @@ FLASH_ROM_SIZE = FLASH_BANK1_SIZE + FLASH_BANK2_SIZE;
 FLASH_RAM_SIZE = SRAM1_SIZE + SRAM2_SIZE + SRAM3_SIZE;
 
 BOOTLOADER_ROM_SIZE = 512K;
-DATA_ROM_SIZE = 16K;
+MBR_ROM_SIZE = 16K;
 APP_ROM_SIZE = 760K;
 
 BOOTLOADER_RAM_SIZE = 64K;
@@ -33,7 +33,7 @@ HEAP_RAM_SIZE = 640K;
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
 {
-    ROM (rx) : ORIGIN = FLASH_ORIGIN + BOOTLOADER_ROM_SIZE + DATA_ROM_SIZE, LENGTH = APP_ROM_SIZE
+    ROM (rx) : ORIGIN = FLASH_ORIGIN + BOOTLOADER_ROM_SIZE + MBR_ROM_SIZE, LENGTH = APP_ROM_SIZE
     SRAM (rw) : ORIGIN = SRAM1_ORIGIN + BOOTLOADER_RAM_SIZE, LENGTH = APP_RAM_SIZE
 }
 
@@ -41,7 +41,7 @@ ENTRY(main)
 
 SECTIONS
 {
-    ASSERT(BOOTLOADER_ROM_SIZE + DATA_ROM_SIZE + APP_ROM_SIZE <= FLASH_ROM_SIZE - APP_ROM_SIZE, "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
+    ASSERT(BOOTLOADER_ROM_SIZE + MBR_ROM_SIZE + APP_ROM_SIZE <= FLASH_ROM_SIZE - APP_ROM_SIZE, "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
     ASSERT(BOOTLOADER_RAM_SIZE + APP_RAM_SIZE + HEAP_RAM_SIZE <= FLASH_RAM_SIZE, "The combined RAM partitions of the Bootloader, App and heap exceed the total RAM size.")
 
     .text : AT(ORIGIN(ROM))
@@ -49,9 +49,9 @@ SECTIONS
         . = ALIGN(4);
         _stext = .;
 
-	    PROVIDE_HIDDEN (__mbr_start = .);
-		KEEP(*(.mbr))
-		PROVIDE_HIDDEN (__mbr_end = .);
+	    PROVIDE_HIDDEN (__app_header_start = .);
+		KEEP(*(.app_header))
+		PROVIDE_HIDDEN (__app_header_end = .);
 
         *(.text)                        /* remaining code */
         *(.text.*)                      /* remaining code */
