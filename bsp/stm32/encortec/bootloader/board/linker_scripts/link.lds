@@ -82,6 +82,7 @@ SECTIONS
         KEEP(build\kernel\components\finsh\msh.o(.text*))
         KEEP(build\kernel\components\finsh\msh_parse.o(.text*))
         KEEP(build\kernel\components\finsh\shell.o(.text*))
+        KEEP(build\kernel\components\fal\src\fal_partition.o(.text*))
         KEEP(build\kernel\components\libc\compilers\common\cctype.o(.text*))
         KEEP(build\kernel\components\libc\compilers\common\cstdlib.o(.text*))
         KEEP(build\kernel\components\libc\compilers\common\cstring.o(.text*))

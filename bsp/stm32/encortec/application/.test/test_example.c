@@ -45,8 +45,9 @@ int application_start(int argc, char *argv[]) {
         // extern void data_save_as_file_test();
         // data_save_as_file_test();
 
-        extern void test_fs_option(void);
-        test_fs_option();
+        // extern void test_fs_option(void);
+        // test_fs_option();
+        log_debug("fatfs mount success.");
     }
 
     // extern void test_hal_hmac_sha256(void);
@@ -58,8 +59,17 @@ int application_start(int argc, char *argv[]) {
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);
 
-    extern void test_gnss(int argc, char **argv);
-    test_gnss(argc, argv);
+    // extern void test_gnss(int argc, char **argv);
+    // test_gnss(argc, argv);
+
+    // extern void save_app_bin(void);
+    // save_app_bin();
+
+    // extern void test_show_app_bin(void);
+    // test_show_app_bin();
+
+    extern void test_ota_app(void);
+    test_ota_app();
 
     // extern rt_err_t test_hdc3021(void);
     // test_hdc3021();

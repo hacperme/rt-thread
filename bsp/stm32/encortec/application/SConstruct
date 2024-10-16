@@ -49,6 +49,7 @@ CPPPATH = [
     os.path.join(RTT_ROOT, "components/drivers/spi"),
     os.path.join(RTT_ROOT, "components/finsh"),
     os.path.join(RTT_ROOT, "components/dfs/dfs_v1/include"),
+    os.path.join(RTT_ROOT, "components/fal/inc"),
     os.path.join(RTT_ROOT, "components/libc/compilers/common/include"),
     os.path.join(RTT_ROOT, "components/libc/compilers/newlib"),
     os.path.join(RTT_ROOT, "components/libc/cplusplus"),
@@ -62,6 +63,7 @@ CPPPATH = [
     os.path.join(RTT_ROOT, "bsp/stm32/libraries/STM32U5xx_HAL/CMSIS/Device/ST/STM32U5xx/Include"),
     os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/drivers"),
     os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/drivers/config"),
+    os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/drivers/drv_flash"),
     os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers"),
     os.path.join(RTT_ROOT, "bsp/stm32/libraries/HAL_Drivers/CMSIS/Include"),
     os.path.join(SDK_ROOT, "bootloader"),
@@ -69,6 +71,7 @@ CPPPATH = [
     os.path.join(SDK_ROOT, "bootloader/board/CubeMX_Config/Inc"),
     os.path.join(SDK_ROOT, "bootloader/board/drivers/fatfs_nand_flash"),
     os.path.join(SDK_ROOT, "bootloader/board/drivers/hal_spi_nand_driver"),
+    os.path.join(SDK_ROOT, "bootloader/board/drivers/ota_app"),
     os.path.join(SDK_ROOT, "application", "rt_api"),
     os.path.join(SDK_ROOT, "application", "logging"),
 ]
@@ -87,6 +90,7 @@ driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/voltage"),
     os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
     os.path.join(SDK_ROOT, "application/board/driver/hal_hmac_sha256"),
+    os.path.join(SDK_ROOT, "application/board/driver/ota"),
 ]
 CPPPATH += driver_cpppath
 
@@ -155,6 +159,7 @@ driver_c_files = [
     "board/driver/cat1/sha256.c",
     "board/driver/nb/nbiot.c",
     "board/driver/hal_hmac_sha256/hal_hmac_sha256.c",
+    "board/driver/ota/stm32u575_ota.c",
 ]
 
 cloud_c_files = [

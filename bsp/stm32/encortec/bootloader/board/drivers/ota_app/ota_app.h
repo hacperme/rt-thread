@@ -18,27 +18,35 @@ typedef enum {
 } ota_tag_e;
 
 typedef enum {
-    OTA_SUCCESS = 0xF0,
-    OTA_FILE_NAME_NOT_EXISTS = 0xF1,
-    OTA_FILE_NOT_EXISTS = 0xF2,
-    OTA_ERASE_WRITE_FAILED = 0xF3,
-    OTA_JUMP_APP_FAILED = 0xF4,
-    OTA_WAITING = 0xF5,
-    OTA_FS_INIT_FAILED = 0xF6,
+    OTA_SUCCESS = 0,
+    OTA_FILE_NAME_NOT_EXISTS = 1,
+    OTA_FILE_NOT_EXISTS = 2,
+    OTA_ERASE_FAILED = 3,
+    OTA_WRITE_FAILED = 4,
+    OTA_JUMP_APP_FAILED = 5,
+    OTA_WAITING = 6,
+    OTA_FS_INIT_FAILED = 7,
     OTA_DEFAULT = 0xFF
-} ota_process_e;
+} ota_state_e;
 
 typedef enum {
     APP_A_PART = 0,
     APP_B_PART = 1
 } app_parition_e;
 
-struct ota_data {
-    char ota_tag;  				// 0 - Not OTA; 1 - Do OTA.
-    char ota_process;  			// 0 ~ 95 升级page编号; 0xF0 - 成功; 0xF1 - ota 文件名不存在; 0xF2 - ota 文件不存在; 0xF3 - 擦写失败; 0xF4 - 跳转失败， 0xFA - 待升级; 0xFF 默认值无升级.
-    char app_part;  			// 0 - app0 partition; 1 - app1 partition.
+struct mbr {
+    rt_uint8_t ota_tag;  			// 0 - Not OTA; 1 - Do OTA.
+    rt_uint8_t ota_state;
+    rt_uint8_t app_part;  			// 0 - app0 partition; 1 - app1 partition.
     char ota_file[255];
 };                              // 该结构体单独放在 onchip flash data 分区中存储.
-typedef struct ota_data *ota_data_t;
+typedef struct mbr *mbr_t;
+
+mbr_t mbr_init(void);
+rt_err_t mbr_save(void);
+
+void ota_app_status_save(ota_tag_e ota_tag_val, ota_state_e ota_proc_state, app_parition_e app_part_no);
+void ota_app_over(ota_tag_e ota_tag_val, ota_state_e ota_proc_state, app_parition_e app_part_no);
+void ota_app_process(void);
 
 #endif
