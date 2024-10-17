@@ -254,7 +254,6 @@ int at_https_upload_file(const char *filename)
     rt_kprintf("localtime: %s\n", localtime);
 
     // uri
-    strcat(uri, "/");
     strcat(uri, filename);
     rt_kprintf("uri: %s\n", uri);
     
