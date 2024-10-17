@@ -11,6 +11,7 @@ def get_param_names(params):
             end_index = params[end_index + 1:].find(",")
             param_item = params if end_index == -1 else params[:end_index]
         if end_index == -1 and param_item.count("(") != param_item.count(")"):
+            # print("Param[%s] is invalid!!!!" % param_item)
             raise ValueError("Param[%s] is invalid!!!!" % param_item)
         param_name = param_item.split('(')[1].split(')')[0].split('*')[-1].strip()
     else:

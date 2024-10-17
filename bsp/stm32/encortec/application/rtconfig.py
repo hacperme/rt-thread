@@ -8,6 +8,8 @@ CROSS_TOOL='gcc'
 if os.getenv('RTT_EXEC_PATH'):
     EXEC_PATH = os.getenv('RTT_EXEC_PATH')
 
+APP_PART = os.getenv('APP_PART').strip().upper() if os.getenv('APP_PART') else "A"
+
 BUILD = 'debug'
 
 RTT_ROOT = os.path.abspath('../../../../')
@@ -19,7 +21,7 @@ BUILD_OBJS_DIR = os.path.join(SDK_ROOT, 'application', 'build', 'objects')
 
 os.makedirs(BUILD_OBJS_DIR, exist_ok=True)
 
-TARGET_NAME = os.path.join(BUILD_DIR, 'encortec-application')
+TARGET_NAME = os.path.join(BUILD_DIR, f'encortec-application-{APP_PART.lower()}')
 
 # toolchains
 PREFIX = 'arm-none-eabi-'
@@ -32,11 +34,12 @@ TARGET_EXT = 'elf'
 SIZE = PREFIX + 'size'
 OBJDUMP = PREFIX + 'objdump'
 OBJCPY = PREFIX + 'objcopy'
+LINK_FILE = f"board/linker_scripts/link_{APP_PART.lower()}.lds"
 
 DEVICE = ' -mcpu=cortex-m33 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections'
 CFLAGS = DEVICE + ' -MMD -std=gnu11 -Dgcc'
 AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp -Wa,-mimplicit-it=thumb '
-LFLAGS = DEVICE + f' -Wl,--gc-sections,-Map={TARGET_NAME}.map,-cref,-u,main -T board/linker_scripts/link.lds'
+LFLAGS = DEVICE + f' -Wl,--gc-sections,-Map={TARGET_NAME}.map,-cref,-u,main -T {LINK_FILE}'
 
 CPATH = ''
 LPATH = ''

@@ -68,8 +68,11 @@ int application_start(int argc, char *argv[]) {
     // extern void test_show_app_bin(void);
     // test_show_app_bin();
 
-    extern void test_ota_app(void);
-    test_ota_app();
+    // extern void test_ota_app(void);
+    // test_ota_app();
+
+    // extern rt_err_t test_watch_dog(void);
+    // test_watch_dog();
 
     // extern rt_err_t test_hdc3021(void);
     // test_hdc3021();

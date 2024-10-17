@@ -8,12 +8,13 @@ from tools.flash import flash
 
 ENCORTEC_BL_MAP_NAME = "./bootloader/encortec-bootloader.map"
 ENCORTEC_BL_BIN_NAME = "./bootloader/encortec-bootloader.bin"
-ENCORTEC_APP_BIN_NAME = "./application/build/encortec-application.bin"
+ENCORTEC_APP_BIN_NAME = "./application/build/encortec-application-%s.bin"
 ENCORTEC_FW_NAME = "./encortec-fw-all.bin"
 ENCORTEC_BL_API_LIST_NAME = "./tools/api_list.txt"
 ENCORTEC_BL_API_ADDR_EXPORT_NAME = "./application/rt_api/rt_api_addr.h"
 ENCORTEC_APP_API_TYPEDEF_H_NAME = "./application/rt_api/rt_api_typedef.h"
 ENCORTEC_APP_API_C_NAME = "./application/rt_api/rt_api.c"
+ENCORTEC_APP_PART = "A"
 
 def build_bootloader():
     print("------ Building Bootloader...")
@@ -27,7 +28,9 @@ def clean_bootloader():
 
 def build_app():
     print("------ Building Application...")
-    subprocess.run("cd ./application && scons && cd ..", shell=True)
+    for app_part in ("A", "B"):
+        if ENCORTEC_APP_PART.find(app_part) != -1:
+            subprocess.run(f"cd ./application && set APP_PART={app_part} && scons && cd ..", shell=True)
     print("------ Done!")
 
 def clean_app():
@@ -36,8 +39,13 @@ def clean_app():
     print("------ Done!")
 
 def merge_fw():
-    print("------ Merging Bootloader and App...")
-    merge_bin_files('./bootloader/encortec-bootloader.bin', './application/build/encortec-application.bin', ENCORTEC_FW_NAME)
+    app_a_file = ENCORTEC_APP_BIN_NAME % "A" if ENCORTEC_APP_PART.find("A") != -1 else None
+    app_b_file = ENCORTEC_APP_BIN_NAME % "B" if ENCORTEC_APP_PART.find("B") != -1 else None
+    msg_a = "part of A" if app_a_file else ""
+    msg_b = "part of B" if app_b_file else ""
+    msg = f"{msg_a} and {msg_b}" if msg_a and msg_b else (msg_a if msg_a else msg_b)
+    print(f"------ Merging Bootloader and App {msg}...")
+    merge_bin_files(ENCORTEC_BL_BIN_NAME, app_a_file, app_b_file, ENCORTEC_FW_NAME)
     print("------ Done!")
 
 def clean_merged_fw():
@@ -94,9 +102,12 @@ def flash_fw():
 def print_usage(with_error=False):
     print(("Invalid command. " if with_error else "") + "Please use one of the following commands:")
     print("1. python ./compile.py -a|--app [-c|--clean] # Compile App code")
+    print("1. python ./compile.py -a|--app [-p|--part_of_app] # Compile App part of A or B or AB (Default A)")
     print("2. python ./compile.py -b|--bootloader [-c|--clean] # Compile Bootloader code")
-    print("3. python ./compile.py [-A|--all] [-c|--clean] # Compile Bootloader and then App")
+    print("3. python ./compile.py [-A|--all] [-c|--clean] # Compile Bootloader and then App part of A or B or AB (Default A)")
+    print("3. python ./compile.py [-A|--all] [-p|--part_of_app] # Compile Bootloader and then App")
     print("4. python ./compile.py -m|--merge [-c|--clean] # Merge Bootloader and App firmware")
+    print("4. python ./compile.py -m|--merge [-p|--part_of_app] # Merge Bootloader and App part of A or B or AB firmware (Default A)")
     print("5. python ./compile.py -f|--flash # Flash firmware")
     print("6. python ./compile.py -e|--export-api-addr [-c|--clean] # Export Bootloader API addresses")
     print("7. python ./compile.py -g|--gen-api [-c|--clean] # Export Bootloader API addresses")
@@ -122,6 +133,10 @@ python .\compile.py -b|--bootloader -c|--clean
 python .\compile.py -e|--export-api-addr -c|--clean
 python .\compile.py -g|--gen-api -c|--clean
 python .\compile.py -m|--merge -c|--clean
+
+python .\compile.py -A|--all -p|--part_of_app
+python .\compile.py -a|--app -p|--part_of_app
+python .\compile.py -m|--merge -p|--part_of_app
 """
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -163,6 +178,21 @@ if __name__ == "__main__":
                 clean_rt_api_c_file()
             elif sys.argv[1] in ['-m', '--merge']:
                 clean_merged_fw()
+            else:
+                print_usage(True)
+    elif len(sys.argv) == 4:
+        if sys.argv[2] not in ['-p', '--part_of_app']:
+            print_usage(True)
+        elif sys.argv[3].upper() not in ("A", "B", "AB"):
+            print_usage(True)
+        else:
+            ENCORTEC_APP_PART = sys.argv[3].strip().upper()
+            if sys.argv[1] in ['-a', '--app']:
+                build_app()
+            elif sys.argv[1] in ['-m', '--merge']:
+                merge_fw()
+            elif sys.argv[1] in ['-A', '--all']:
+                build_all()
             else:
                 print_usage(True)
     else:

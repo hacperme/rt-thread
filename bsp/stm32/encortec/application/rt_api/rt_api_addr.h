@@ -299,15 +299,15 @@
 #define rt_hw_cpu_reset_addr 0x08039BD5
 #define mbr_init_addr 0x0803B60D
 #define mbr_save_addr 0x0803B6D1
-#define rt_sched_lock_addr 0x0803F9BD
-#define rt_sched_unlock_addr 0x0803F9E7
-#define rt_sched_unlock_n_resched_addr 0x0803FA01
-#define rt_system_scheduler_init_addr 0x0803FA29
-#define rt_system_scheduler_start_addr 0x0803FA71
-#define rt_schedule_addr 0x0803FAAD
-#define rt_exit_critical_safe_addr 0x0803FE4D
-#define rt_enter_critical_addr 0x0803FE61
-#define rt_exit_critical_addr 0x0803FE9D
-#define rt_critical_level_addr 0x0803FEF5
+#define rt_sched_lock_addr 0x0803FA0D
+#define rt_sched_unlock_addr 0x0803FA37
+#define rt_sched_unlock_n_resched_addr 0x0803FA51
+#define rt_system_scheduler_init_addr 0x0803FA79
+#define rt_system_scheduler_start_addr 0x0803FAC1
+#define rt_schedule_addr 0x0803FAFD
+#define rt_exit_critical_safe_addr 0x0803FE9D
+#define rt_enter_critical_addr 0x0803FEB1
+#define rt_exit_critical_addr 0x0803FEED
+#define rt_critical_level_addr 0x0803FF45
 
 #endif /* __ENCORTEC_FUNCTION_ADDRESSES_H */

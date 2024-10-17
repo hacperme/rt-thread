@@ -137,6 +137,7 @@ rt_api/rt_api.c
 logging/logging.c
 .test/test_example.c
 .test/test_file.c
+.test/test_wdg.c
 """
 )
 

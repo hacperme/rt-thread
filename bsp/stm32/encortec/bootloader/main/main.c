@@ -96,9 +96,18 @@ static void jump_to_app(void)
     }
 }
 
+static void assert_hook(const char *ex, const char *func, rt_size_t line)
+{
+    LOG_E("(%s) assertion failed at function:%s, line number:%d \n", ex, func, line);
+    rt_backtrace();
+    rt_hw_cpu_reset();
+}
+
 int main(void)
 {
     rt_err_t res;
+
+    rt_assert_set_hook(assert_hook);
 
     mbr = mbr_init();
     LOG_I("mbr_init %s.", mbr != RT_NULL ? "success" : "failed");
