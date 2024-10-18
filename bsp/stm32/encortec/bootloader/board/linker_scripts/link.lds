@@ -22,7 +22,7 @@ FLASH_ROM_SIZE = FLASH_BANK1_SIZE + FLASH_BANK2_SIZE;
 FLASH_RAM_SIZE = SRAM1_SIZE + SRAM2_SIZE + SRAM3_SIZE;
 
 BOOTLOADER_ROM_SIZE = 512K;
-DATA_ROM_SIZE = 16K;
+MBR_ROM_SIZE = 16K;
 APP_ROM_SIZE = 760K;
 
 BOOTLOADER_RAM_SIZE = 64K;
@@ -33,7 +33,7 @@ HEAP_RAM_SIZE = 640K;
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
 {
-    ROM (rx) : ORIGIN = FLASH_ORIGIN, LENGTH = BOOTLOADER_ROM_SIZE + DATA_ROM_SIZE
+    ROM (rx) : ORIGIN = FLASH_ORIGIN, LENGTH = BOOTLOADER_ROM_SIZE + MBR_ROM_SIZE
     SRAM (rw) : ORIGIN = SRAM1_ORIGIN, LENGTH = BOOTLOADER_RAM_SIZE
 }
 ENTRY(Reset_Handler)
@@ -41,7 +41,7 @@ _system_stack_size = 0x400;
 
 SECTIONS
 {
-    ASSERT(BOOTLOADER_ROM_SIZE + DATA_ROM_SIZE + APP_ROM_SIZE <= FLASH_ROM_SIZE - APP_ROM_SIZE, "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
+    ASSERT(BOOTLOADER_ROM_SIZE + MBR_ROM_SIZE + APP_ROM_SIZE <= FLASH_ROM_SIZE - APP_ROM_SIZE, "The combined Flash partitions of the Bootloader and App exceed the total Flash size.")
     ASSERT(BOOTLOADER_RAM_SIZE + APP_RAM_SIZE + HEAP_RAM_SIZE <= FLASH_RAM_SIZE, "The combined RAM partitions of the Bootloader, App and heap exceed the total RAM size.")
 
     .text :
@@ -82,6 +82,7 @@ SECTIONS
         KEEP(build\kernel\components\finsh\msh.o(.text*))
         KEEP(build\kernel\components\finsh\msh_parse.o(.text*))
         KEEP(build\kernel\components\finsh\shell.o(.text*))
+        KEEP(build\kernel\components\fal\src\fal_partition.o(.text*))
         KEEP(build\kernel\components\libc\compilers\common\cctype.o(.text*))
         KEEP(build\kernel\components\libc\compilers\common\cstdlib.o(.text*))
         KEEP(build\kernel\components\libc\compilers\common\cstring.o(.text*))
@@ -106,6 +107,7 @@ SECTIONS
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr_ex.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_hash.o(.text*))
         KEEP(build\board\drivers\fatfs_nand_flash\drv_nand_flash.o(.text*))
         KEEP(build\board\drivers\fatfs_nand_flash\drv_fatfs_dhara_nand.o(.text*))
         KEEP(build\kernel\components\dfs\dfs_v1\src\dfs_posix.o(.text*))
@@ -186,8 +188,10 @@ SECTIONS
 
     ASSERT(__bootloader_rom_occupied_end  <= __bootloader_rom_end, "Bootloader ROM data exceeds bootloader ROM end.")
 
-    PROVIDE ( __app_rom_start = __bootloader_rom_end );
-    PROVIDE ( __app_rom_end = __app_rom_start + APP_ROM_SIZE);
+    PROVIDE ( __appa_rom_start = __bootloader_rom_end );
+    PROVIDE ( __appa_rom_end = __appa_rom_start + APP_ROM_SIZE);
+    PROVIDE ( __appb_rom_start = __appa_rom_end );
+    PROVIDE ( __appb_rom_end = __appb_rom_start + APP_ROM_SIZE);
 
     .stack :
     {

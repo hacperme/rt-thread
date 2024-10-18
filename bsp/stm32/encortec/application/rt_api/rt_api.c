@@ -7,6 +7,7 @@
 #include "rttypes.h"
 #include "logging.h"
 #include "stm32u5xx_hal.h"
+#include "ota_app.h"
 #include <sys/stat.h>
 
 rt_err_t rt_thread_init(struct rt_thread *thread, const char *name, void (*entry)(void *parameter), void *parameter, void *stack_start, rt_uint32_t stack_size, rt_uint8_t priority, rt_uint32_t tick) {
@@ -1275,5 +1276,77 @@ rt_err_t rt_sched_unlock(rt_sched_lock_level_t level) {
 
 rt_err_t rt_sched_unlock_n_resched(rt_sched_lock_level_t level) {
     return ((rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_unlock_n_resched_addr))(level);
+}
+
+HAL_StatusTypeDef HAL_HASH_Init(HASH_HandleTypeDef *hhash) {
+    return ((HAL_HASH_Init_api_ptr_t)(HAL_HASH_Init_addr))(hhash);
+}
+
+HAL_StatusTypeDef HAL_HASH_DeInit(HASH_HandleTypeDef *hhash) {
+    return ((HAL_HASH_DeInit_api_ptr_t)(HAL_HASH_DeInit_addr))(hhash);
+}
+
+HAL_StatusTypeDef HAL_HMACEx_SHA256_Start(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout) {
+    return ((HAL_HMACEx_SHA256_Start_api_ptr_t)(HAL_HMACEx_SHA256_Start_addr))(hhash, pInBuffer, Size, pOutBuffer, Timeout);
+}
+
+rt_err_t rt_sched_lock(rt_sched_lock_level_t *plvl) {
+    return ((rt_sched_lock_api_ptr_t)(rt_sched_lock_addr))(plvl);
+}
+
+rt_err_t rt_sched_unlock(rt_sched_lock_level_t level) {
+    return ((rt_sched_unlock_api_ptr_t)(rt_sched_unlock_addr))(level);
+}
+
+rt_err_t rt_sched_unlock_n_resched(rt_sched_lock_level_t level) {
+    return ((rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_unlock_n_resched_addr))(level);
+}
+
+const struct fal_flash_dev * fal_flash_device_find(const char *name) {
+    return ((fal_flash_device_find_api_ptr_t)(fal_flash_device_find_addr))(name);
+}
+
+const struct fal_partition * fal_partition_find(const char *name) {
+    return ((fal_partition_find_api_ptr_t)(fal_partition_find_addr))(name);
+}
+
+const struct fal_partition * fal_get_partition_table(size_t *len) {
+    return ((fal_get_partition_table_api_ptr_t)(fal_get_partition_table_addr))(len);
+}
+
+void fal_set_partition_table_temp(struct fal_partition *table, size_t len) {
+    return ((fal_set_partition_table_temp_api_ptr_t)(fal_set_partition_table_temp_addr))(table, len);
+}
+
+int fal_partition_read(const struct fal_partition *part, uint32_t addr, uint8_t *buf, size_t size) {
+    return ((fal_partition_read_api_ptr_t)(fal_partition_read_addr))(part, addr, buf, size);
+}
+
+int fal_partition_write(const struct fal_partition *part, uint32_t addr, const uint8_t *buf, size_t size) {
+    return ((fal_partition_write_api_ptr_t)(fal_partition_write_addr))(part, addr, buf, size);
+}
+
+int fal_partition_erase(const struct fal_partition *part, uint32_t addr, size_t size) {
+    return ((fal_partition_erase_api_ptr_t)(fal_partition_erase_addr))(part, addr, size);
+}
+
+int fal_partition_erase_all(const struct fal_partition *part) {
+    return ((fal_partition_erase_all_api_ptr_t)(fal_partition_erase_all_addr))(part);
+}
+
+void fal_show_part_table(void) {
+    return ((fal_show_part_table_api_ptr_t)(fal_show_part_table_addr))();
+}
+
+void rt_hw_cpu_reset(void) {
+    return ((rt_hw_cpu_reset_api_ptr_t)(rt_hw_cpu_reset_addr))();
+}
+
+mbr_t mbr_init(void) {
+    return ((mbr_init_api_ptr_t)(mbr_init_addr))();
+}
+
+rt_err_t mbr_save(void) {
+    return ((mbr_save_api_ptr_t)(mbr_save_addr))();
 }
 

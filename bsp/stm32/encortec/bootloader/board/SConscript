@@ -25,6 +25,9 @@ if GetDepend(["BSP_USING_NAND_FLASH", "BSP_USING_DHARA"]):
     path += [cwd + '/drivers/fatfs_nand_flash']
     path += [cwd + '/drivers/hal_spi_nand_driver']
 
+src += Glob("drivers/ota_app/*.c")
+path += [cwd + '/drivers/ota_app']
+
 startup_path_prefix = SDK_LIB
 
 if rtconfig.PLATFORM in ['gcc']:

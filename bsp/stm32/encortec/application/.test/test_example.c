@@ -45,9 +45,13 @@ int application_start(int argc, char *argv[]) {
         // extern void data_save_as_file_test();
         // data_save_as_file_test();
 
-        extern void test_fs_option(void);
-        test_fs_option();
+        // extern void test_fs_option(void);
+        // test_fs_option();
+        log_debug("fatfs mount success.");
     }
+
+    // extern void test_hal_hmac_sha256(void);
+    // test_hal_hmac_sha256();
 
     // extern void test_adxl372(int argc, char **argv);
     // test_adxl372(argc, argv);
@@ -58,14 +62,29 @@ int application_start(int argc, char *argv[]) {
     // extern void test_gnss(int argc, char **argv);
     // test_gnss(argc, argv);
 
+    // extern void save_app_bin(void);
+    // save_app_bin();
+
+    // extern void test_show_app_bin(void);
+    // test_show_app_bin();
+
+    // extern void test_ota_app(void);
+    // test_ota_app();
+
+    // extern rt_err_t test_watch_dog(void);
+    // test_watch_dog();
+
     // extern rt_err_t test_hdc3021(void);
     // test_hdc3021();
 
     // extern rt_err_t test_temp116(void);
     // test_temp116();
 
-    extern void test_read_voltage(int argc, char *argv[]);
-    test_read_voltage(argc, argv);
+    extern void test_crc32_check(void);
+    test_crc32_check();
+
+    // extern void test_read_voltage(int argc, char *argv[]);
+    // test_read_voltage(argc, argv);
 
     // extern void test_rtc(void);
     // rt_thread_mdelay(5 * 1000);

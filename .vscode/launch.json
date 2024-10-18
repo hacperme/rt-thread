@@ -2,14 +2,15 @@
     "configurations": [
         {
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/bsp/stm32/encortec/application/build/encortec-application.elf",
+            // "executable": "${workspaceFolder}/bsp/stm32/encortec/application/build/encortec-application.elf",
+            "executable": "${workspaceFolder}/bsp/stm32/encortec/bootloader/encortec-bootloader.elf",
             "name": "Debug with J-Link",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "jlink",
             "interface": "swd",
             "device": "STM32U535VE",
-            "svdFile": "${workspaceRoot}/.vscode/STM32U535.svd",
+            "svdFile": "${workspaceRoot}/.vscode/STM32U575.svd",
             "liveWatch": {
                 "enabled": true,
                 "samplesPerSecond": 4

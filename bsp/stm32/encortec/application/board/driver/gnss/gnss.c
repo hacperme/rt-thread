@@ -188,7 +188,7 @@ static void gnss_parse_nmea(char *nmea)
 
 static void gnss_thread_entry(void *parameter)
 {
-    log_debug("gnss_thread_entry start.");
+    // log_debug("gnss_thread_entry start.");
     rt_err_t res;
     do {
         res = rt_sem_take(&GNSS_THD_SUSPEND_SEM, RT_WAITING_NO);
@@ -200,7 +200,6 @@ static void gnss_thread_entry(void *parameter)
         // log_debug("rt_mutex_take GNSS_LOCK %s", res == RT_EOK ? "success" : "failed");
         if (res == RT_EOK)
         {
-            // log_debug("query gnss data.");
             rt_memset(nmea, 0, GNSS_BUFF_SIZE);
             if (rt_device_read(GNSS_SERIAL, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
@@ -226,15 +225,17 @@ static void gnss_thread_entry(void *parameter)
     rt_memset(nmea, 0, GNSS_BUFF_SIZE);
     rt_memset(&HGPS, 0, sizeof(HGPS));
     rt_memset(&NMEA_ITEMS, 0, sizeof(NMEA_ITEMS));
+    // rt_enter_critical();
+    // log_debug("rt_enter_critical");
     rt_sched_lock_level_t slvl;
     rt_sched_lock(&slvl);
-    // rt_enter_critical();
     res = rt_sem_release(&GNSS_THD_SUSPEND_SEM);
     log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
     rt_sched_unlock(slvl);
     res = rt_thread_suspend(rt_thread_self());
-    log_debug("rt_thread_suspend gnss_thread_entry rt_thread_self %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
     // rt_schedule();
+    // log_debug("rt_schedule");
     // rt_exit_critical();
 }
 
@@ -246,7 +247,7 @@ static rt_err_t gnss_power_on(void)
 static rt_err_t gnss_power_off(void)
 {
     rt_err_t res = gnss_pwron_pin_enable(0);
-    log_debug("gnss_power_off %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_pwron_pin_enable %s", res == RT_EOK ? "success" : "failed");
     return res;
 }
 
@@ -570,7 +571,7 @@ void test_gnss(int argc, char **argv)
     log_debug("gnss_open %s", res == RT_EOK ? "success" : "failed");
     rt_thread_mdelay(100); //at least 300 ms
 
-    rt_uint8_t cnt = 30;
+    rt_uint8_t cnt = 3;
     lwgps_t gnss_data = {0};
     nmea_item test_nmea_item = {0};
 

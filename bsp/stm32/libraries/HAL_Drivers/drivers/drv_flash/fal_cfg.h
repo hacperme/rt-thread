@@ -30,7 +30,7 @@ extern const struct fal_flash_dev stm32u5_onchip_flash;
 #define FAL_PART_TABLE                                                        \
 {                                                                             \
     {0x12345678, "bl",    "onchip_flash", 0,         512*1024, 0},            \
-    {0x12345678, "data",  "onchip_flash", 512*1024,  16*1024,  0},            \
+    {0x12345678, "mbr",   "onchip_flash", 512*1024,  16*1024,  0},            \
     {0x12345678, "app_a", "onchip_flash", 528*1024,  760*1024, 0},            \
     {0x12345678, "app_b", "onchip_flash", 1288*1024, 760*1024, 0},            \
 }

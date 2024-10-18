@@ -25,8 +25,8 @@ extern uint8_t _ebss[];
 
 static app_startup_params_t sg_app_startup_params = {0};
 
-static const mbr_t mbr __attribute__((unused, section(".mbr"))) = {
-    .app_magic_number = MBR_APP_MAGIC_NUMBER,
+static const app_header_t app_header __attribute__((unused, section(".app_header"))) = {
+    .app_magic_number = APP_HEADER_MAGIC_NUMBER,
     .app_main_entry = main,
     .app_startup_entry = startup
 };

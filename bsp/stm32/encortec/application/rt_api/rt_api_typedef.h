@@ -13,6 +13,7 @@
 #include <sys/statfs.h>
 #include <stdio.h>
 #include "stm32u5xx_hal.h"
+#include "ota_app.h"
 
 typedef rt_err_t (*rt_thread_init_api_ptr_t)(struct rt_thread *thread, const char *name, void (*entry)(void *parameter), void *parameter, void *stack_start, rt_uint32_t stack_size, rt_uint8_t priority, rt_uint32_t tick);
 typedef rt_err_t (*rt_thread_detach_api_ptr_t)(rt_thread_t thread);
@@ -298,7 +299,26 @@ typedef char *(*getcwd_api_ptr_t)(char *buf, size_t size);
 typedef int (*rmdir_api_ptr_t)(const char *path);
 typedef int (*access_api_ptr_t)(const char *path, int mode);
 typedef int (*stat_api_ptr_t)(const char *path, struct stat *buf);
+typedef void (*HAL_SYSCFG_VREFBUF_VoltageScalingConfig_api_ptr_t)(uint32_t VoltageScaling);
+typedef void (*HAL_SYSCFG_VREFBUF_HighImpedanceConfig_api_ptr_t)(uint32_t Mode);
+typedef void (*HAL_SYSCFG_DisableVREFBUF_api_ptr_t)(void);
+typedef HAL_StatusTypeDef (*HAL_SYSCFG_EnableVREFBUF_api_ptr_t)(void);
+typedef HAL_StatusTypeDef (*HAL_HASH_Init_api_ptr_t)(HASH_HandleTypeDef *hhash);
+typedef HAL_StatusTypeDef (*HAL_HASH_DeInit_api_ptr_t)(HASH_HandleTypeDef *hhash);
+typedef HAL_StatusTypeDef (*HAL_HMACEx_SHA256_Start_api_ptr_t)(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout);
 typedef rt_err_t (*rt_sched_lock_api_ptr_t)(rt_sched_lock_level_t *plvl);
 typedef rt_err_t (*rt_sched_unlock_api_ptr_t)(rt_sched_lock_level_t level);
 typedef rt_err_t (*rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_lock_level_t level);
+typedef const struct fal_flash_dev *(*fal_flash_device_find_api_ptr_t)(const char *name);
+typedef const struct fal_partition *(*fal_partition_find_api_ptr_t)(const char *name);
+typedef const struct fal_partition *(*fal_get_partition_table_api_ptr_t)(size_t *len);
+typedef void (*fal_set_partition_table_temp_api_ptr_t)(struct fal_partition *table, size_t len);
+typedef int (*fal_partition_read_api_ptr_t)(const struct fal_partition *part, uint32_t addr, uint8_t *buf, size_t size);
+typedef int (*fal_partition_write_api_ptr_t)(const struct fal_partition *part, uint32_t addr, const uint8_t *buf, size_t size);
+typedef int (*fal_partition_erase_api_ptr_t)(const struct fal_partition *part, uint32_t addr, size_t size);
+typedef int (*fal_partition_erase_all_api_ptr_t)(const struct fal_partition *part);
+typedef void (*fal_show_part_table_api_ptr_t)(void);
+typedef void (*rt_hw_cpu_reset_api_ptr_t)(void);
+typedef mbr_t (*mbr_init_api_ptr_t)(void);
+typedef rt_err_t (*mbr_save_api_ptr_t)(void);
 #endif
