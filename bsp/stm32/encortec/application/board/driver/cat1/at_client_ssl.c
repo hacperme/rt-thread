@@ -728,13 +728,6 @@ rt_err_t cat1_set_network_config()
     }
     LOG_D("set AT+QIACT? success");
 
-    result = at_obj_exec_cmd(client, resp, "AT+QIACT=1");
-    if (result != RT_EOK) {
-        LOG_E("at_obj_exec_cmd AT+QIACT=1: %d", result);
-        goto ERROR;
-    }
-    LOG_D("set AT+QIACT=1 success");
-
 ERROR:
     at_delete_resp(resp);
     return result;

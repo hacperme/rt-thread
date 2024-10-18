@@ -472,7 +472,7 @@ enum cat1_network_status cat1_wait_network_ready()
 
     cat1_enable_echo(0);
     // wait network ready for cat1
-    if (cat1_check_network(10) != RT_EOK) {
+    if (cat1_check_network(20) != RT_EOK) {
         log_debug("cat1 network not ready");
 
         if (! set_cat1_network_config_flag) {
@@ -1018,5 +1018,6 @@ void save_json_obj_to_file(const char *file_path, cJSON *root)
         data = cJSON_PrintUnformatted(root);
         fwrite(data, 1, strlen(data), fd);
         fclose(fd);
+        free(data);
     }
 }
