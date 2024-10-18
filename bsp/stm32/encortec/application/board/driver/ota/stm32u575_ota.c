@@ -102,9 +102,6 @@ rt_err_t set_ota_option(ota_tag_e ota_tag, char *ota_file_name)
     rt_memset(mbr->ota_file, 0, sizeof(mbr->ota_file));
     rt_memcpy(mbr->ota_file, ota_file_name, rt_strlen(ota_file_name));
 
-    // TODO: Delete this code.
-    mbr->app_part = APP_B_PART;
-
     res = mbr_save();
 
 _exit_:
