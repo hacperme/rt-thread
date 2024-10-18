@@ -19,6 +19,10 @@
 #include <board.h>
 #include "drv_config.h"
 
+// #define DRV_DEBUG
+#define LOG_TAG             "drv.adc"
+#include <drv_log.h>
+
 struct stm32_hwcrypto_device
 {
     struct rt_hwcrypto_device dev;
@@ -117,7 +121,7 @@ static rt_uint32_t _crc_update(struct hwcrypto_crc *ctx, const rt_uint8_t *in, r
 
         switch(ctx ->crc_cfg.width)
         {
-#if defined(CRC_POLYLENGTH_7B) && defined(CRC_POLYLENGTH_8B) && defined(CRC_POLYLENGTH_16B) && defined(CRC_POLYLENGTH_32B) || defined(SOC_SERIES_STM32U5)
+#if defined(CRC_POLYLENGTH_7B) && defined(CRC_POLYLENGTH_8B) && defined(CRC_POLYLENGTH_16B) && defined(CRC_POLYLENGTH_32B)
         case 7:
             HW_TypeDef->Init.CRCLength = CRC_POLYLENGTH_7B;
             break;
@@ -165,7 +169,8 @@ static rt_uint32_t _crc_update(struct hwcrypto_crc *ctx, const rt_uint8_t *in, r
     length /= 4;
 #endif /* defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) */
 
-    result = HAL_CRC_Accumulate(ctx->parent.contex, (rt_uint32_t *)in, length);
+    // result = HAL_CRC_Accumulate(ctx->parent.contex, (rt_uint32_t *)in, length);
+    result = HAL_CRC_Calculate(ctx->parent.contex, (rt_uint32_t *)in, length);
 
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32WB) || defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32U5)
     if (HW_TypeDef->Init.OutputDataInversionMode)

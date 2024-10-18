@@ -293,21 +293,21 @@
 #define chdir_addr 0x0801DE1D
 #define access_addr 0x0801DEC9
 #define getcwd_addr 0x0801DF1D
-#define HAL_HMACEx_SHA256_Start_addr 0x08026F5D
-#define fal_flash_device_find_addr 0x080385F1
-#define at_vprintfln_addr 0x0803950D
-#define rt_hw_cpu_reset_addr 0x08039BD5
-#define mbr_init_addr 0x0803B60D
-#define mbr_save_addr 0x0803B6D1
-#define rt_sched_lock_addr 0x0803FA0D
-#define rt_sched_unlock_addr 0x0803FA37
-#define rt_sched_unlock_n_resched_addr 0x0803FA51
-#define rt_system_scheduler_init_addr 0x0803FA79
-#define rt_system_scheduler_start_addr 0x0803FAC1
-#define rt_schedule_addr 0x0803FAFD
-#define rt_exit_critical_safe_addr 0x0803FE9D
-#define rt_enter_critical_addr 0x0803FEB1
-#define rt_exit_critical_addr 0x0803FEED
-#define rt_critical_level_addr 0x0803FF45
+#define HAL_HMACEx_SHA256_Start_addr 0x08026F6D
+#define fal_flash_device_find_addr 0x08038601
+#define at_vprintfln_addr 0x0803951D
+#define rt_hw_cpu_reset_addr 0x08039BE5
+#define mbr_init_addr 0x0803B61D
+#define mbr_save_addr 0x0803B6E1
+#define rt_sched_lock_addr 0x0803FA1D
+#define rt_sched_unlock_addr 0x0803FA47
+#define rt_sched_unlock_n_resched_addr 0x0803FA61
+#define rt_system_scheduler_init_addr 0x0803FA89
+#define rt_system_scheduler_start_addr 0x0803FAD1
+#define rt_schedule_addr 0x0803FB0D
+#define rt_exit_critical_safe_addr 0x0803FEAD
+#define rt_enter_critical_addr 0x0803FEC1
+#define rt_exit_critical_addr 0x0803FEFD
+#define rt_critical_level_addr 0x0803FF55
 
 #endif /* __ENCORTEC_FUNCTION_ADDRESSES_H */

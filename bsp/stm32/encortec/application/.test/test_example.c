@@ -80,6 +80,9 @@ int application_start(int argc, char *argv[]) {
     // extern rt_err_t test_temp116(void);
     // test_temp116();
 
+    extern void test_crc32_check(void);
+    test_crc32_check();
+
     // extern void test_read_voltage(int argc, char *argv[]);
     // test_read_voltage(argc, argv);
 
