@@ -298,8 +298,7 @@ typedef char *(*getcwd_api_ptr_t)(char *buf, size_t size);
 typedef int (*rmdir_api_ptr_t)(const char *path);
 typedef int (*access_api_ptr_t)(const char *path, int mode);
 typedef int (*stat_api_ptr_t)(const char *path, struct stat *buf);
-typedef void (*HAL_SYSCFG_VREFBUF_VoltageScalingConfig_api_ptr_t)(uint32_t VoltageScaling);
-typedef void (*HAL_SYSCFG_VREFBUF_HighImpedanceConfig_api_ptr_t)(uint32_t Mode);
-typedef void (*HAL_SYSCFG_DisableVREFBUF_api_ptr_t)(void);
-typedef HAL_StatusTypeDef (*HAL_SYSCFG_EnableVREFBUF_api_ptr_t)(void);
+typedef rt_err_t (*rt_sched_lock_api_ptr_t)(rt_sched_lock_level_t *plvl);
+typedef rt_err_t (*rt_sched_unlock_api_ptr_t)(rt_sched_lock_level_t level);
+typedef rt_err_t (*rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_lock_level_t level);
 #endif

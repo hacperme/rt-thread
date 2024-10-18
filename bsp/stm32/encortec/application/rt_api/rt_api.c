@@ -1265,19 +1265,15 @@ int stat(const char *path, struct stat *buf) {
     return ((stat_api_ptr_t)(stat_addr))(path, buf);
 }
 
-void HAL_SYSCFG_VREFBUF_VoltageScalingConfig(uint32_t VoltageScaling) {
-    return ((HAL_SYSCFG_VREFBUF_VoltageScalingConfig_api_ptr_t)(HAL_SYSCFG_VREFBUF_VoltageScalingConfig_addr))(VoltageScaling);
+rt_err_t rt_sched_lock(rt_sched_lock_level_t *plvl) {
+    return ((rt_sched_lock_api_ptr_t)(rt_sched_lock_addr))(plvl);
 }
 
-void HAL_SYSCFG_VREFBUF_HighImpedanceConfig(uint32_t Mode) {
-    return ((HAL_SYSCFG_VREFBUF_HighImpedanceConfig_api_ptr_t)(HAL_SYSCFG_VREFBUF_HighImpedanceConfig_addr))(Mode);
+rt_err_t rt_sched_unlock(rt_sched_lock_level_t level) {
+    return ((rt_sched_unlock_api_ptr_t)(rt_sched_unlock_addr))(level);
 }
 
-void HAL_SYSCFG_DisableVREFBUF(void) {
-    return ((HAL_SYSCFG_DisableVREFBUF_api_ptr_t)(HAL_SYSCFG_DisableVREFBUF_addr))();
-}
-
-HAL_StatusTypeDef HAL_SYSCFG_EnableVREFBUF(void) {
-    return ((HAL_SYSCFG_EnableVREFBUF_api_ptr_t)(HAL_SYSCFG_EnableVREFBUF_addr))();
+rt_err_t rt_sched_unlock_n_resched(rt_sched_lock_level_t level) {
+    return ((rt_sched_unlock_n_resched_api_ptr_t)(rt_sched_unlock_n_resched_addr))(level);
 }
 

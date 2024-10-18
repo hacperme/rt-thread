@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include "settings.h"
 #include <math.h>
+#include <dirent.h>
 
 #include "logging.h"
 // #define DBG_TAG "business"
@@ -44,6 +45,7 @@ enum {
     CAT1_INIT,
     CAT1_WAIT_NETWORK_RDY,
     CAT1_UPLOAD_FILE,
+    ESP32_WIFI_TRANSFER_DATA,
     SLEEP,
 };
 
@@ -279,31 +281,28 @@ int nbiot_wait_server_connect_ready()
     log_debug("nbiot wait server connect");
     rt_err_t result = RT_EOK;
 
-    if (nbiot_check_qiotstate() == RT_EOK) {
-        // server connect ok, goto report control data to server
-        return NBIOT_SERVER_CONNECT_RDY;
-    }
-    else {
-        nbiot_lwm2m_deregister();
-        struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 180, 1, 1, 1};
-        if (! set_lwm2m_config_flag && nbiot_check_lwm2m_config(&config) != RT_EOK) {
-            if (nbiot_set_lwm2m_config(&config) == RT_EOK) {
-                set_lwm2m_config_flag = 1;
-                log_debug("nbiot_set_lwm2m_config success");
-            }
-            else {
-                log_debug("nbiot_set_lwm2m_config failed");
-            }
-        }
-        // connect failed, but network ready
-        if (nbiot_check_network(1) == RT_EOK) {
-            nbiot_lwm2m_register();
-            return NBIOT_SERVER_CONNECT_RETRY;
+    nbiot_lwm2m_deregister();
+    struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 180, 1, 1, 1};
+    if (! set_lwm2m_config_flag && nbiot_check_lwm2m_config(&config) != RT_EOK) {
+        if (nbiot_set_lwm2m_config(&config) == RT_EOK) {
+            set_lwm2m_config_flag = 1;
+            log_debug("nbiot_set_lwm2m_config success");
         }
         else {
-            // connect failed and network not ready
-            return NBIOT_NETWORK_RETRY;
+            log_debug("nbiot_set_lwm2m_config failed");
         }
+    }
+    // connect failed, but network ready
+    if (nbiot_check_network(1) == RT_EOK) {
+        nbiot_lwm2m_register();
+        if (nbiot_check_qiotstate(30) == RT_EOK) {
+            return NBIOT_SERVER_CONNECT_RDY;
+        }
+        return NBIOT_SERVER_CONNECT_RETRY;
+    }
+    else {
+        // connect failed and network not ready
+        return NBIOT_NETWORK_RETRY;
     }
 }
 
@@ -316,6 +315,10 @@ enum nbiot_report_ctrl_data_status {
     NBIOT_REPORT_CTRL_DATA_RETRY
 };
 
+extern cJSON *read_json_obj_from_file(const char *file_path);
+char nbiot_imei_string[16] = {0};
+char ssid_string[64] = {0};
+char pwd_string[64] = "1234567890";
 int nbiot_report_ctrl_data_to_server()
 {
     if (nbiot_report_ctrl_retry_times >= 3) {
@@ -325,12 +328,47 @@ int nbiot_report_ctrl_data_to_server()
     nbiot_report_ctrl_retry_times += 1;
 
     log_debug("nbiot report ctrl data to server");
-    char data[128] = {0};
-    snprintf(data, 128, "{\"12\":%d,\"13\":false}", settings_params->collect_interval);
-    if (nbiot_report_ctrl_data(data, rt_strlen(data)) == RT_EOK) {
-        nbiot_recv_ctrl_data(64, &server_ctrl_data);  // read ctrl data from server
+
+    cJSON *data = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data, "12", settings_params->collect_interval);  // Cat1 Collect Interval
+    cJSON_AddStringToObject(data, "24", "300");  // Cat1 File Upload
+    cJSON_AddNumberToObject(data, "4", get_current_antenna_no());  // Antennae No
+
+    // WIFI_Config
+    if (strlen(nbiot_imei_string) == 0) {
+        if (get_nbiot_imei(nbiot_imei_string) != RT_EOK) {
+            memset(nbiot_imei_string, 0, sizeof(nbiot_imei_string));
+            memcpy(nbiot_imei_string, "123456", 6);
+        }
+    }
+    sprintf(ssid_string, "encortec-%s", nbiot_imei_string + 9);
+    cJSON *wifi_config = cJSON_CreateObject();
+    cJSON_AddStringToObject(wifi_config, "1", ssid_string);
+    cJSON_AddStringToObject(wifi_config, "2", pwd_string);
+    cJSON_AddItemToObject(data, "3", wifi_config);
+
+    // upload files
+    cJSON *file_upload_event = read_json_obj_from_file("/upload_files.json");
+    if (file_upload_event) {
+        log_debug("no upload json files");
+        cJSON_AddItemToObject(data, "22", file_upload_event);
+        remove("/upload_files.json");
+    }
+
+    char *data_string = cJSON_PrintUnformatted(data);
+    log_debug("data_string: %s", data_string);
+    cJSON_Delete(data);
+
+    rt_err_t result = nbiot_report_ctrl_data(data_string, rt_strlen(data_string));
+    free(data_string);
+
+    if (result == RT_EOK) {
+        nbiot_recv_ctrl_data(256, &server_ctrl_data);  // read ctrl data from server
         log_debug("server_ctrl_data.CollectInterval: %d", server_ctrl_data.CollectInterval);
-        log_debug("server_ctrl_data.Cat1FileUpload: %d", server_ctrl_data.Cat1FileUpload);
+        log_debug("server_ctrl_data.Esp32_AP_Switch: %d", server_ctrl_data.Esp32_AP_Switch);
+        log_debug("server_ctrl_data.Cat1_File_Upload_File_Times: %s", server_ctrl_data.Cat1_File_Upload_File_Times);
+        log_debug("server_ctrl_data.Cat1_File_Upload_File_Type: %d", server_ctrl_data.Cat1_File_Upload_File_Type);
+        log_debug("server_ctrl_data.Cat1_File_Upload_Switch: %d", server_ctrl_data.Cat1_File_Upload_Switch);
         log_debug("report ctrl data to server success, goto, report sensor data");
         settings_params_t p = {0};
         if (server_ctrl_data.CollectInterval != 0) {
@@ -377,49 +415,34 @@ int nbiot_report_sensor_data_to_server()
         log_debug("nmea_buf char is NULL");
     }
 
-    char data_string[1024] = {0};
+    cJSON *data = cJSON_CreateObject();
+    cJSON_AddNumberToObject(data, "1", sensor_data.temp1);  // Rail temperature 1
+    cJSON_AddNumberToObject(data, "5", sensor_data.temp2);  // Rail temperature 2
+    cJSON_AddNumberToObject(data, "11", sensor_data.temp3);  // Air temperature
+    cJSON_AddNumberToObject(data, "2", sensor_data.humi);  // Humidity
+    cJSON_AddNumberToObject(data, "14", wakeup_source_flag);  // Wake up Source Flag
+    
     if (wakeup_source_flag != RTC_SOURCE) {
-        snprintf(
-            data_string, 
-            sizeof(data_string), 
-            "{" \
-            "\"1\":%f,\"5\":%f,\"11\":%f,\"2\":%f,\"6\":%f,\"7\":%f,\"8\":%f," \
-            "\"9\":%f,\"10\":%f,\"15\":%f,\"16\":%d,\"17\":%d,\"18\":%d,\"14\":%d," \
-            "\"20\":%d,\"21\":%s,\"3\":{\"1\":\"%s\",\"2\":\"%s\"}" \
-            "}",
-            sensor_data.temp1, 
-            sensor_data.temp2, 
-            sensor_data.temp3, 
-            sensor_data.humi, 
-            sensor_data.lat, 
-            sensor_data.lng, 
-            sensor_data.acc_x, 
-            sensor_data.acc_y, 
-            sensor_data.acc_z,
-            sensor_data.water_level,
-            sensor_data.cur_vol,
-            sensor_data.vcap_vol,
-            sensor_data.vbat_vol,
-            wakeup_source_flag,
-            21,
-            "true",
-            "abcdefghij",
-            "0213456789"
-        );
+        // Acceleration
+        cJSON *acc = cJSON_CreateObject();
+        cJSON_AddNumberToObject(acc, "1", sensor_data.acc_x);
+        cJSON_AddNumberToObject(acc, "2", sensor_data.acc_y);
+        cJSON_AddNumberToObject(acc, "3", sensor_data.acc_z);
+        cJSON_AddItemToObject(data, "19", acc);
+
+        cJSON_AddNumberToObject(data, "15", isinf(sensor_data.water_level) ? 0 : sensor_data.water_level);  // Water Level
+        cJSON_AddNumberToObject(data, "16", sensor_data.cur_vol);  // Conversion voltage
+        cJSON_AddNumberToObject(data, "17", sensor_data.vcap_vol);  // Capacitance voltage
+        cJSON_AddNumberToObject(data, "18", sensor_data.vbat_vol);  // Battery voltage
+        cJSON_AddNumberToObject(data, "20", 26);  // NB RSSI
     }
-    else {
-        snprintf(
-            data_string, 
-            sizeof(data_string), 
-            "{\"1\":%f,\"5\":%f,\"11\":%f,\"2\":%f,\"14\":%d}",
-            sensor_data.temp1, 
-            sensor_data.temp2, 
-            sensor_data.temp3, 
-            sensor_data.humi,
-            wakeup_source_flag
-        );
-    }
-    if (nbiot_report_model_data(data_string, rt_strlen(data_string)) == RT_EOK) {
+
+    char *data_string = cJSON_PrintUnformatted(data);
+    rt_err_t result = nbiot_report_model_data(data_string, rt_strlen(data_string));
+    cJSON_Delete(data);
+    free(data_string);
+
+    if (result == RT_EOK) {
         return NBIOT_REPORT_SENSOR_DATA_SUCCESS;
     }
     else {
@@ -461,7 +484,6 @@ enum cat1_network_status cat1_wait_network_ready()
                 log_debug("cat1_set_network_config failed");
             }
         }
-
         return CAT1_NETWORK_NOT_RDY;
     }
     else {
@@ -476,9 +498,22 @@ enum cat1_upload_file_status {
     CAT1_UPLOAD_FILE_ERROR
 };
 
-static int cat1_upload_file_retry_times = 0;
+int split_string_in_place(char *s)
+{
+    int lines = 0;
+    while (*s != '\0') {
+        if (*s == ',') {
+            *s = '\0';
+            lines++;
+        }
+        s++;
+    }
+    return lines + 1;
+}
 
+static int cat1_upload_file_retry_times = 0;
 extern int at_https_upload_file(const char *filename);
+extern void save_json_obj_to_file(const char *file_path, cJSON *root);
 int cat1_upload_file()
 {
     if (cat1_upload_file_retry_times >= 3) {
@@ -488,22 +523,80 @@ int cat1_upload_file()
     cat1_upload_file_retry_times += 1;
 
     rt_err_t result = RT_EOK;
-    log_debug("cat1 upload file, Cat1FileUpload: %d", server_ctrl_data.Cat1FileUpload);
 
-    // char *file_name = NULL;
-    // while (file_name = get_oldest_file_name(&fs)) {
-    //     log_debug("file name is: %s", file_name);
-    //     // 需要上报
-    //     // if (at_http_upload_file_chunked(file_name) == -1) {
-    //     if (at_https_upload_file(file_name) == -1) {
-    //         log_debug("at http upload file failed");
-    //         return CAT1_UPLOAD_FILE_FAILED;
-    //     }
-    //     else {
-    //         delete_oldest_file(&fs);
-    //         log_debug("at http upload '%s' success", file_name);
-    //     }
-    // }
+    char parent_dir[20] = {0};
+    memset(parent_dir, 0, sizeof(parent_dir));
+    if (server_ctrl_data.Cat1_File_Upload_File_Type == 1) {  // 数据文件
+        strcat(parent_dir, "/data");
+    }
+    else if (server_ctrl_data.Cat1_File_Upload_File_Type == 2) { // 系统文件
+        strcat(parent_dir, "/log");
+    }
+    else {
+
+    }
+
+    log_debug("cat1 upload file parent_dir dir: %s", parent_dir);
+    int nums = split_string_in_place(server_ctrl_data.Cat1_File_Upload_File_Times);
+    log_debug("got sub dir nums: %d", nums);
+
+    char *sub_dir = server_ctrl_data.Cat1_File_Upload_File_Times;
+    char target_dir[128] = {0};
+    char upload_file_path[128] = {0};
+    DIR *dir;
+    struct dirent *ent;
+    cJSON *root = cJSON_CreateObject();
+    cJSON *array = cJSON_CreateArray();
+    char upload_file_name[64] = {0};
+    cJSON *temp_obj;
+
+    for (int i=1; i <= nums; i++) {
+        log_debug("got sub_dir %d: %s", i, sub_dir);
+        if (!strlen(sub_dir)) {
+            continue;
+        }
+
+        memset(target_dir, 0, sizeof(target_dir));
+        sprintf(target_dir, "%s/%s", parent_dir, sub_dir);
+        log_debug("got target dir: %s", target_dir);
+
+        // 遍历文件 for test
+        // list_files(target_dir);
+        log_debug("----- uploading dir \"%s\" files: ------", target_dir);
+        if ((dir = opendir(target_dir)) != NULL) {
+            while ((ent = readdir(dir)) != NULL) {
+                memset(upload_file_path, 0, sizeof(upload_file_path));
+                sprintf(upload_file_path, "%s/%s", target_dir, ent->d_name);
+                log_debug("uploading file \"%s\", %d Bytes", upload_file_path, get_file_size(upload_file_path));
+
+                if (at_https_upload_file(upload_file_path) == -1) {
+                    log_debug("at https upload file failed");
+                }
+                else {
+                    log_debug("at https upload \"%s\" success", upload_file_path);
+                    remove(upload_file_path);
+                    memset(upload_file_name, 0, sizeof(upload_file_name));
+                    sprintf(upload_file_name, "%s/%s", "iot-encortec", ent->d_name);
+        
+                    temp_obj = cJSON_CreateObject();
+                    cJSON_AddStringToObject(temp_obj, "1", sub_dir);
+                    cJSON_AddStringToObject(temp_obj, "2", upload_file_name);
+                    cJSON_AddNumberToObject(temp_obj, "3", server_ctrl_data.Cat1_File_Upload_File_Type);
+                    cJSON_AddItemToArray(array, temp_obj);
+                }
+            }
+            closedir(dir);
+        }
+        log_debug("----- uploading dir \"%s\" completed ------", target_dir);
+
+        sub_dir += (strlen(sub_dir) + 1);
+    }
+
+    if (cJSON_GetArraySize(array) > 0) {
+        cJSON_AddItemToObject(root, "23", array);
+        save_json_obj_to_file("/upload_files.json", root);
+    }
+    cJSON_Delete(root);
 
     return CAT1_UPLOAD_FILE_SUCCESS;
 }
@@ -514,10 +607,6 @@ void stm32_sleep()
     log_debug("wait stm32_sleep_ack_sem release");
     rt_sem_take(stm32_sleep_ack_sem, rt_tick_from_millisecond(1000));
     log_debug("go into sleep");
-
-    esp32_power_off();
-    gnss_close();
-    cat1_deinit();
 
     end_tick_ms = rt_tick_get_millisecond();
     log_debug("start tick ms: %d", start_tick_ms);
@@ -624,6 +713,9 @@ void save_sensor_data()
             }
         }
     }
+
+    // 删除超过30天的文件
+    delete_old_dirs(&fs);
 }
 
 static rt_mq_t sm_mq = NULL;
@@ -648,6 +740,7 @@ static void sm_init(void) {
     // sm_set_initial_status(CAT1_INIT);
 }
 
+extern rt_err_t esp32_wifi_transfer();
 void main_business_entry(void)
 {
     rt_err_t result;
@@ -693,6 +786,7 @@ void main_business_entry(void)
             case COLLECT_SENSOR_DATA:
                 collect_sensor_data();
                 sensor_pwron_pin_enable(PIN_LOW);
+                gnss_close();
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
@@ -776,7 +870,7 @@ void main_business_entry(void)
                 break;
             case CAT1_INIT:
                 if (cat1_init() != RT_EOK) {
-                    sm_set_status(SLEEP);
+                    sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 else {
                     sm_set_status(CAT1_WAIT_NETWORK_RDY);
@@ -795,17 +889,22 @@ void main_business_entry(void)
                 }
                 else if (rv == CAT1_NETWORK_ERROR) {
                     cat1_deinit();
-                    sm_set_status(SLEEP);
+                    sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 break;
             case CAT1_UPLOAD_FILE:
                 rv = cat1_upload_file();
                 if (rv == CAT1_UPLOAD_FILE_SUCCESS || rv == CAT1_UPLOAD_FILE_ERROR) {
-                    sm_set_status(SLEEP);
+                    cat1_deinit();
+                    sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 else {
                     sm_set_status(CAT1_UPLOAD_FILE);
                 }
+                break;
+            case ESP32_WIFI_TRANSFER_DATA:
+                esp32_wifi_transfer();
+                sm_set_status(SLEEP);
                 break;
             case SLEEP:
                 stm32_sleep();
@@ -814,5 +913,110 @@ void main_business_entry(void)
                 log_warn("unknown status: %d", status);
                 break;
         }
+    }
+}
+
+
+extern rt_err_t esp_wait_rdy();
+extern rt_err_t esp_wait_start(rt_int32_t time);
+extern rt_err_t esp_wait_stop(rt_int32_t time);
+extern rt_err_t esp_wait_connected(rt_int32_t time);
+extern rt_err_t esp_wait_disconnected(rt_int32_t time);
+extern bool esp_at_init(void);
+extern void nand_to_esp32(void);
+extern rt_err_t esp32_transf_data(const char* ssid, size_t ssid_len, const char* psw, size_t psw_len, const char* dk_str, size_t dk_len);
+rt_err_t esp32_wifi_transfer()
+{
+    rt_err_t result = RT_EOK;
+    // server_ctrl_data.Esp32_AP_Switch = 1; // for test
+    if (server_ctrl_data.Esp32_AP_Switch) {
+        nand_to_esp32();
+        esp_at_init();
+        esp32_power_pin_init();
+        esp32_power_on();
+
+        if (esp_wait_rdy() != 0) {
+            log_debug("can not wait esp32 ready");
+            return RT_ERROR;
+        }
+        log_debug("esp wait rdy");
+
+        result = esp32_transf_data(
+            ssid_string, strlen(ssid_string),
+            pwd_string, strlen(pwd_string),
+            nbiot_imei_string, strlen(nbiot_imei_string)
+        );
+        // result = esp32_transf_data(
+        //     "ESP_TEST", strlen("ESP_TEST"),
+        //     "1234567890", strlen("1234567890"),
+        //     "THIS IS DT TEST", strlen("THIS IS DT TEST")
+        // );
+        if (result != RT_EOK) {
+            log_debug("esp32_transf_data error");
+            return result;
+        }
+
+        if (esp_wait_connected(rt_tick_from_millisecond(300000)) == 0) {
+            log_debug("got esp_wait_connected");
+            // 如果 300s 内 app 连接wifi
+            if (esp_wait_start(rt_tick_from_millisecond(300000)) == 0) {
+                log_debug("got esp_wait_start");
+                // 如果 300s 内 开始传输
+                if (esp_wait_stop(RT_WAITING_FOREVER) == 0) {
+                    log_debug("got esp_wait_stop");
+                    esp32_power_off();
+                    return RT_EOK;
+                }
+            }
+            else {
+                log_debug("can not got esp_wait_start");
+            }
+        }
+        else {
+            log_debug("can not got esp_wait_connected");
+        }
+        esp32_power_off();
+    }
+
+    return RT_EOK;
+}
+
+cJSON *read_json_obj_from_file(const char *file_path)
+{
+    FILE *fd = NULL;
+    int length = 0;
+
+    fd = fopen(file_path, "rb");
+    if (!fd) {
+        log_debug("open file \"%s\" failed", file_path);
+        return NULL;
+    }
+    
+    fseek(fd, 0, SEEK_END);
+    length = ftell(fd);
+    fseek(fd, 0, SEEK_SET);
+    log_debug("got \"%s\" file length: %d", file_path, length);
+
+    char *json_string = (char *)malloc(length + 1);
+    memset(json_string, 0, length + 1);
+    fread(json_string, 1, length, fd);
+    log_debug("read json string: %s\n", json_string);
+    fclose(fd);
+
+    cJSON *root = cJSON_Parse(json_string);
+
+    free(json_string);
+    return root;
+}
+
+void save_json_obj_to_file(const char *file_path, cJSON *root)
+{
+    FILE *fd = NULL;
+    char *data = NULL;
+    fd = fopen(file_path, "wb");
+    if (fd) {
+        data = cJSON_PrintUnformatted(root);
+        fwrite(data, 1, strlen(data), fd);
+        fclose(fd);
     }
 }

@@ -1,6 +1,7 @@
 #include "nbiot.h"
 #include <stdio.h>
 #include "cJSON.h"
+#include <string.h>
 
 #include "logging.h"
 // #define DBG_TAG "nbiot"
@@ -145,7 +146,7 @@ rt_err_t nbiot_at_client_init(void)
 
     return result;
 }
-MSH_CMD_EXPORT(nbiot_at_client_init, nbiot_at_client_init);
+// MSH_CMD_EXPORT(nbiot_at_client_init, nbiot_at_client_init);
 
 rt_err_t nbiot_disable_sleep_mode()
 {
@@ -180,7 +181,7 @@ ERROR:
     at_delete_resp(resp);
     return result;
 }
-MSH_CMD_EXPORT(nbiot_disable_sleep_mode, nbiot_disable_sleep_mode);
+// MSH_CMD_EXPORT(nbiot_disable_sleep_mode, nbiot_disable_sleep_mode);
 
 rt_err_t nbiot_enable_sleep_mode()
 {
@@ -209,7 +210,7 @@ rt_err_t nbiot_enable_sleep_mode()
     at_delete_resp(resp);
     return result;
 }
-MSH_CMD_EXPORT(nbiot_enable_sleep_mode, nbiot_enable_sleep_mode);
+// MSH_CMD_EXPORT(nbiot_enable_sleep_mode, nbiot_enable_sleep_mode);
 
 rt_err_t nbiot_enable_echo(int enable)
 {
@@ -560,7 +561,7 @@ rt_err_t nbiot_lwm2m_register()
     at_delete_resp(resp);
     return RT_ERROR;
 }
-MSH_CMD_EXPORT(nbiot_lwm2m_register, nbiot_lwm2m_register);
+// MSH_CMD_EXPORT(nbiot_lwm2m_register, nbiot_lwm2m_register);
 
 rt_err_t nbiot_lwm2m_deregister()
 {
@@ -590,7 +591,7 @@ rt_err_t nbiot_lwm2m_deregister()
     at_delete_resp(resp);
     return result;
 }
-MSH_CMD_EXPORT(nbiot_lwm2m_deregister, nbiot_lwm2m_deregister);
+// MSH_CMD_EXPORT(nbiot_lwm2m_deregister, nbiot_lwm2m_deregister);
 
 rt_err_t nbiot_check_qiotstate(int retry_times)
 {
@@ -609,25 +610,25 @@ rt_err_t nbiot_check_qiotstate(int retry_times)
         return RT_ERROR;
     }
     
-    int state = -1;
-    result = at_obj_exec_cmd(client, resp, "AT+QIOTSTATE?");
-    if (result == RT_EOK) {
-        if (at_resp_parse_line_args(resp, 2, "+QIOTSTATE: %d", &state) > 0) {
-            log_debug("get qiotstate state: %d", state);
-            if (state == 8) {
-                at_delete_resp(resp);
-                return RT_EOK;
-            }
-            else {
-                at_delete_resp(resp);
-                return RT_ERROR;
+    while (retry_times) {
+        int state = -1;
+        result = at_obj_exec_cmd(client, resp, "AT+QIOTSTATE?");
+        if (result == RT_EOK) {
+            if (at_resp_parse_line_args(resp, 2, "+QIOTSTATE: %d", &state) > 0) {
+                log_debug("get qiotstate state: %d", state);
+                if (state == 8) {
+                    at_delete_resp(resp);
+                    return RT_EOK;
+                }
             }
         }
+        retry_times--;
+        rt_thread_mdelay(1000);
     }
     at_delete_resp(resp);  // after at_resp_parse_line_args, delete resp will cause dump
     return RT_ERROR;
 }
-MSH_CMD_EXPORT(nbiot_check_qiotstate, nbiot_check_qiotstate);
+// MSH_CMD_EXPORT(nbiot_check_qiotstate, nbiot_check_qiotstate);
 
 rt_err_t nbiot_report_model_data(const char *data, rt_size_t length)
 {
@@ -710,19 +711,19 @@ rt_err_t nbiot_report_ctrl_data(const char *data, rt_size_t length)
     rt_thread_mdelay(500);  // After the > response, it is recommended for the MCU to wait for 500 ms before sending the data.
 
     rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-    QIOT_DATA_RECV_EVENT_CODE = -1;
+    QIOT_DATA_SEND_EVENT_CODE = -1;
     rt_mutex_release(&qiot_event_mutex);
     at_client_obj_send(client, data, length);
     at_client_obj_send(client, "\x1A", 1);
 
     for (int i=0; i < 30; i++) {
         rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-        if (QIOT_DATA_RECV_EVENT_CODE == -1) {
+        if (QIOT_DATA_SEND_EVENT_CODE == -1) {
             rt_mutex_release(&qiot_event_mutex);
             rt_thread_mdelay(1000);
             continue;
         }
-        if (QIOT_DATA_RECV_EVENT_CODE == 10210) {
+        if (QIOT_DATA_SEND_EVENT_CODE == 10210) {
             rt_mutex_release(&qiot_event_mutex);
             at_delete_resp(resp);
             return RT_EOK;
@@ -748,7 +749,7 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
         return RT_ERROR;
     }
 
-    at_response_t resp = at_create_resp(128, 2, rt_tick_from_millisecond(3000));
+    at_response_t resp = at_create_resp(512, 2, rt_tick_from_millisecond(3000));
     if (resp == RT_NULL) {
         log_error("create resp failed.");
         return RT_ERROR;
@@ -756,7 +757,9 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
 
     int retry_times = 0;
     int got_collect_interval_item_flag = 0;
-    int got_cat1_upload_file_item = 0;
+    int got_cat1_upload_file = 0;
+    int got_esp32_ap_switch_item_flag = 0;
+    cJSON *temp;
     while (1) {
         int cur_len = 0;
         int remain_len = 0;
@@ -781,24 +784,42 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
             log_debug("recv ctrl data from server: %s", data);
             cJSON *root = cJSON_Parse(data);
             if (root != NULL) {
-                log_debug("cJSON: %s", cJSON_Print(root));
                 cJSON *collect_interval_item = cJSON_GetObjectItem(root, "12");
                 if (collect_interval_item != NULL) {
                     log_debug("key: %s, value: %d", collect_interval_item->string, collect_interval_item->valueint);
                     server_ctrl_data_ptr->CollectInterval = collect_interval_item->valueint;
                     got_collect_interval_item_flag = 1;
                 }
-                cJSON *cat1_upload_file_item = cJSON_GetObjectItem(root, "13");
-                if (cat1_upload_file_item != NULL) {
-                    log_debug("key: %s, value: %d", cat1_upload_file_item->string, cat1_upload_file_item->valueint);
-                    server_ctrl_data_ptr->Cat1FileUpload = cat1_upload_file_item->valueint;
-                    got_cat1_upload_file_item = 1;
+                cJSON *esp32_ap_switch_item = cJSON_GetObjectItem(root, "21");
+                if (esp32_ap_switch_item != NULL) {
+                    log_debug("key: %s, value: %d", esp32_ap_switch_item->string, esp32_ap_switch_item->valueint);
+                    server_ctrl_data_ptr->Esp32_AP_Switch = esp32_ap_switch_item->valueint;
+                    got_esp32_ap_switch_item_flag = 1;
                 }
-                cJSON_free(root);
+                cJSON *cat1_file_upload = cJSON_GetObjectItem(root, "13");
+                if (cat1_file_upload != NULL) {
+                    temp = cJSON_GetObjectItem(cat1_file_upload, "1");
+                    if (temp) {
+                        log_debug("key: %s, value: %s", temp->string, temp->valuestring);
+                        strcat(server_ctrl_data_ptr->Cat1_File_Upload_File_Times, temp->valuestring);
+                    }
+                    temp = cJSON_GetObjectItem(cat1_file_upload, "2");
+                    if (temp) {
+                        log_debug("key: %s, value: %d", temp->string, temp->valueint);
+                        server_ctrl_data_ptr->Cat1_File_Upload_File_Type = temp->valueint;
+                    }
+                    temp = cJSON_GetObjectItem(cat1_file_upload, "3");
+                    if (temp) {
+                        log_debug("key: %s, value: %d", temp->string, temp->valueint);
+                        server_ctrl_data_ptr->Cat1_File_Upload_Switch = temp->valueint;
+                    }
+                    got_cat1_upload_file = 1;
+                }
+                cJSON_Delete(root);
             }
         }
         
-        if (got_cat1_upload_file_item && got_collect_interval_item_flag) {
+        if (got_collect_interval_item_flag && got_esp32_ap_switch_item_flag && got_cat1_upload_file) {
             log_debug("got cat1_upload_file_item and collect_interval_item");
             break;
         }
@@ -893,6 +914,42 @@ rt_err_t nbiot_set_qiotlocext(char *nmea_string)
         }
     }
     log_error("set qiotlocext result: %d\n", result);
+    at_delete_resp(resp);
+    return result;
+}
+
+
+// AT+CGSN=1
+rt_err_t get_nbiot_imei(char *output)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+    char imei[64] = {0};
+
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(512, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(client, resp, "AT+CGSN=1");
+    if (result == RT_EOK) {
+        const char *resp_line = at_resp_get_line(resp, 2);
+        if (resp_line == RT_NULL) {
+            result = RT_ERROR;
+            goto ERROR;
+        }
+        memcpy(output, resp_line + 7, strlen(resp_line + 7));
+        output[15] = '\0';
+    }
+
+ERROR:
     at_delete_resp(resp);
     return result;
 }

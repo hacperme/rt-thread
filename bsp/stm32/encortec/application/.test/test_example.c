@@ -71,12 +71,25 @@ int application_start(int argc, char *argv[]) {
     // rt_thread_mdelay(5 * 1000);
     // test_rtc();
 
-    extern void data_save_as_file_test();
-    data_save_as_file_test();
+    // extern void data_save_as_file_test();
+    // data_save_as_file_test();
 
-    // extern void main_business_entry(void);
-    // main_business_entry();
+    // extern int delete_directory(const char *dir);
+    // delete_directory("/data");
 
-    return 0;
+    extern void main_business_entry(void);
+    main_business_entry();
+
+    // extern void esp_data_stransf_example(void);
+    // esp_data_stransf_example();
+
+    // for test
+    // extern void esp32_power_pin_init(void);
+    // extern rt_err_t esp32_start_download(void);
+    // esp32_power_pin_init();
+    // esp32_start_download();
+
+    // extern rt_err_t esp32_wifi_transfer();
+    // esp32_wifi_transfer();
 }
 #endif

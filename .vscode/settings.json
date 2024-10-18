@@ -40,6 +40,11 @@
         "drv_nand_flash.h": "c",
         "voltage.h": "c",
         "tmp116.h": "c",
-        "control.h": "c"
+        "control.h": "c",
+        "stdlib.h": "c",
+        "string.h": "c",
+        "lpm.h": "c",
+        "cjson.h": "c",
+        "esp32.h": "c"
     }
 }

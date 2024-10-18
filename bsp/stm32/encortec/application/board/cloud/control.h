@@ -11,6 +11,10 @@ enum AntennaType {MAIN_ANT=0, REMPTE_ANT};
 enum ModuleType {NBIOT_MODULE=0, CAT1_MODULE};
 enum SimCard {SIM1=0, SIM2};
 
+int board_pins_init(void);
+
+rt_err_t sensor_pwron_pin_enable(rt_uint8_t mode);
+
 rt_err_t antenna_active();
 
 rt_err_t antenna_deactive();
@@ -40,5 +44,9 @@ rt_err_t cat1_power_ctrl(int state);
 rt_err_t cat1_init();
 
 void cat1_deinit();
+
+rt_err_t antenna_type_switch();
+
+enum AntennaType get_current_antenna_no();
 
 #endif

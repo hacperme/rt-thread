@@ -27,5 +27,6 @@ extern size_t get_file_size(const char *filename);
 extern void delete_oldest_file(struct FileSystem *fs);
 extern int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, bool disable_single_file_size_limit, bool append);
 extern void list_files(const char *path);
+extern void delete_old_dirs(struct FileSystem *fs);
 
 #endif

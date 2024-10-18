@@ -173,6 +173,8 @@ rt_err_t cat1_pwrkey_stm_pin_enable(rt_uint8_t mode)
 
 rt_err_t cat1_power_on(void)
 {
+    cat1_power_pin_init();
+    
     rt_err_t res;
     res = cat1_pwron_pin_enable(1);
     // TODO: Enable this check.

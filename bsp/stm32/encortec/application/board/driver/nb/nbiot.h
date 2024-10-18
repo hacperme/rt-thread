@@ -38,7 +38,10 @@ typedef struct datetime *datetime_t;
 
 struct ServerCtrlData {
     int CollectInterval;
-    int Cat1FileUpload;
+    int Esp32_AP_Switch;
+    char Cat1_File_Upload_File_Times[128];
+    int Cat1_File_Upload_File_Type;
+    int Cat1_File_Upload_Switch;
 };
 
 /* init AT client */
@@ -78,5 +81,7 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
 rt_err_t nbiot_get_current_datetime(datetime_t dt);
 
 rt_err_t nbiot_set_qiotlocext(char *nmea_string);
+
+rt_err_t get_nbiot_imei(char *output);
 
 #endif

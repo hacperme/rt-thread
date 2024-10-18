@@ -115,7 +115,7 @@ static rt_err_t adc_vol_read(rt_int8_t channel, rt_uint16_t *value)
     rt_uint16_t vol = 0;
 
     adc_dev = (rt_adc_device_t)rt_device_find(ADC_NAME);
-    log_error("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
+    log_info("find %s device %s.", ADC_NAME, (adc_dev == RT_NULL ? "falied" : "success"));
     res = !adc_dev ? RT_ERROR : RT_EOK;
     if (res != RT_EOK)
     {

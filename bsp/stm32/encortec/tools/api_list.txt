@@ -284,7 +284,6 @@ getcwd
 rmdir
 access
 stat
-HAL_SYSCFG_VREFBUF_VoltageScalingConfig
-HAL_SYSCFG_VREFBUF_HighImpedanceConfig
-HAL_SYSCFG_DisableVREFBUF
-HAL_SYSCFG_EnableVREFBUF
+rt_sched_lock
+rt_sched_unlock
+rt_sched_unlock_n_resched

@@ -77,7 +77,9 @@ driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/tools"),
     os.path.join(SDK_ROOT, "application/board/driver/adxl372"),
     os.path.join(SDK_ROOT, "application/board/driver/cat1"),
+    os.path.join(SDK_ROOT, "application/board/driver/esp32"),
     os.path.join(SDK_ROOT, "application/board/driver/nb"),
+    os.path.join(SDK_ROOT, "application/board/driver/esp32"),
     os.path.join(SDK_ROOT, "application/board/driver/data_save_as_file"),
     os.path.join(SDK_ROOT, "application/board/driver/fdc1004"),
     os.path.join(SDK_ROOT, "application/board/driver/gnss"),
@@ -154,6 +156,8 @@ driver_c_files = [
     "board/driver/cat1/hmac_sha256.c",
     "board/driver/cat1/sha256.c",
     "board/driver/nb/nbiot.c",
+    # "board/driver/esp32/esp32.c",
+    "board/driver/esp32/at_data_transf.c",
 ]
 
 cloud_c_files = [
