@@ -49,4 +49,7 @@ rt_err_t antenna_type_switch();
 
 enum AntennaType get_current_antenna_no();
 
+void debug_led1_pin_init(void);
+rt_err_t debug_led1_pin_enable(rt_uint8_t mode);
+
 #endif
