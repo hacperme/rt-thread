@@ -86,6 +86,17 @@ rt_err_t flash_pwron_pin_enable(rt_uint8_t mode)
     return rt_pin_read(FLASH_PWRON_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
+void debug_led1_pin_init(void)
+{
+    rt_pin_mode(DEBUG_LED1_PIN, PIN_MODE_OUTPUT);
+}
+
+rt_err_t debug_led1_pin_enable(rt_uint8_t mode)
+{
+    rt_pin_write(DEBUG_LED1_PIN, mode);
+    return rt_pin_read(DEBUG_LED1_PIN) == mode ? RT_EOK : RT_ERROR;
+}
+
 int board_pins_init(void)
 {
     rt_err_t res = RT_EOK;
@@ -97,6 +108,7 @@ int board_pins_init(void)
     sim_select_pin_init();
     nbiot_boot_pin_init();
     flash_pwron_pin_init();
+    debug_led1_pin_init();
 
     return res;
 }

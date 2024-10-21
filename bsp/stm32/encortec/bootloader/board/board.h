@@ -125,6 +125,8 @@ void MX_ICACHE_Init(void);
 #define SIM_DET_1_PIN           GET_PIN(C, 7)
 #define SIM_DET_VCC_PIN         GET_PIN(D, 0)
 
+#define DEBUG_LED1_PIN         GET_PIN(H, 0)
+
 #ifdef __cplusplus
 }
 #endif
