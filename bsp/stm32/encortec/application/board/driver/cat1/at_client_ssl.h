@@ -17,6 +17,7 @@ rt_err_t cat1_qpowd();
 rt_err_t cat1_set_cfun_mode(int mode);
 rt_err_t cat1_check_state();
 rt_err_t cat1_wait_rdy();
+rt_err_t cat1_wait_powered_down();
 rt_err_t cat1_check_network(int retry_times);
 rt_err_t cat1_enable_echo(int enable);
 rt_err_t cat1_set_network_config();

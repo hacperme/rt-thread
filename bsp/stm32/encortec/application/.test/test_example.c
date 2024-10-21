@@ -45,8 +45,8 @@ int application_start(int argc, char *argv[]) {
         // extern void data_save_as_file_test();
         // data_save_as_file_test();
 
-        extern void test_fs_option(void);
-        test_fs_option();
+        // extern void test_fs_option(void);
+        // test_fs_option();
     }
 
     // extern void test_adxl372(int argc, char **argv);

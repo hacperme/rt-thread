@@ -34,6 +34,7 @@ typedef struct
 	rt_sem_t _qsslurc;
 	rt_sem_t _qfupl;
     rt_sem_t _rdy;
+	rt_sem_t _powered_down;
 } qat_sem_s;
 
 static qat_sem_s _ql_at_sem = {0};
@@ -49,6 +50,7 @@ static struct at_urc urc_table[] = {
     {"+QSSLURC:", 		"\r\n",		urc_func},
     {"+QFUPL:", 		"\r\n",		urc_func},
     {"RDY",         "\r\n",         urc_func},
+	{"POWERED DOWN", "\r\n",		urc_func}
 };
 
 
@@ -71,6 +73,10 @@ static void urc_func(struct at_client *client ,const char *data, rt_size_t size)
         LOG_E("send _rdy sem\n");
         rt_sem_release(_ql_at_sem._rdy);
     }
+	else if (strncmp(data, "POWERED DOWN", strlen("POWERED DOWN")) == 0) {
+        LOG_E("send _powered_down sem\n");
+        rt_sem_release(_ql_at_sem._powered_down);
+    }
 }
 
 bool at_ssl_client_init(void)
@@ -91,7 +97,7 @@ bool at_ssl_client_init(void)
 	_ql_at_sem._qsslurc = rt_sem_create("sslurc_sem", 0, RT_IPC_FLAG_PRIO);
     _ql_at_sem._rdy = rt_sem_create("rdy_sem", 0, RT_IPC_FLAG_PRIO);
 	_ql_at_sem._qfupl = rt_sem_create("fupl_sem", 0, RT_IPC_FLAG_PRIO);
-	
+	_ql_at_sem._powered_down = rt_sem_create("_powered_down", 0, RT_IPC_FLAG_PRIO);
 	
     LOG_I("AT Client1 (uart1) initialized success\n");
 	at_obj_set_urc_table(at_client_get("uart1"), urc_table, sizeof(urc_table) / sizeof(urc_table[0]));
@@ -543,6 +549,11 @@ int example_at_ssl1(void)
 rt_err_t cat1_wait_rdy()
 {
     return rt_sem_take(_ql_at_sem._rdy, rt_tick_from_millisecond(15000));
+}
+
+rt_err_t cat1_wait_powered_down()
+{
+    return rt_sem_take(_ql_at_sem._powered_down, rt_tick_from_millisecond(15000));
 }
 
 rt_err_t cat1_qpowd()
