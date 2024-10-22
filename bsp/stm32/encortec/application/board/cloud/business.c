@@ -306,6 +306,23 @@ int nbiot_wait_server_connect_ready()
     }
 }
 
+void get_random_number(char *output) {
+    unsigned int tick = rt_tick_get();
+    srand(rt_tick_get());
+
+    int min = 48;
+    int max = 122;
+    int random_value;
+    for (int i = 0; i < 10;) {
+        random_value = min + rand() % ((max + 1) - min);
+        if ((random_value <= 63 && random_value >= 58) || (random_value <= 96 && random_value >= 91)) {
+            continue;
+        }
+        output[i] = random_value;
+        i++;
+    }
+}
+
 static int nbiot_report_ctrl_retry_times = 0;
 static struct ServerCtrlData server_ctrl_data = {0};
 
@@ -950,6 +967,8 @@ rt_err_t esp32_wifi_transfer()
         }
         log_debug("esp wait rdy");
 
+        get_random_number(pwd_string);
+
         result = esp32_transf_data(
             ssid_string, strlen(ssid_string),
             pwd_string, strlen(pwd_string),
@@ -957,7 +976,7 @@ rt_err_t esp32_wifi_transfer()
         );
         // result = esp32_transf_data(
         //     "ESP_TEST", strlen("ESP_TEST"),
-        //     "1234567890", strlen("1234567890"),
+        //     pwd_string, strlen(pwd_string),
         //     "THIS IS DT TEST", strlen("THIS IS DT TEST")
         // );
         if (result != RT_EOK) {

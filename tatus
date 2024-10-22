@@ -1,0 +1,72 @@
+[1mdiff --git a/bsp/stm32/encortec/application/.test/test_example.c b/bsp/stm32/encortec/application/.test/test_example.c[m
+[1mindex fca5df0e7..167cc5379 100644[m
+[1m--- a/bsp/stm32/encortec/application/.test/test_example.c[m
+[1m+++ b/bsp/stm32/encortec/application/.test/test_example.c[m
+[36m@@ -77,8 +77,8 @@[m [mint application_start(int argc, char *argv[]) {[m
+     // extern int delete_directory(const char *dir);[m
+     // delete_directory("/data");[m
+ [m
+[31m-    extern void main_business_entry(void);[m
+[31m-    main_business_entry();[m
+[32m+[m[32m    // extern void main_business_entry(void);[m
+[32m+[m[32m    // main_business_entry();[m
+ [m
+     // extern void esp_data_stransf_example(void);[m
+     // esp_data_stransf_example();[m
+[36m@@ -89,7 +89,7 @@[m [mint application_start(int argc, char *argv[]) {[m
+     // esp32_power_pin_init();[m
+     // esp32_start_download();[m
+ [m
+[31m-    // extern rt_err_t esp32_wifi_transfer();[m
+[31m-    // esp32_wifi_transfer();[m
+[32m+[m[32m    extern rt_err_t esp32_wifi_transfer();[m
+[32m+[m[32m    esp32_wifi_transfer();[m
+ }[m
+ #endif[m
+\ No newline at end of file[m
+[1mdiff --git a/bsp/stm32/encortec/application/board/cloud/business.c b/bsp/stm32/encortec/application/board/cloud/business.c[m
+[1mindex 06109ffa7..38c571ae8 100644[m
+[1m--- a/bsp/stm32/encortec/application/board/cloud/business.c[m
+[1m+++ b/bsp/stm32/encortec/application/board/cloud/business.c[m
+[36m@@ -306,6 +306,23 @@[m [mint nbiot_wait_server_connect_ready()[m
+     }[m
+ }[m
+ [m
+[32m+[m[32mvoid get_random_number(char *output) {[m
+[32m+[m[32m    unsigned int tick = rt_tick_get();[m
+[32m+[m[32m    srand(rt_tick_get());[m
+[32m+[m
+[32m+[m[32m    int min = 48;[m
+[32m+[m[32m    int max = 122;[m
+[32m+[m[32m    int random_value;[m
+[32m+[m[32m    for (int i = 0; i < 10;) {[m
+[32m+[m[32m        random_value = min + rand() % ((max + 1) - min);[m
+[32m+[m[32m        if ((random_value <= 63 && random_value >= 58) || (random_value <= 96 && random_value >= 91)) {[m
+[32m+[m[32m            continue;[m
+[32m+[m[32m        }[m
+[32m+[m[32m        output[i] = random_value;[m
+[32m+[m[32m        i++;[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[32m+[m
+ static int nbiot_report_ctrl_retry_times = 0;[m
+ static struct ServerCtrlData server_ctrl_data = {0};[m
+ [m
+[36m@@ -950,6 +967,8 @@[m [mrt_err_t esp32_wifi_transfer()[m
+         }[m
+         log_debug("esp wait rdy");[m
+ [m
+[32m+[m[32m        get_random_number(pwd_string);[m
+[32m+[m
+         result = esp32_transf_data([m
+             ssid_string, strlen(ssid_string),[m
+             pwd_string, strlen(pwd_string),[m
+[36m@@ -957,7 +976,7 @@[m [mrt_err_t esp32_wifi_transfer()[m
+         );[m
+         // result = esp32_transf_data([m
+         //     "ESP_TEST", strlen("ESP_TEST"),[m
+[31m-        //     "1234567890", strlen("1234567890"),[m
+[32m+[m[32m        //     pwd_string, strlen(pwd_string),[m
+         //     "THIS IS DT TEST", strlen("THIS IS DT TEST")[m
+         // );[m
+         if (result != RT_EOK) {[m
