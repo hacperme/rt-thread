@@ -330,8 +330,8 @@ int nbiot_report_ctrl_data_to_server()
     log_debug("nbiot report ctrl data to server");
 
     cJSON *data = cJSON_CreateObject();
-    cJSON_AddNumberToObject(data, "12", settings_params->collect_interval);  // Cat1 Collect Interval
-    cJSON_AddStringToObject(data, "24", "300");  // Cat1 File Upload
+    cJSON_AddNumberToObject(data, "12", settings_params->cat1_collect_interval);  // Cat1 Collect Interval
+    cJSON_AddNumberToObject(data, "24", settings_params->nb_collect_interval);  // NB Collect Interval
     cJSON_AddNumberToObject(data, "4", get_current_antenna_no());  // Antennae No
 
     // WIFI_Config
@@ -364,15 +364,20 @@ int nbiot_report_ctrl_data_to_server()
 
     if (result == RT_EOK) {
         nbiot_recv_ctrl_data(256, &server_ctrl_data);  // read ctrl data from server
-        log_debug("server_ctrl_data.CollectInterval: %d", server_ctrl_data.CollectInterval);
+        log_debug("server_ctrl_data.Cat1_CollectInterval: %d", server_ctrl_data.Cat1_CollectInterval);
+        log_debug("server_ctrl_data.NB_CollectInterval: %d", server_ctrl_data.NB_CollectInterval);
         log_debug("server_ctrl_data.Esp32_AP_Switch: %d", server_ctrl_data.Esp32_AP_Switch);
         log_debug("server_ctrl_data.Cat1_File_Upload_File_Times: %s", server_ctrl_data.Cat1_File_Upload_File_Times);
         log_debug("server_ctrl_data.Cat1_File_Upload_File_Type: %d", server_ctrl_data.Cat1_File_Upload_File_Type);
         log_debug("server_ctrl_data.Cat1_File_Upload_Switch: %d", server_ctrl_data.Cat1_File_Upload_Switch);
         log_debug("report ctrl data to server success, goto, report sensor data");
         settings_params_t p = {0};
-        if (server_ctrl_data.CollectInterval != 0) {
-            p.collect_interval = server_ctrl_data.CollectInterval;
+        if (server_ctrl_data.Cat1_CollectInterval != 0) {
+            p.cat1_collect_interval = server_ctrl_data.Cat1_CollectInterval;
+            settings_update(&settings, &p);
+        }
+        if (server_ctrl_data.NB_CollectInterval != 0) {
+            p.nb_collect_interval = server_ctrl_data.NB_CollectInterval;
             settings_update(&settings, &p);
         }
         return NBIOT_REPORT_CTRL_DATA_SUCCESS;
@@ -611,10 +616,10 @@ void stm32_sleep()
     end_tick_ms = rt_tick_get_millisecond();
     log_debug("start tick ms: %d", start_tick_ms);
     log_debug("end tick ms: %d", end_tick_ms);
-    log_debug("settings_params->collect_interval: %d", settings_params->collect_interval);
+    log_debug("settings_params->nb_collect_interval: %d", settings_params->nb_collect_interval);
 
     int remaining = 0;
-    remaining = settings_params->collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
+    remaining = settings_params->nb_collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
     log_debug("remaining: %d", remaining);
     rtc_set_wakeup(remaining > 0 ? remaining : 10);
     shut_down();
@@ -752,11 +757,15 @@ void main_business_entry(void)
         if (!settings_params) {
             settings_params = &settings.params;
         }
-        if (settings_params->collect_interval == 0) {
-            settings_params->collect_interval = 600;
+        if (settings_params->cat1_collect_interval == 0) {
+            settings_params->cat1_collect_interval = 600;
+        }
+        if (settings_params->nb_collect_interval == 0) {
+            settings_params->nb_collect_interval = 300;
         }
 
-        log_info("settings_params->collect_interval: %d", settings_params->collect_interval);
+        log_info("settings_params->cat1_collect_interval: %d", settings_params->cat1_collect_interval);
+        log_info("settings_params->nb_collect_interval: %d", settings_params->nb_collect_interval);
     }
  
     stm32_sleep_ack_sem = rt_sem_create("stm32_sleep_ack_sem", 0, RT_IPC_FLAG_FIFO);
