@@ -492,6 +492,7 @@ enum cat1_network_status cat1_wait_network_ready()
     }
     cat1_wait_network_retry_times += 1;
 
+    cat1_set_band();
     cat1_enable_echo(0);
     // wait network ready for cat1
     if (cat1_check_network(20) != RT_EOK) {

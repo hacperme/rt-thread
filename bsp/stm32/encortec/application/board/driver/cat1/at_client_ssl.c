@@ -695,6 +695,33 @@ rt_err_t cat1_enable_echo(int enable)
     return result;
 }
 
+rt_err_t cat1_set_band()
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get("uart1");
+    if (client == RT_NULL) {
+        LOG_E("cat1 at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(128, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        LOG_E("create resp failed.");
+        return RT_ERROR;
+    }
+
+    // 锁 4G 网络
+    result = at_obj_exec_cmd(client, resp, "AT*BAND=5");
+    if (result != RT_EOK) {
+        LOG_E("cat1 disable at AT*BAND=5 failed: %d", result);
+    }
+
+    at_delete_resp(resp);
+    return result;
+}
+
 rt_err_t cat1_set_network_config()
 {
     rt_err_t result = RT_EOK;
