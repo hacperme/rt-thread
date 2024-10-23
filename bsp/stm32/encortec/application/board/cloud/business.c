@@ -335,7 +335,7 @@ enum nbiot_report_ctrl_data_status {
 extern cJSON *read_json_obj_from_file(const char *file_path);
 char nbiot_imei_string[16] = {0};
 char ssid_string[64] = {0};
-char pwd_string[64] = "1234567890";
+char pwd_string[64];
 int nbiot_report_ctrl_data_to_server()
 {
     if (nbiot_report_ctrl_retry_times >= 3) {
@@ -362,7 +362,11 @@ int nbiot_report_ctrl_data_to_server()
     sprintf(ssid_string, "encortec-%s", nbiot_imei_string + 9);
     cJSON *wifi_config = cJSON_CreateObject();
     cJSON_AddStringToObject(wifi_config, "1", ssid_string);
+
+    memset(pwd_string, 0, 64);
+    get_random_number(pwd_string);
     cJSON_AddStringToObject(wifi_config, "2", pwd_string);
+
     cJSON_AddItemToObject(data, "3", wifi_config);
 
     // upload files
@@ -979,8 +983,6 @@ rt_err_t esp32_wifi_transfer()
             return RT_ERROR;
         }
         log_debug("esp wait rdy");
-
-        get_random_number(pwd_string);
 
         result = esp32_transf_data(
             ssid_string, strlen(ssid_string),
