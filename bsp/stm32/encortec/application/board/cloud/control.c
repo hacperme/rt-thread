@@ -277,4 +277,23 @@ void cat1_deinit()
     antenna_deinit();
 }
 
-// for test
+
+#include <stdio.h>
+#include <string.h>
+
+void save_imei_to_file(const char *imei)
+{
+    FILE *f = fopen("/imei.txt", "w");
+    fwrite(imei, 1, strlen(imei), f);
+    fclose(f);
+}
+
+void read_imei_from_file(char *output, int read_length)
+{
+    FILE *f = fopen("/imei.txt", "r");
+    if (!f) {
+        return;
+    }
+    fread(output, 1, read_length, f);
+    fclose(f);
+}

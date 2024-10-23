@@ -357,6 +357,7 @@ int nbiot_report_ctrl_data_to_server()
             memset(nbiot_imei_string, 0, sizeof(nbiot_imei_string));
             memcpy(nbiot_imei_string, "123456", 6);
         }
+        save_imei_to_file(nbiot_imei_string);
     }
     sprintf(ssid_string, "encortec-%s", nbiot_imei_string + 9);
     cJSON *wifi_config = cJSON_CreateObject();
@@ -550,10 +551,12 @@ int cat1_upload_file()
     char parent_dir[20] = {0};
     memset(parent_dir, 0, sizeof(parent_dir));
     if (server_ctrl_data.Cat1_File_Upload_File_Type == 1) {  // 数据文件
-        strcat(parent_dir, "/data");
+        strcat(parent_dir, "/data/");
+        strcat(parent_dir, nbiot_imei_string);
     }
     else if (server_ctrl_data.Cat1_File_Upload_File_Type == 2) { // 系统文件
-        strcat(parent_dir, "/log");
+        strcat(parent_dir, "/log/");
+        strcat(parent_dir, nbiot_imei_string);
     }
     else {
 
@@ -769,7 +772,9 @@ void main_business_entry(void)
     rt_err_t result;
     int status;
     int rv = 0;
-    
+    read_imei_from_file(nbiot_imei_string, 15);
+    log_debug("read_imei_from_file: %s", nbiot_imei_string);
+
     if (settings_init(&settings, "/settings.conf", NULL) == 0) {
         settings_params = settings_read(&settings);
         if (!settings_params) {
@@ -793,7 +798,15 @@ void main_business_entry(void)
     log_debug("start tick ms: %d", start_tick_ms);
 
     sm_init();
-    data_save_as_file_init(&fs, 0, ".dat", "/data", -1);
+
+    char temp_base[32] = {0};
+    if (strlen(nbiot_imei_string)) {
+        sprintf(temp_base, "/data/%s", nbiot_imei_string);
+        data_save_as_file_init(&fs, 0, ".dat", temp_base, -1);
+    }
+    else {
+        data_save_as_file_init(&fs, 0, ".dat", "/data", -1);
+    }
 
     board_pins_init();
 
@@ -829,7 +842,6 @@ void main_business_entry(void)
                 rv = nbiot_wait_network_ready();
                 if (rv == NBIOT_NETWORK_NOT_RDY) {
                     nbiot_deinit();
-                    save_sensor_data();
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_NETWORK_RETRY) {

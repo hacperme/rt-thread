@@ -166,6 +166,39 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
     log_debug("fs->latest_file_name: %s\n", fs->latest_file_name);
 }
 
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <unistd.h>
+ 
+void mkdir_recursive(char *path) {
+    char tmp[256];
+    size_t len;
+ 
+    strcpy(tmp, path);
+    len = strlen(path);
+    if(len && path[len - 1] == '/') {
+        tmp[len - 1] = 0;
+        len--;
+    }
+ 
+    for(int i = 0; i < len; i++) {
+        if(tmp[i] == '/') {
+            tmp[i] = 0;
+            if(access(tmp, F_OK) != 0) {
+                mkdir(tmp, 0755);
+            }
+            tmp[i] = '/';
+        }
+    }
+ 
+    if(access(path, F_OK) != 0) {
+        mkdir(path, 0755);
+    }
+}
+
 void data_save_as_file_init(struct FileSystem *fs, int single_file_size_limit, const char *suffix, const char *base, int save_period) {
     if(single_file_size_limit) {
         fs->single_file_size_limit = single_file_size_limit;
@@ -179,7 +212,7 @@ void data_save_as_file_init(struct FileSystem *fs, int single_file_size_limit, c
     // 判断目录是否存在
     DIR* dir = opendir(fs->base);
     if (dir == NULL) {
-        mkdir(fs->base, 0755);
+        mkdir_recursive(fs->base);
     }
     data_save_as_file_info_refresh(fs);
 }
@@ -239,6 +272,7 @@ void delete_oldest_dir(struct FileSystem *fs) {
     }
 }
 
+extern char nbiot_imei_string[16];
 // 追加或创建文件
 int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, bool disable_single_file_size_limit, bool append) {
     // 获取最新文件的大小

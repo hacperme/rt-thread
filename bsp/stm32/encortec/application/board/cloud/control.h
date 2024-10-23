@@ -52,4 +52,7 @@ enum AntennaType get_current_antenna_no();
 void debug_led1_pin_init(void);
 rt_err_t debug_led1_pin_enable(rt_uint8_t mode);
 
+void save_imei_to_file(const char *imei);
+void read_imei_from_file(char *output, int read_length);
+
 #endif
