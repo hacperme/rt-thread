@@ -53,8 +53,8 @@ int application_start(int argc, char *argv[]) {
     // extern void test_hal_hmac_sha256(void);
     // test_hal_hmac_sha256();
 
-    // extern void test_adxl372(int argc, char **argv);
-    // test_adxl372(argc, argv);
+    extern void test_adxl372(int argc, char **argv);
+    test_adxl372(argc, argv);
 
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);
@@ -80,8 +80,8 @@ int application_start(int argc, char *argv[]) {
     // extern rt_err_t test_temp116(void);
     // test_temp116();
 
-    extern void test_crc32_check(void);
-    test_crc32_check();
+    // extern void test_crc32_check(void);
+    // test_crc32_check();
 
     // extern void test_read_voltage(int argc, char *argv[]);
     // test_read_voltage(argc, argv);

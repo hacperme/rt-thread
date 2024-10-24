@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include "ota_app.h"
 
-rt_err_t set_ota_option(ota_tag_e ota_tag, char *ota_file_name)
+rt_err_t set_stm32u575_ota_option(ota_tag_e ota_tag, char *ota_file_name)
 {
     rt_err_t res = RT_ERROR;
 
@@ -36,7 +36,7 @@ _exit_:
     return res;
 }
 
-rt_err_t clear_ota_option(void)
+rt_err_t clear_stm32u575_ota_option(void)
 {
     rt_err_t res = RT_ERROR;
 
@@ -56,9 +56,9 @@ _exit_:
     return res;
 }
 
-void test_ota_app(void)
+void test_stm32u575_ota_app(void)
 {
-    rt_err_t res = set_ota_option(OTA_YES, "app_a.bin");
+    rt_err_t res = set_stm32u575_ota_option(OTA_YES, "app_a.bin");
     if (res == RT_EOK)
     {
         rt_hw_cpu_reset();
