@@ -55,9 +55,9 @@ void create_hashed_canonical_request(const char *method, const char *uri, const 
     snprintf(header_value, sizeof(header_value), "host:%s\n", host);
     strcat(canonical_request, header_value);
 
-    memset(header_value, 0, sizeof(header_value));
-    snprintf(header_value, sizeof(header_value), "x-amz-acl:%s\n", "public-read-write");
-    strcat(canonical_request, header_value);
+    // memset(header_value, 0, sizeof(header_value));
+    // snprintf(header_value, sizeof(header_value), "x-amz-acl:%s\n", "public-read-write");
+    // strcat(canonical_request, header_value);
 
     memset(header_value, 0, sizeof(header_value));
     snprintf(header_value, sizeof(header_value), "x-amz-content-sha256:%s\n", content_sha256);
@@ -70,7 +70,8 @@ void create_hashed_canonical_request(const char *method, const char *uri, const 
     strcat(canonical_request, "\n");
 
     // SignedHeaders
-    strcat(canonical_request, "host;x-amz-acl;x-amz-content-sha256;x-amz-date\n");
+    // strcat(canonical_request, "host;x-amz-acl;x-amz-content-sha256;x-amz-date\n");
+    strcat(canonical_request, "host;x-amz-content-sha256;x-amz-date\n");
 
     // HashedPayload
     strcat(canonical_request, content_sha256);
@@ -269,7 +270,8 @@ int at_https_upload_file(const char *filename)
     snprintf(
         auth,
         512,
-        "AWS4-HMAC-SHA256 Credential=%s/%s/%s/%s/aws4_request,SignedHeaders=host;x-amz-content-sha256;x-amz-date;x-amz-acl,Signature=%s",
+        // "AWS4-HMAC-SHA256 Credential=%s/%s/%s/%s/aws4_request,SignedHeaders=host;x-amz-content-sha256;x-amz-date;x-amz-acl,Signature=%s",
+        "AWS4-HMAC-SHA256 Credential=%s/%s/%s/%s/aws4_request,SignedHeaders=host;x-amz-content-sha256;x-amz-date,Signature=%s",
         AWS_ACCESS_KEY_ID, date, region, service, signature
     );
     rt_kprintf("Authorization: %s\n", auth);
@@ -284,8 +286,8 @@ int at_https_upload_file(const char *filename)
         "Content-Length: %d\r\n" \
         "Authorization: %s\r\n" \
         "X-Amz-Date: %s\r\n" \
-        "X-Amz-Content-Sha256: %s\r\n" \
-        "X-Amz-Acl: public-read-write\r\n\r\n",
+        "X-Amz-Content-Sha256: %s\r\n\r\n",
+        // "X-Amz-Acl: public-read-write\r\n\r\n",
         uri, host, localtime, content_length, auth, amz_date, hashed_payload
     );
 
