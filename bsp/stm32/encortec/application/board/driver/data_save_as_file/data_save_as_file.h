@@ -3,9 +3,9 @@
 
 #include <stdbool.h>
 
-#define DIR_MAX_LEN 20
+#define DIR_MAX_LEN 64
 #define FILE_SUFFIX_MAX_LEN 10
-#define FILE_NAME_MAX_LEN 50
+#define FILE_NAME_MAX_LEN 64
 #define FILE_SYSTEM_SIZE 512 * 1024 * 1024                // 文件系统大小 512 MB
 #define SINGLE_FILE_SIZE_LIMIT_DFT 8 * 1024               // 单个文件最大大小 4MB
 #define MIN_FREE_BLOCKS 2                                 // 最小空闲空间 1024 个 block

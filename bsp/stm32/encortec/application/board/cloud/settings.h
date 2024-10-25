@@ -2,7 +2,8 @@
 #define __ENCORTEC_SETTINGS_H
 
 typedef struct {
-    int collect_interval;
+    int cat1_collect_interval;
+    int nb_collect_interval;
 } settings_params_t;
 
 typedef struct {

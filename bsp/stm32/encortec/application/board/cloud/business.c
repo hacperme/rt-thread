@@ -306,6 +306,23 @@ int nbiot_wait_server_connect_ready()
     }
 }
 
+void get_random_number(char *output) {
+    unsigned int tick = rt_tick_get();
+    srand(rt_tick_get());
+
+    int min = 48;
+    int max = 122;
+    int random_value;
+    for (int i = 0; i < 10;) {
+        random_value = min + rand() % ((max + 1) - min);
+        if ((random_value <= 63 && random_value >= 58) || (random_value <= 96 && random_value >= 91)) {
+            continue;
+        }
+        output[i] = random_value;
+        i++;
+    }
+}
+
 static int nbiot_report_ctrl_retry_times = 0;
 static struct ServerCtrlData server_ctrl_data = {0};
 
@@ -318,7 +335,7 @@ enum nbiot_report_ctrl_data_status {
 extern cJSON *read_json_obj_from_file(const char *file_path);
 char nbiot_imei_string[16] = {0};
 char ssid_string[64] = {0};
-char pwd_string[64] = "1234567890";
+char pwd_string[64];
 int nbiot_report_ctrl_data_to_server()
 {
     if (nbiot_report_ctrl_retry_times >= 3) {
@@ -330,8 +347,8 @@ int nbiot_report_ctrl_data_to_server()
     log_debug("nbiot report ctrl data to server");
 
     cJSON *data = cJSON_CreateObject();
-    cJSON_AddNumberToObject(data, "12", settings_params->collect_interval);  // Cat1 Collect Interval
-    cJSON_AddStringToObject(data, "24", "300");  // Cat1 File Upload
+    cJSON_AddNumberToObject(data, "12", settings_params->cat1_collect_interval);  // Cat1 Collect Interval
+    cJSON_AddNumberToObject(data, "24", settings_params->nb_collect_interval);  // NB Collect Interval
     cJSON_AddNumberToObject(data, "4", get_current_antenna_no());  // Antennae No
 
     // WIFI_Config
@@ -340,11 +357,16 @@ int nbiot_report_ctrl_data_to_server()
             memset(nbiot_imei_string, 0, sizeof(nbiot_imei_string));
             memcpy(nbiot_imei_string, "123456", 6);
         }
+        save_imei_to_file(nbiot_imei_string);
     }
     sprintf(ssid_string, "encortec-%s", nbiot_imei_string + 9);
     cJSON *wifi_config = cJSON_CreateObject();
     cJSON_AddStringToObject(wifi_config, "1", ssid_string);
+
+    memset(pwd_string, 0, 64);
+    get_random_number(pwd_string);
     cJSON_AddStringToObject(wifi_config, "2", pwd_string);
+
     cJSON_AddItemToObject(data, "3", wifi_config);
 
     // upload files
@@ -364,15 +386,20 @@ int nbiot_report_ctrl_data_to_server()
 
     if (result == RT_EOK) {
         nbiot_recv_ctrl_data(256, &server_ctrl_data);  // read ctrl data from server
-        log_debug("server_ctrl_data.CollectInterval: %d", server_ctrl_data.CollectInterval);
+        log_debug("server_ctrl_data.Cat1_CollectInterval: %d", server_ctrl_data.Cat1_CollectInterval);
+        log_debug("server_ctrl_data.NB_CollectInterval: %d", server_ctrl_data.NB_CollectInterval);
         log_debug("server_ctrl_data.Esp32_AP_Switch: %d", server_ctrl_data.Esp32_AP_Switch);
         log_debug("server_ctrl_data.Cat1_File_Upload_File_Times: %s", server_ctrl_data.Cat1_File_Upload_File_Times);
         log_debug("server_ctrl_data.Cat1_File_Upload_File_Type: %d", server_ctrl_data.Cat1_File_Upload_File_Type);
         log_debug("server_ctrl_data.Cat1_File_Upload_Switch: %d", server_ctrl_data.Cat1_File_Upload_Switch);
         log_debug("report ctrl data to server success, goto, report sensor data");
         settings_params_t p = {0};
-        if (server_ctrl_data.CollectInterval != 0) {
-            p.collect_interval = server_ctrl_data.CollectInterval;
+        if (server_ctrl_data.Cat1_CollectInterval != 0) {
+            p.cat1_collect_interval = server_ctrl_data.Cat1_CollectInterval;
+            settings_update(&settings, &p);
+        }
+        if (server_ctrl_data.NB_CollectInterval != 0) {
+            p.nb_collect_interval = server_ctrl_data.NB_CollectInterval;
             settings_update(&settings, &p);
         }
         return NBIOT_REPORT_CTRL_DATA_SUCCESS;
@@ -470,6 +497,7 @@ enum cat1_network_status cat1_wait_network_ready()
     }
     cat1_wait_network_retry_times += 1;
 
+    cat1_set_band();
     cat1_enable_echo(0);
     // wait network ready for cat1
     if (cat1_check_network(20) != RT_EOK) {
@@ -527,10 +555,12 @@ int cat1_upload_file()
     char parent_dir[20] = {0};
     memset(parent_dir, 0, sizeof(parent_dir));
     if (server_ctrl_data.Cat1_File_Upload_File_Type == 1) {  // 数据文件
-        strcat(parent_dir, "/data");
+        strcat(parent_dir, "/data/");
+        strcat(parent_dir, nbiot_imei_string);
     }
     else if (server_ctrl_data.Cat1_File_Upload_File_Type == 2) { // 系统文件
-        strcat(parent_dir, "/log");
+        strcat(parent_dir, "/log/");
+        strcat(parent_dir, nbiot_imei_string);
     }
     else {
 
@@ -611,10 +641,10 @@ void stm32_sleep()
     end_tick_ms = rt_tick_get_millisecond();
     log_debug("start tick ms: %d", start_tick_ms);
     log_debug("end tick ms: %d", end_tick_ms);
-    log_debug("settings_params->collect_interval: %d", settings_params->collect_interval);
+    log_debug("settings_params->nb_collect_interval: %d", settings_params->nb_collect_interval);
 
     int remaining = 0;
-    remaining = settings_params->collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
+    remaining = settings_params->nb_collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
     log_debug("remaining: %d", remaining);
     rtc_set_wakeup(remaining > 0 ? remaining : 10);
     shut_down();
@@ -746,17 +776,23 @@ void main_business_entry(void)
     rt_err_t result;
     int status;
     int rv = 0;
-    
+    read_imei_from_file(nbiot_imei_string, 15);
+    log_debug("read_imei_from_file: %s", nbiot_imei_string);
+
     if (settings_init(&settings, "/settings.conf", NULL) == 0) {
         settings_params = settings_read(&settings);
         if (!settings_params) {
             settings_params = &settings.params;
         }
-        if (settings_params->collect_interval == 0) {
-            settings_params->collect_interval = 600;
+        if (settings_params->cat1_collect_interval == 0) {
+            settings_params->cat1_collect_interval = 600;
+        }
+        if (settings_params->nb_collect_interval == 0) {
+            settings_params->nb_collect_interval = 300;
         }
 
-        log_info("settings_params->collect_interval: %d", settings_params->collect_interval);
+        log_info("settings_params->cat1_collect_interval: %d", settings_params->cat1_collect_interval);
+        log_info("settings_params->nb_collect_interval: %d", settings_params->nb_collect_interval);
     }
  
     stm32_sleep_ack_sem = rt_sem_create("stm32_sleep_ack_sem", 0, RT_IPC_FLAG_FIFO);
@@ -766,7 +802,15 @@ void main_business_entry(void)
     log_debug("start tick ms: %d", start_tick_ms);
 
     sm_init();
-    data_save_as_file_init(&fs, 0, ".dat", "/data", -1);
+
+    char temp_base[32] = {0};
+    if (strlen(nbiot_imei_string)) {
+        sprintf(temp_base, "/data/%s", nbiot_imei_string);
+        data_save_as_file_init(&fs, 0, ".dat", temp_base, -1);
+    }
+    else {
+        data_save_as_file_init(&fs, 0, ".dat", "/data", -1);
+    }
 
     board_pins_init();
 
@@ -802,7 +846,6 @@ void main_business_entry(void)
                 rv = nbiot_wait_network_ready();
                 if (rv == NBIOT_NETWORK_NOT_RDY) {
                     nbiot_deinit();
-                    save_sensor_data();
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_NETWORK_RETRY) {
@@ -948,7 +991,7 @@ rt_err_t esp32_wifi_transfer()
         );
         // result = esp32_transf_data(
         //     "ESP_TEST", strlen("ESP_TEST"),
-        //     "1234567890", strlen("1234567890"),
+        //     pwd_string, strlen(pwd_string),
         //     "THIS IS DT TEST", strlen("THIS IS DT TEST")
         // );
         if (result != RT_EOK) {

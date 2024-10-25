@@ -756,9 +756,6 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
     }
 
     int retry_times = 0;
-    int got_collect_interval_item_flag = 0;
-    int got_cat1_upload_file = 0;
-    int got_esp32_ap_switch_item_flag = 0;
     cJSON *temp;
     while (1) {
         int cur_len = 0;
@@ -784,17 +781,20 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
             log_debug("recv ctrl data from server: %s", data);
             cJSON *root = cJSON_Parse(data);
             if (root != NULL) {
-                cJSON *collect_interval_item = cJSON_GetObjectItem(root, "12");
-                if (collect_interval_item != NULL) {
-                    log_debug("key: %s, value: %d", collect_interval_item->string, collect_interval_item->valueint);
-                    server_ctrl_data_ptr->CollectInterval = collect_interval_item->valueint;
-                    got_collect_interval_item_flag = 1;
+                cJSON *cat1_collect_interval_item = cJSON_GetObjectItem(root, "12");
+                if (cat1_collect_interval_item != NULL) {
+                    log_debug("key: %s, value: %d", cat1_collect_interval_item->string, cat1_collect_interval_item->valueint);
+                    server_ctrl_data_ptr->Cat1_CollectInterval = cat1_collect_interval_item->valueint;
+                }
+                cJSON *nb_collect_interval_item = cJSON_GetObjectItem(root, "24");
+                if (nb_collect_interval_item != NULL) {
+                    log_debug("key: %s, value: %d", nb_collect_interval_item->string, nb_collect_interval_item->valueint);
+                    server_ctrl_data_ptr->NB_CollectInterval = nb_collect_interval_item->valueint;
                 }
                 cJSON *esp32_ap_switch_item = cJSON_GetObjectItem(root, "21");
                 if (esp32_ap_switch_item != NULL) {
                     log_debug("key: %s, value: %d", esp32_ap_switch_item->string, esp32_ap_switch_item->valueint);
                     server_ctrl_data_ptr->Esp32_AP_Switch = esp32_ap_switch_item->valueint;
-                    got_esp32_ap_switch_item_flag = 1;
                 }
                 cJSON *cat1_file_upload = cJSON_GetObjectItem(root, "13");
                 if (cat1_file_upload != NULL) {
@@ -813,15 +813,9 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
                         log_debug("key: %s, value: %d", temp->string, temp->valueint);
                         server_ctrl_data_ptr->Cat1_File_Upload_Switch = temp->valueint;
                     }
-                    got_cat1_upload_file = 1;
                 }
                 cJSON_Delete(root);
             }
-        }
-        
-        if (got_collect_interval_item_flag && got_esp32_ap_switch_item_flag && got_cat1_upload_file) {
-            log_debug("got cat1_upload_file_item and collect_interval_item");
-            break;
         }
 
         retry_times += 1;

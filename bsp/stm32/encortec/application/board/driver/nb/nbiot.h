@@ -37,7 +37,8 @@ struct datetime {
 typedef struct datetime *datetime_t;
 
 struct ServerCtrlData {
-    int CollectInterval;
+    int Cat1_CollectInterval;
+    int NB_CollectInterval;
     int Esp32_AP_Switch;
     char Cat1_File_Upload_File_Times[128];
     int Cat1_File_Upload_File_Type;
