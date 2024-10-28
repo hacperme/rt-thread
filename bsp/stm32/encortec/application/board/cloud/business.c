@@ -683,7 +683,7 @@ void save_sensor_data()
 
     struct FileFormatData data = {0};
     data.separator = wakeup_source_flag == RTC_SOURCE ? 0xaa : 0xff;
-    data.year = current_time.year;
+    data.year = current_time.year + 2000;
     data.month = current_time.month;
     data.day = current_time.day;
     data.hour = current_time.hour;
