@@ -176,7 +176,7 @@
 
 #define RT_USING_AT
 #define AT_USING_CLIENT
-#define AT_CLIENT_NUM_MAX 4
+#define AT_CLIENT_NUM_MAX 2
 #define AT_USING_CLI
 #define AT_PRINT_RAW_CMD
 #define AT_SW_VERSION_NUM 0x10301
@@ -410,7 +410,6 @@
 #define BSP_USING_LPUART1
 #define BSP_USING_ADC
 #define BSP_USING_ADC1
-#define BSP_USING_VERFBUF
 #define BSP_USING_SPI
 #define BSP_USING_SPI1
 #define BSP_USING_I2C

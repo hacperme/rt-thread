@@ -155,6 +155,6 @@ rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size);
 rt_err_t adxl372_set_fifo(rt_uint8_t *fifo_format, rt_uint8_t *fifo_mode, rt_uint16_t *fifo_samples);
 rt_err_t adxl372_read_fifo_num(rt_uint16_t *fifo_num);
 rt_err_t adxl372_read_fifo_data(rt_int16_t *fifo_data);
-rt_err_t adxl372_read_fifo_xyz(rt_int16_t **xyz_buff, rt_uint16_t *xyz_size);
+rt_err_t adxl372_read_fifo_xyz(rt_int16_t **x_buff, rt_int16_t **y_buff, rt_int16_t **z_buff, rt_uint16_t *xyz_size);
 
 #endif  // __ADXL372_H__

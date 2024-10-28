@@ -27,7 +27,10 @@ rt_uint8_t XYZ_REGS[3][2] = {
     {ADI_ADXL372_Y_DATA_H, ADI_ADXL372_Y_DATA_L},
     {ADI_ADXL372_Z_DATA_H, ADI_ADXL372_Z_DATA_L}
 };
-static rt_int16_t fifo_xyz_buf[ADXL372_FIFO_XYZ_BUFF_SIZE][3] = {0};
+
+static rt_int16_t fifo_x_buf[ADXL372_FIFO_XYZ_BUFF_SIZE] = {0};
+static rt_int16_t fifo_y_buf[ADXL372_FIFO_XYZ_BUFF_SIZE] = {0};
+static rt_int16_t fifo_z_buf[ADXL372_FIFO_XYZ_BUFF_SIZE] = {0};
 static rt_uint16_t fifo_xyz_size = 0;
 
 static void adxl372_inact_event_handler(void)
@@ -857,7 +860,7 @@ rt_err_t adxl372_read_fifo_data(rt_int16_t *fifo_data)
     return res;
 }
 
-rt_err_t adxl372_read_fifo_xyz(rt_int16_t **xyz_buff, rt_uint16_t *xyz_size)
+rt_err_t adxl372_read_fifo_xyz(rt_int16_t **x_buff, rt_int16_t **y_buff, rt_int16_t **z_buff, rt_uint16_t *xyz_size)
 {
     rt_err_t res;
     rt_uint16_t fifo_num = 0;
@@ -896,11 +899,26 @@ rt_err_t adxl372_read_fifo_xyz(rt_int16_t **xyz_buff, rt_uint16_t *xyz_size)
                     group_read_res = res;
                     if (res == RT_EOK)
                     {
-                        fifo_xyz_buf[fifo_xyz_size][j] = fifo_data;
+                        switch (j)
+                        {
+                        case 0:
+                            fifo_x_buf[fifo_xyz_size] = fifo_data;
+                            break;
+                        case 1:
+                            fifo_y_buf[fifo_xyz_size] = fifo_data;
+                            break;
+                        case 2:
+                            fifo_z_buf[fifo_xyz_size] = fifo_data;
+                            break;
+                        default:
+                            break;
+                        }
                     }
                     else
                     {
-                        rt_memset(fifo_xyz_buf[fifo_xyz_size], 0, 3);
+                        fifo_x_buf[fifo_xyz_size] = 0;
+                        fifo_y_buf[fifo_xyz_size] = 0;
+                        fifo_z_buf[fifo_xyz_size] = 0;
                     }
                 }
                 if (group_read_res == RT_EOK)
@@ -925,12 +943,9 @@ rt_err_t adxl372_read_fifo_xyz(rt_int16_t **xyz_buff, rt_uint16_t *xyz_size)
         adxl372_inact_event_handler();
     }
 
-    // for (i = 0; i < fifo_xyz_size; i++)
-    // {
-    //     log_debug("X=%d, Y=%d, Z=%d", fifo_xyz_buf[i][0], fifo_xyz_buf[i][1], fifo_xyz_buf[i][2]);
-    // }
-
-    *xyz_buff = (rt_int16_t *)fifo_xyz_buf;
+    *x_buff = (rt_int16_t *)fifo_x_buf;
+    *y_buff = (rt_int16_t *)fifo_y_buf;
+    *z_buff = (rt_int16_t *)fifo_z_buf;
     *xyz_size = fifo_xyz_size;
 
     return res;
@@ -1007,13 +1022,13 @@ void test_adxl372(void)
         );
     }
 
-    rt_int16_t *xyz_buf;
+    rt_int16_t *x_buf, *y_buf, *z_buf;
     rt_uint16_t xyz_size = 0;
-    res = adxl372_read_fifo_xyz(&xyz_buf, &xyz_size);
-    log_debug("adxl372_read_fifo_xyz res=%d, xyz_buf=0x%08X, xyz_size=%d", res, xyz_buf, xyz_size);
+    res = adxl372_read_fifo_xyz(&x_buf, &y_buf, &z_buf, &xyz_size);
+    log_debug("adxl372_read_fifo_xyz res=%d, xyz_size=%d", res, xyz_size);
     for (rt_uint16_t i = 0; i < xyz_size; i++)
     {
-        log_debug("X=%d, Y=%d, Z=%d", xyz_buf[i * 3 + 0], xyz_buf[i * 3 + 1], xyz_buf[i * 3 + 2]);
+        log_debug("X=%d, Y=%d, Z=%d", x_buf[i], y_buf[i], z_buf[i]);
     }
 
     if (run_always == 1)
