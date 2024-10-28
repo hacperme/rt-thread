@@ -80,8 +80,8 @@ int application_start(int argc, char *argv[]) {
     // extern rt_err_t test_temp116(void);
     // test_temp116();
 
-    extern void test_crc32_check(void);
-    test_crc32_check();
+    // extern void test_crc32_check(void);
+    // test_crc32_check();
 
     // extern void test_read_voltage(int argc, char *argv[]);
     // test_read_voltage(argc, argv);
@@ -93,8 +93,8 @@ int application_start(int argc, char *argv[]) {
     // extern void data_save_as_file_test();
     // data_save_as_file_test();
 
-    // extern int delete_directory(const char *dir);
-    // delete_directory("/data");
+    extern int delete_directory(const char *dir);
+    delete_directory("/data");
 
     extern void main_business_entry(void);
     main_business_entry();

@@ -646,102 +646,76 @@ void stm32_sleep()
     int remaining = 0;
     remaining = settings_params->nb_collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
     log_debug("remaining: %d", remaining);
-    rtc_set_wakeup(remaining > 0 ? remaining : 10);
-    shut_down();
+    // rtc_set_wakeup(remaining > 0 ? remaining : 10);
+    // shut_down();
 }
 
-char sensor_data_buffer[4096] = {0};
+struct FileFormatData
+{
+    char separator;
+    int year;
+    int month;
+    int day;
+    int hour;
+    int minute;
+    float lat;
+    float lng;
+    int zone;
+    float temp1;
+    float temp2;
+    float temp3;
+    float humi;
+    float water_level;
+    int vcap_vol;
+    int vbat_vol;
+};
+
+int track_voltages[1024] = {0};
+int acc_x_list[1024] = {0};
+int acc_y_list[1024] = {0};
+int acc_z_list[1024] = {0};
+
 void save_sensor_data()
 {
     int length = 0;
     char temp_buf[128] = {0};
     log_debug("save sensor data");
-    
-    snprintf(
-        sensor_data_buffer + strlen(sensor_data_buffer), 
-        sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), 
-        "timestamp: %d/%02d/%02d %02d:%02d:%02d\r\n",
-        current_time.year + 2000,
-        current_time.month,
-        current_time.day,
-        current_time.hour,
-        current_time.minute,
-        current_time.second
-    );
 
-    // temperature1: 25.0
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "temperature1: %0.2f\r\n", sensor_data.temp1);
+    struct FileFormatData data = {0};
+    data.separator = wakeup_source_flag == RTC_SOURCE ? 0xaa : 0xff;
+    data.year = current_time.year;
+    data.month = current_time.month;
+    data.day = current_time.day;
+    data.hour = current_time.hour;
+    data.minute = current_time.minute;
+    data.lat = sensor_data.lat;
+    data.lng = sensor_data.lng;
+    data.zone = 0;
+    data.temp1 = sensor_data.temp1;
+    data.temp2 = sensor_data.temp2;
+    data.temp3 = sensor_data.temp3;
+    data.humi = sensor_data.humi;
+    data.water_level = sensor_data.water_level;
+    data.vcap_vol = sensor_data.vcap_vol;
+    data.vbat_vol = sensor_data.vbat_vol;
 
-    // temperature2: 25.0
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "temperature2: %0.2f\r\n", sensor_data.temp2);
+    data_save_as_file(&fs, (char *)&data, sizeof(data), true, false);
+    log_debug("write data file size: %d", sizeof(data));
 
-    // temperature3: 25.0
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "temperature3: %0.2f\r\n", sensor_data.temp3);
+    if (wakeup_source_flag != RTC_SOURCE) {
+        int sample_size = 1024;
+        data_save_as_file(&fs, (char *)&sample_size, sizeof(sample_size), true, true);
+        log_debug("write sample_size file size: %d", sizeof(sample_size));
 
-    // humidity: 56
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "humidity: %0.2f\r\n", sensor_data.humi);
+        data_save_as_file(&fs, (char *)acc_x_list, sizeof(acc_x_list), true, true);
+        log_debug("write acc_x_list file size: %d", sizeof(acc_x_list));
+        data_save_as_file(&fs, (char *)acc_y_list, sizeof(acc_y_list), true, true);
+        log_debug("write acc_y_list file size: %d", sizeof(acc_y_list));
+        data_save_as_file(&fs, (char *)acc_z_list, sizeof(acc_z_list), true, true);
+        log_debug("write acc_z_list file size: %d", sizeof(acc_z_list));
 
-    // water_level: 2.0
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "water_level: %0.2f\r\n", sensor_data.water_level);
-
-    // vbat: 3.6
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vbat: %d\r\n", sensor_data.vbat_vol);
-
-    // vcur: 2.9
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vcur: %d\r\n", sensor_data.cur_vol);
-
-    // vcap: 3.3
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "vcap: %d\r\n", sensor_data.vcap_vol);
-
-    // GNSS: $GNGGA:,,,,,,GNSS:
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "GNSS: ");
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), nmea_buf);
-    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "\r\n");
-
-    // log_debug("sensor_data_buffer:\r\n%s", sensor_data_buffer);
-    data_save_as_file(&fs, sensor_data_buffer, strlen(sensor_data_buffer), true, false);
-    memset(sensor_data_buffer, 0, sizeof(sensor_data_buffer));
-
-    log_debug("read_acc_xyz_result: %d", read_acc_xyz_result);
-
-    if (read_acc_xyz_result == RT_EOK)
-    {
-        snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), "acceleration:\r\n");
-        for (rt_uint16_t i = 0; i < 1024; i++)
-        {   
-            if (fabs(ACC_XYZ_BUFF[i][0]) > fabs(sensor_data.acc_x)) {
-                log_debug("set acc_x %f", ACC_XYZ_BUFF[i][0]);
-                sensor_data.acc_x = ACC_XYZ_BUFF[i][0];
-            }
-
-            if (fabs(ACC_XYZ_BUFF[i][1]) > fabs(sensor_data.acc_y)) {
-                log_debug("set acc_y %f", ACC_XYZ_BUFF[i][1]);
-                sensor_data.acc_y = ACC_XYZ_BUFF[i][1];
-            }
-
-            if (fabs(ACC_XYZ_BUFF[i][2]) > fabs(sensor_data.acc_z)) {
-                log_debug("set acc_z %f", ACC_XYZ_BUFF[i][2]);
-                sensor_data.acc_z = ACC_XYZ_BUFF[i][2];
-            }
-
-            rt_memset(temp_buf, 0, 128);
-            length = sprintf(temp_buf, "%0.2f,%0.2f,%0.2f\r\n", ACC_XYZ_BUFF[i][0], ACC_XYZ_BUFF[i][1], ACC_XYZ_BUFF[i][2]);
-            // log_debug("temp_buf: %s", temp_buf);
-            // 循环写三轴数据
-            if (strlen(sensor_data_buffer) + length > sizeof(sensor_data_buffer)) {
-                if (data_save_as_file(&fs, sensor_data_buffer, strlen(sensor_data_buffer), true, true) == 0) {
-                    log_debug("Data saved successfully.");
-                    rt_memset(sensor_data_buffer, 0, sizeof(sensor_data_buffer));
-                    snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), temp_buf);
-                } else {
-                    log_error("Data saved failed.");
-                    // 本次写入失败，重试写入，最多重试3次?
-                }
-            }
-            else {
-                snprintf(sensor_data_buffer + strlen(sensor_data_buffer), sizeof(sensor_data_buffer) - strlen(sensor_data_buffer), temp_buf);
-            }
-        }
+        data_save_as_file(&fs, (char *)(track_voltages), sizeof(track_voltages), true, true);
+        log_debug("write track_voltages file size: %d", sizeof(track_voltages));
     }
 
     // 删除超过30天的文件
@@ -846,6 +820,7 @@ void main_business_entry(void)
                 rv = nbiot_wait_network_ready();
                 if (rv == NBIOT_NETWORK_NOT_RDY) {
                     nbiot_deinit();
+                    save_sensor_data();
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_NETWORK_RETRY) {
