@@ -107,7 +107,10 @@ static void dt_urc_func(struct at_client *client ,const char *data, rt_size_t si
         AT_SEND_CMD(client_urc, resp, "AT+QTRANSF=0", ;);
         LOG_E("send +DT:SUCCESS sem\n");
         rt_sem_release(_ql_at_sem._stop);
-	}else if (strncmp(data, "+DT:CLOSE", strlen("+DT:CLOSE")) == 0) 
+	} else if (strncmp(data, "+DT:STA_NO_CONNECT_LONG_TIME", strlen("+DT:STA_NO_CONNECT_LONG_TIME"))){
+        LOG_E("send +DT:STA_NO_CONNECT_LONG_TIME sem\n");
+        rt_sem_release(_ql_at_sem._stop);
+    } else if (strncmp(data, "+DT:CLOSE", strlen("+DT:CLOSE")) == 0) 
     {
     }
 }
