@@ -5,8 +5,9 @@ static UpgradeStatus esp_status = UPGRADE_STATUS_IDLE;
 
 void esp_prepare(void) {
     printf("Preparing ESP upgrade...\n");
-    // 可在此处打开esp32 电源，将nandflash切换至 esp侧，check 版本号
+    // 可在此处打开esp32 电源，//check 版本号*
     esp_status = UPGRADE_STATUS_DOWNLOADING;
+    //
 }
 
 void esp_download(int* progress) {
@@ -17,6 +18,7 @@ void esp_download(int* progress) {
     // 需要阻塞等待下载结果
 
     esp_status = UPGRADE_STATUS_VERIFIED;
+    //保存到文件系统
 }
 
 void esp_verify(void) {

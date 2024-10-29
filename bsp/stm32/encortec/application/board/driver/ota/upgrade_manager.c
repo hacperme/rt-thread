@@ -125,12 +125,16 @@ UpgradeStatus check_overall_status(void) {
 
 
 extern UpgradeModule esp_module;
+
+// 业务结束后，开启升级  或 开机前调用
 int upgrade_all_module(void) {
     // add_module(nb_module, UPGRADE_MODULE_NB, "/fota/nb/");
     // add_module(cat1_module, UPGRADE_MODULE_CAT1, "/fota/cat1/");
     // add_module(gnss_module, UPGRADE_MODULE_GNSS, "/fota/gnss/");
     // add_module(esp_module, UPGRADE_MODULE_ESP, "/fota/esp/");
     // add_module(st_module, UPGRADE_MODULE_ST, "/fota/st/");
+
+    //从文件系统中拿结构体，保存至/fota/config.bin
 
     UpgradeNode* current;
 
@@ -158,7 +162,9 @@ int upgrade_all_module(void) {
         }
 
         // 打印当前所有模块的升级结果
-        print_upgrade_results();
+        print_upgrade_results(); // 同时加上上报， 确保上报成功
+
+        //删除链表
 
         // 检查整体状态
         if (check_overall_status() == UPGRADE_STATUS_SUCCESS) {
@@ -168,7 +174,9 @@ int upgrade_all_module(void) {
     }
 
     // 确保所有节点都已被释放
-    printf("Upgrade process completed.\n");
+    printf("Upgrade process completed.\n"); 
+
+    //有STM32,重启STM32 // STM升级状态有重启后查询版本号或接口查询升级状态，后上报至云
 
     return 0;
 }
