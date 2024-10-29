@@ -6,13 +6,7 @@
 #include "hmac_sha256.h"
 #include "at_client_ssl.h"
 #include "sha256.h"
-
-#define AWS_ACCESS_KEY_ID "xxxxxxxxxxxxxx"
-#define AWS_SECRET_ACCESS_KEY "xxxxxxxxxxxxxxxxxxxxx"
-#define AWS_REGION "ap-east-1"
-#define AWS_SERVICE "s3"
-#define AWS_BUCKET "iot-encortec"
-#define AWS_HOST "iot-encortec.s3.ap-east-1.amazonaws.com"
+#include "at_client_https.h"
 
 void bin2hex(const uint8_t *src, uint32_t src_length, uint8_t *output)
 {

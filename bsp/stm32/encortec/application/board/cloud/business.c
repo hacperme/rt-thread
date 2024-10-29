@@ -17,6 +17,7 @@
 #include "settings.h"
 #include <math.h>
 #include <dirent.h>
+#include "at_client_https.h"
 
 #include "logging.h"
 // #define DBG_TAG "business"
@@ -606,7 +607,7 @@ int cat1_upload_file()
                     log_debug("at https upload \"%s\" success", upload_file_path);
                     remove(upload_file_path);
                     memset(upload_file_name, 0, sizeof(upload_file_name));
-                    sprintf(upload_file_name, "%s/%s", "iot-encortec", ent->d_name);
+                    sprintf(upload_file_name, "%s/%s", AWS_BUCKET, ent->d_name);
         
                     temp_obj = cJSON_CreateObject();
                     cJSON_AddStringToObject(temp_obj, "1", sub_dir);
