@@ -269,6 +269,7 @@ static rt_err_t MX_ADC1_IN_Enable(uint32_t adc_channel)
 #define ADC_VERF                        3300
 
 static uint16_t cur_vol_buff[CUR_VOL_BUFF_SIZE] = {0};
+static uint16_t cur_remain_size = 0;
 static uint16_t vol_buff[VOL_BUFF_SIZE] = {0};
 static rt_uint8_t adc_dma_init_tag = 0;
 
@@ -329,26 +330,23 @@ static rt_err_t adc_vol_read(rt_uint32_t adc_channel, rt_uint16_t *value)
         return res;
     }
     rt_thread_mdelay(10);
+    rt_uint16_t remain_size = (rt_uint16_t)__HAL_DMA_GET_COUNTER(handle_GPDMA1_Channel1) / 2;
     hal_res = HAL_ADC_Stop_DMA(hadc1);
-    log_debug("HAL_ADC_Stop_DMA %s, hal_res=%d", hal_res == HAL_OK ? "success" : "failed", hal_res);
+    log_debug("HAL_ADC_Stop_DMA %s, hal_res=%d, remain_size=%ld", hal_res == HAL_OK ? "success" : "failed", hal_res, remain_size);
 
-    rt_uint32_t sum_val = 0;
-    rt_uint8_t sum_cnt = 0;
-    for (rt_uint8_t i = 0; i < VOL_BUFF_SIZE; i ++){
-        if (vol_buff[i] != 0)
-        {
-            sum_val += vol_buff[i];
-            sum_cnt++;
-        }
-    }
-    res = sum_cnt == 0 ? RT_ERROR : RT_EOK;
-    if (res == RT_ERROR)
-    {
-        return res;
+    rt_uint16_t coll_size = VOL_BUFF_SIZE > remain_size ? VOL_BUFF_SIZE - remain_size : VOL_BUFF_SIZE;
+
+    rt_uint16_t sum_val = 0;
+    rt_uint16_t sum_cnt = 0;
+    // for (rt_uint16_t i = 0; i < coll_size; i ++){
+    for (rt_uint16_t i = 0; i < VOL_BUFF_SIZE; i ++){
+        log_debug("vol_buff[%d]=%d", i, vol_buff[i]);
+        sum_val += vol_buff[i];
+        sum_cnt++;
     }
     log_debug("sum_val=%d, sum_cnt=%d, avg_val=%d", sum_val, sum_cnt, sum_val / sum_cnt);
-
     *value = (sum_val / sum_cnt) * ADC_VERF / ((1 << 14) - 1);
+
     return res;
 }
 
@@ -389,6 +387,7 @@ rt_err_t cur_vol_read_start(void)
     }
     
     int hal_res;
+    cur_remain_size = 0;
     hal_res = HAL_ADC_Start_DMA(hadc1, (uint32_t *)cur_vol_buff, CUR_VOL_BUFF_SIZE);
     res = hal_res == 0 ? RT_EOK : RT_ERROR;
     if (res != RT_EOK)
@@ -406,8 +405,10 @@ rt_err_t cur_vol_read_stop(void)
     {
         return res;
     }
+    cur_remain_size = (uint16_t)__HAL_DMA_GET_COUNTER(handle_GPDMA1_Channel1) / 2;
     int hal_res = HAL_ADC_Stop_DMA(hadc1);
     res = hal_res == HAL_OK ? RT_EOK : RT_ERROR;
+    log_debug("cur_vol_read_stop cur_remain_size=%ld", cur_remain_size);
 
     return res;
 }
@@ -416,23 +417,15 @@ rt_err_t cur_vol_read(rt_uint16_t **cur_buff, rt_uint16_t *buff_size)
 {
     rt_err_t res = RT_EOK;
 
-    rt_uint16_t buf_cnt = 0;
-    for (rt_uint16_t i = 0; i < CUR_VOL_BUFF_SIZE; i++)
-    {
-        if (cur_vol_buff[i] != 0)
-        {
-            cur_vol_buff[i] = cur_vol_buff[i] * ADC_VERF / ((1 << 14) - 1);
-            buf_cnt++;
-        }
-        else
-        {
-            break;
-        }
-    }
-    *cur_buff = cur_vol_buff;
-    *buff_size = buf_cnt;
+    rt_uint16_t coll_size = CUR_VOL_BUFF_SIZE > cur_remain_size ? CUR_VOL_BUFF_SIZE - cur_remain_size : CUR_VOL_BUFF_SIZE;
 
-    res = buf_cnt != 0 ? RT_EOK : RT_ERROR;
+    for (rt_uint16_t i = 0; i < coll_size; i++)
+    {
+        cur_vol_buff[i] = cur_vol_buff[i] * ADC_VERF / ((1 << 14) - 1);
+    }
+
+    *cur_buff = cur_vol_buff;
+    *buff_size = coll_size;
 
     return res;
 }
