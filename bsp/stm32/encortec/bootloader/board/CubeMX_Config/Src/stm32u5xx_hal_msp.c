@@ -29,12 +29,6 @@
 
 /* USER CODE END TD */
 
-// extern DMA_NodeTypeDef Node_GPDMA1_Channel1;
-
-// extern DMA_QListTypeDef List_GPDMA1_Channel1;
-
-// extern DMA_HandleTypeDef handle_GPDMA1_Channel1;
-
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN Define */
 
@@ -484,63 +478,6 @@ static void HAL_ADC1_MspInit(GPIO_InitTypeDef *GPIO_InitStruct, RCC_PeriphCLKIni
     GPIO_InitStruct->Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct->Pull = GPIO_NOPULL;
     HAL_GPIO_Init(PIN_STPORT(ADC1_IN1_PIN), GPIO_InitStruct);
-
-    // /* ADC1 DMA Init */
-    // /* GPDMA1_REQUEST_ADC1 Init */
-    // DMA_NodeConfTypeDef NodeConfig;
-    // NodeConfig.NodeType = DMA_GPDMA_LINEAR_NODE;
-    // NodeConfig.Init.Request = GPDMA1_REQUEST_ADC1;
-    // NodeConfig.Init.BlkHWRequest = DMA_BREQ_SINGLE_BURST;
-    // NodeConfig.Init.Direction = DMA_PERIPH_TO_MEMORY;
-    // NodeConfig.Init.SrcInc = DMA_SINC_INCREMENTED;
-    // NodeConfig.Init.DestInc = DMA_DINC_INCREMENTED;
-    // NodeConfig.Init.SrcDataWidth = DMA_SRC_DATAWIDTH_WORD;
-    // NodeConfig.Init.DestDataWidth = DMA_DEST_DATAWIDTH_WORD;
-    // NodeConfig.Init.SrcBurstLength = 1;
-    // NodeConfig.Init.DestBurstLength = 1;
-    // NodeConfig.Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0|DMA_DEST_ALLOCATED_PORT0;
-    // NodeConfig.Init.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
-    // NodeConfig.Init.Mode = DMA_NORMAL;
-    // NodeConfig.TriggerConfig.TriggerPolarity = DMA_TRIG_POLARITY_MASKED;
-    // NodeConfig.DataHandlingConfig.DataExchange = DMA_EXCHANGE_NONE;
-    // NodeConfig.DataHandlingConfig.DataAlignment = DMA_DATA_RIGHTALIGN_ZEROPADDED;
-    // if (HAL_DMAEx_List_BuildNode(&NodeConfig, &Node_GPDMA1_Channel1) != HAL_OK)
-    // {
-    //   Error_Handler();
-    // }
-
-    // if (HAL_DMAEx_List_InsertNode(&List_GPDMA1_Channel1, NULL, &Node_GPDMA1_Channel1) != HAL_OK)
-    // {
-    //   Error_Handler();
-    // }
-
-    // if (HAL_DMAEx_List_SetCircularMode(&List_GPDMA1_Channel1) != HAL_OK)
-    // {
-    //   Error_Handler();
-    // }
-
-    // handle_GPDMA1_Channel1.Instance = GPDMA1_Channel1;
-    // handle_GPDMA1_Channel1.InitLinkedList.Priority = DMA_LOW_PRIORITY_LOW_WEIGHT;
-    // handle_GPDMA1_Channel1.InitLinkedList.LinkStepMode = DMA_LSM_FULL_EXECUTION;
-    // handle_GPDMA1_Channel1.InitLinkedList.LinkAllocatedPort = DMA_LINK_ALLOCATED_PORT0;
-    // handle_GPDMA1_Channel1.InitLinkedList.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
-    // handle_GPDMA1_Channel1.InitLinkedList.LinkedListMode = DMA_LINKEDLIST_CIRCULAR;
-    // if (HAL_DMAEx_List_Init(&handle_GPDMA1_Channel1) != HAL_OK)
-    // {
-    //   Error_Handler();
-    // }
-
-    // if (HAL_DMAEx_List_LinkQ(&handle_GPDMA1_Channel1, &List_GPDMA1_Channel1) != HAL_OK)
-    // {
-    //   Error_Handler();
-    // }
-
-    // __HAL_LINKDMA(hadc, DMA_Handle, handle_GPDMA1_Channel1);
-
-    // if (HAL_DMA_ConfigChannelAttributes(&handle_GPDMA1_Channel1, DMA_CHANNEL_NPRIV) != HAL_OK)
-    // {
-    //   Error_Handler();
-    // }
 
   /* USER CODE BEGIN ADC1_MspInit 1 */
 
