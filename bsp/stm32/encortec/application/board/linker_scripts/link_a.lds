@@ -26,9 +26,9 @@ MBR_ROM_SIZE = 16K;
 APP_ROM_SIZE = 760K;
 
 BOOTLOADER_RAM_SIZE = 64K;
-APP_RAM_SIZE = 64K;
+APP_RAM_SIZE = 464K;
 
-HEAP_RAM_SIZE = 640K;
+HEAP_RAM_SIZE = 240K;
 
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY

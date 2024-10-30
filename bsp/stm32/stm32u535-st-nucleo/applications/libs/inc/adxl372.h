@@ -136,7 +136,7 @@ rt_err_t adxl372_set_measure_config(rt_uint8_t *measure_val, rt_uint8_t *odr_val
 
 rt_err_t adxl372_init(void);
 rt_err_t adxl732_read(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
-rt_err_t adxl732_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
+rt_err_t adxl372_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
 
 rt_err_t adxl372_query_dev_info(void);
 rt_err_t adxl372_check_xyz_ready(void);

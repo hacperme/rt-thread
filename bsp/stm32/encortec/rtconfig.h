@@ -126,7 +126,6 @@
 #define RT_SERIAL_RB_BUFSZ 2048
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
-#define RT_USING_ADC
 #define RT_USING_RANDOM
 #define RT_USING_PWM
 #define RT_USING_MTD_NOR
@@ -176,7 +175,7 @@
 
 #define RT_USING_AT
 #define AT_USING_CLIENT
-#define AT_CLIENT_NUM_MAX 4
+#define AT_CLIENT_NUM_MAX 2
 #define AT_USING_CLI
 #define AT_PRINT_RAW_CMD
 #define AT_SW_VERSION_NUM 0x10301
@@ -409,8 +408,6 @@
 #define BSP_USING_UART5
 #define BSP_USING_LPUART1
 #define BSP_USING_ADC
-#define BSP_USING_ADC1
-#define BSP_USING_VERFBUF
 #define BSP_USING_SPI
 #define BSP_USING_SPI1
 #define BSP_USING_I2C

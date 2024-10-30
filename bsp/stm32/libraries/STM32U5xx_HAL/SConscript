@@ -56,11 +56,11 @@ if GetDepend(['RT_USING_HWTIMER']) or GetDepend(['RT_USING_PWM']):
     src += ['STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_tim.c']
     src += ['STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_tim_ex.c']
 
-if GetDepend(['RT_USING_ADC']):
+if GetDepend(['BSP_USING_ADC']):
     src += ['STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_adc.c']
     src += ['STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_adc_ex.c']
 
-if GetDepend(['RT_USING_DAC']):
+if GetDepend(['BSP_USING_ADC']):
     src += ['STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_dac.c']
     src += ['STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_dac_ex.c']
 

@@ -50,13 +50,18 @@ enum {
     SLEEP,
 };
 
-static rt_sem_t stm32_sleep_ack_sem = RT_NULL;
-void adxl372_inact_event_handler(void)
-{
-    // log_debug("adxl372_inact_event_handler called");
-    rt_sem_release(stm32_sleep_ack_sem);
-    adxl372_int1_pin_irq_disable();
-}
+// static rt_sem_t stm32_sleep_ack_sem = RT_NULL;
+// void adxl372_inact_event_handler(void)
+// {
+//     // log_debug("adxl372_inact_event_handler called");
+//     if (stm32_sleep_ack_sem != RT_NULL)
+//     {
+//         rt_sem_release(stm32_sleep_ack_sem);
+//     }
+//     adxl372_int1_pin_irq_disable();
+//     // adxl372_set_standby();
+//     // adxl372_recv_inact_event_thd_stop();
+// }
 
 enum wakeup_source_type {RTC_SOURCE, SHAKE_SOURCE, OTHER_SOURCE};
 enum wakeup_source_type wakeup_source_flag = -1;
@@ -90,14 +95,17 @@ int external_devices_init()
     gnss_open();
 
     rt_uint16_t milliscond = 520;
-    rt_uint16_t threshold = 10;  // 0.1 g
-    rt_uint8_t measure_val = 0x03;
-    rt_uint8_t odr_val = 0x60;
+    rt_uint16_t threshold = 10;         // 0.1 g
+    rt_uint8_t measure_val = 0x00;
+    rt_uint8_t odr_val = 0x40;          // 1600Hz
     rt_uint8_t hpf_val = 0x03;
+    rt_uint8_t fifo_format = 0;         // FIFO store x y z.
+    rt_uint8_t fifo_mode = 1;           // stream mode.
+    rt_uint16_t fifo_samples = 170;
 
     res = adxl372_init();
     log_debug("adxl372_init %s", res != RT_EOK ? "failed" : "success");
-    res = adxl372_set_measure_config(&measure_val, &odr_val, &hpf_val);
+    res = adxl372_set_measure_config(&measure_val, &odr_val, &hpf_val, &fifo_format, &fifo_mode, &fifo_samples);
     log_debug(
         "adxl372_set_measure_config(measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X) %s",
         measure_val, odr_val, hpf_val, res != RT_EOK ? "failed" : "success"
@@ -635,8 +643,8 @@ int cat1_upload_file()
 static int DEFAULT_REMAINING_SECONDS = 600;
 void stm32_sleep()
 {   
-    log_debug("wait stm32_sleep_ack_sem release");
-    rt_sem_take(stm32_sleep_ack_sem, rt_tick_from_millisecond(1000));
+    // log_debug("wait stm32_sleep_ack_sem release");
+    // rt_sem_take(stm32_sleep_ack_sem, rt_tick_from_millisecond(1000));
     log_debug("go into sleep");
 
     end_tick_ms = rt_tick_get_millisecond();
@@ -770,7 +778,7 @@ void main_business_entry(void)
         log_info("settings_params->nb_collect_interval: %d", settings_params->nb_collect_interval);
     }
  
-    stm32_sleep_ack_sem = rt_sem_create("stm32_sleep_ack_sem", 0, RT_IPC_FLAG_FIFO);
+    // stm32_sleep_ack_sem = rt_sem_create("stm32_sleep_ack_sem", 0, RT_IPC_FLAG_FIFO);
     rtc_init();
 
     start_tick_ms = rt_tick_get_millisecond();

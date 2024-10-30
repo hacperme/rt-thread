@@ -72,6 +72,7 @@ CPPPATH = [
     os.path.join(SDK_ROOT, "bootloader/board/drivers/fatfs_nand_flash"),
     os.path.join(SDK_ROOT, "bootloader/board/drivers/hal_spi_nand_driver"),
     os.path.join(SDK_ROOT, "bootloader/board/drivers/ota_app"),
+    os.path.join(SDK_ROOT, "bootloader/board/drivers/adc_dma"),
     os.path.join(SDK_ROOT, "application", "rt_api"),
     os.path.join(SDK_ROOT, "application", "logging"),
 ]
@@ -154,7 +155,8 @@ driver_c_files = [
     "board/driver/hdc3021/hdc3021.c",
     "board/driver/lpm/lpm.c",
     "board/driver/tmp116/tmp116.c",
-    "board/driver/voltage/voltage.c",
+    # "board/driver/voltage/voltage.c",
+    "board/driver/voltage/voltage_adc.c",
     "board/driver/watch_dog/watch_dog.c",
     "board/driver/cat1/at_client_https.c",
     "board/driver/cat1/at_client_ssl.c",

@@ -95,19 +95,19 @@ static const rt_uint8_t FIFO_CRL_MODE_POS             = 1;
 static const rt_uint8_t FIFO_CRL_FORMAT_POS           = 3;
 static const rt_uint8_t PWRCTRL_FILTER_SETTLE_POS     = 4;
 
-static const rt_uint8_t DATA_RDY      = 1;
-static const rt_uint8_t FIFO_RDY      = 2;
-static const rt_uint8_t FIFO_FULL     = 4;
-static const rt_uint8_t FIFO_OVR      = 8;
+static const rt_uint8_t DATA_RDY                      = 1;
+static const rt_uint8_t FIFO_RDY                      = 2;
+static const rt_uint8_t FIFO_FULL                     = 4;
+static const rt_uint8_t FIFO_OVR                      = 8;
 
 /*Acceleremoter configuration*/
-static const rt_uint8_t ACT_VALUE       =  30;     // Activity threshold value
-static const rt_uint8_t INACT_VALUE     =  30;     // Inactivity threshold value
-static const rt_uint8_t ACT_TIMER       =  1;      // Activity timer value in multiples of 3.3ms
-static const rt_uint8_t INACT_TIMER     =  1;      // Inactivity timer value in multiples of 26ms
-static const rt_uint8_t ADXL_INT1_PIN   = 7;
-static const rt_uint8_t ADXL_INT2_PIN   = 5;
-static const rt_uint8_t ADXL_SPI_RNW    = 1;
+static const rt_uint8_t ACT_VALUE                     = 30;     // Activity threshold value
+static const rt_uint8_t INACT_VALUE                   = 30;     // Inactivity threshold value
+static const rt_uint8_t ACT_TIMER                     = 1;      // Activity timer value in multiples of 3.3ms
+static const rt_uint8_t INACT_TIMER                   = 1;      // Inactivity timer value in multiples of 26ms
+static const rt_uint8_t ADXL_INT1_PIN                 = 7;
+static const rt_uint8_t ADXL_INT2_PIN                 = 5;
+static const rt_uint8_t ADXL_SPI_RNW                  = 1;
 
 static const float ADXL372_SCALEG = 0.1; // g per lsb
 
@@ -128,11 +128,11 @@ rt_err_t adxl372_int1_pin_irq_enable(void);
 rt_err_t adxl372_int1_pin_irq_disable(void);
 rt_err_t adxl372_enable_inactive_irq(rt_uint16_t *milliseconds, rt_uint16_t *threshold);
 rt_err_t adxl372_disable_inactive_irq(void);
-rt_err_t adxl372_set_measure_config(rt_uint8_t *measure_val, rt_uint8_t *odr_val, rt_uint8_t *hpf_val);
+rt_err_t adxl372_set_measure_config(rt_uint8_t *measure_val, rt_uint8_t *odr_val, rt_uint8_t *hpf_val, rt_uint8_t *fifo_format, rt_uint8_t *fifo_mode, rt_uint16_t *fifo_samples);
 
 rt_err_t adxl372_init(void);
-rt_err_t adxl732_read(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
-rt_err_t adxl732_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
+rt_err_t adxl372_read(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
+rt_err_t adxl372_write(rt_uint8_t reg, rt_uint8_t *data, rt_uint16_t size);
 
 rt_err_t adxl372_query_dev_info(void);
 rt_err_t adxl372_check_xyz_ready(void);
@@ -151,5 +151,10 @@ rt_err_t adxl372_reset(void);
 rt_err_t adxl372_set_standby(void);
 rt_err_t adxl372_full_bandwidth_measurement_mode(void);
 rt_err_t adxl372_measure_acc(float acc_xyz_buff[][3], rt_uint16_t size);
+
+rt_err_t adxl372_set_fifo(rt_uint8_t *fifo_format, rt_uint8_t *fifo_mode, rt_uint16_t *fifo_samples);
+rt_err_t adxl372_read_fifo_num(rt_uint16_t *fifo_num);
+rt_err_t adxl372_read_fifo_data(rt_int16_t *fifo_data);
+rt_err_t adxl372_read_fifo_xyz(rt_int16_t **x_buff, rt_int16_t **y_buff, rt_int16_t **z_buff, rt_uint16_t *xyz_size);
 
 #endif  // __ADXL372_H__

@@ -43,7 +43,9 @@
         "control.h": "c",
         "stm32u5xx_hal_hash.h": "c",
         "drv_usart_v2.h": "c",
-        "string.h": "c",
-        "at_client_https.h": "c"
+        "ota_app.h": "c",
+        "string": "c",
+        "stm32u5xx_hal.h": "c",
+        "stm32u5xx_hal_conf.h": "c"
     }
 }

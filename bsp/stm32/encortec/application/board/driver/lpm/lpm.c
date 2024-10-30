@@ -240,13 +240,13 @@ rt_uint8_t get_reset_source(void)
     }
     __HAL_RCC_CLEAR_RESET_FLAGS();
     reset_source_clear = 1;
-    // Is BORRST  -- (wakeup_source & (1 << 0)) >> 0 == 1
-    // Is OBLRST  -- (wakeup_source & (1 << 1)) >> 1 == 1
-    // Is PINRST  -- (wakeup_source & (1 << 2)) >> 2 == 1
-    // Is SFTRST  -- (wakeup_source & (1 << 3)) >> 3 == 1
-    // Is IWDGRST -- (wakeup_source & (1 << 4)) >> 4 == 1
-    // Is WWDGRST -- (wakeup_source & (1 << 5)) >> 5 == 1
-    // Is LPWRRST -- (wakeup_source & (1 << 6)) >> 6 == 1
+    // Is BORRST  -- (reset_source & (1 << 0)) >> 0 == 1
+    // Is OBLRST  -- (reset_source & (1 << 1)) >> 1 == 1
+    // Is PINRST  -- (reset_source & (1 << 2)) >> 2 == 1
+    // Is SFTRST  -- (reset_source & (1 << 3)) >> 3 == 1
+    // Is IWDGRST -- (reset_source & (1 << 4)) >> 4 == 1
+    // Is WWDGRST -- (reset_source & (1 << 5)) >> 5 == 1
+    // Is LPWRRST -- (reset_source & (1 << 6)) >> 6 == 1
     return reset_source;
 }
 
@@ -466,6 +466,12 @@ static void test_show_wkup_status(void)
 }
 
 // MSH_CMD_EXPORT(test_show_wkup_status, test show reset status);
+
+void test_show_reset_status(void)
+{
+    rt_uint8_t rst_status = get_reset_source();
+    log_debug("rst_status=%d", rst_status);
+}
 
 static void test_esp32_download(int argc, char **argv)
 {

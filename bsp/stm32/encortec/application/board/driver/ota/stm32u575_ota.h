@@ -13,7 +13,7 @@
 #include "rtdevice.h"
 #include "ota_app.h"
 
-rt_err_t set_ota_option(ota_tag_e ota_tag, char *ota_file_name);
-rt_err_t clear_ota_option(void);
+rt_err_t set_stm32u575_ota_option(ota_tag_e ota_tag, char *ota_file_name);
+rt_err_t clear_stm32u575_ota_option(void);
 
 #endif
