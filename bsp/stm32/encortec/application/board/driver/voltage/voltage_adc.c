@@ -10,6 +10,7 @@
 #include "voltage_adc.h"
 #include "stm32u5xx_hal.h"
 #include "adc_dma.h"
+#include "tools.h"
 #include "logging.h"
 
 
@@ -270,6 +271,7 @@ static rt_err_t MX_ADC1_IN_Enable(uint32_t adc_channel)
 
 static uint16_t cur_vol_buff[CUR_VOL_BUFF_SIZE] = {0};
 static uint16_t cur_remain_size = 0;
+static rt_tick_t cur_sticks, cur_eticks;
 static uint16_t vol_buff[VOL_BUFF_SIZE] = {0};
 static rt_uint8_t adc_dma_init_tag = 0;
 
@@ -338,9 +340,8 @@ static rt_err_t adc_vol_read(rt_uint32_t adc_channel, rt_uint16_t *value)
 
     rt_uint16_t sum_val = 0;
     rt_uint16_t sum_cnt = 0;
-    // for (rt_uint16_t i = 0; i < coll_size; i ++){
     for (rt_uint16_t i = 0; i < VOL_BUFF_SIZE; i ++){
-        log_debug("vol_buff[%d]=%d", i, vol_buff[i]);
+        // log_debug("vol_buff[%d]=%d", i, vol_buff[i]);
         sum_val += vol_buff[i];
         sum_cnt++;
     }
@@ -388,6 +389,7 @@ rt_err_t cur_vol_read_start(void)
     
     int hal_res;
     cur_remain_size = 0;
+    cur_sticks = rt_tick_get_millisecond();
     hal_res = HAL_ADC_Start_DMA(hadc1, (uint32_t *)cur_vol_buff, CUR_VOL_BUFF_SIZE);
     res = hal_res == 0 ? RT_EOK : RT_ERROR;
     if (res != RT_EOK)
@@ -407,8 +409,8 @@ rt_err_t cur_vol_read_stop(void)
     }
     cur_remain_size = (uint16_t)__HAL_DMA_GET_COUNTER(handle_GPDMA1_Channel1) / 2;
     int hal_res = HAL_ADC_Stop_DMA(hadc1);
+    cur_eticks = rt_tick_get_millisecond();
     res = hal_res == HAL_OK ? RT_EOK : RT_ERROR;
-    log_debug("cur_vol_read_stop cur_remain_size=%ld", cur_remain_size);
 
     return res;
 }
@@ -416,8 +418,20 @@ rt_err_t cur_vol_read_stop(void)
 rt_err_t cur_vol_read(rt_uint16_t **cur_buff, rt_uint16_t *buff_size)
 {
     rt_err_t res = RT_EOK;
+    log_debug(
+        "cur_vol_read cur_remain_size=%ld, cur_sticks=%ld, cur_eticks=%ld, run_ticks=%ld",
+        cur_remain_size, cur_sticks, cur_eticks, rt_tick_diff(cur_sticks, cur_eticks)
+    );
 
-    rt_uint16_t coll_size = CUR_VOL_BUFF_SIZE > cur_remain_size ? CUR_VOL_BUFF_SIZE - cur_remain_size : CUR_VOL_BUFF_SIZE;
+    rt_uint16_t coll_size = CUR_VOL_BUFF_SIZE;
+    if (rt_tick_diff(cur_sticks, cur_eticks) > 19 * 1000 && (CUR_VOL_BUFF_SIZE - cur_remain_size < rt_tick_diff(cur_sticks, cur_eticks)))
+    {
+        coll_size = CUR_VOL_BUFF_SIZE;
+    }
+    else
+    {
+        coll_size = CUR_VOL_BUFF_SIZE - cur_remain_size;
+    }
 
     for (rt_uint16_t i = 0; i < coll_size; i++)
     {
