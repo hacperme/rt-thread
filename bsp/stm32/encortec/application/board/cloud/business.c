@@ -1,7 +1,6 @@
 #include "nbiot.h"
 #include "gnss.h"
 #include "lpm.h"
-#include "voltage.h"
 #include "tmp116.h"
 #include "hdc3021.h"
 #include "fdc1004.h"
@@ -18,6 +17,7 @@
 #include <math.h>
 #include <dirent.h>
 #include "at_client_https.h"
+#include "voltage_adc.h"
 
 #include "logging.h"
 // #define DBG_TAG "business"
@@ -94,23 +94,6 @@ int external_devices_init()
     esp32_power_off();
     gnss_open();
 
-    rt_uint16_t milliscond = 520;
-    rt_uint16_t threshold = 10;         // 0.1 g
-    rt_uint8_t measure_val = 0x00;
-    rt_uint8_t odr_val = 0x40;          // 1600Hz
-    rt_uint8_t hpf_val = 0x03;
-    rt_uint8_t fifo_format = 0;         // FIFO store x y z.
-    rt_uint8_t fifo_mode = 1;           // stream mode.
-    rt_uint16_t fifo_samples = 170;
-
-    res = adxl372_init();
-    log_debug("adxl372_init %s", res != RT_EOK ? "failed" : "success");
-    res = adxl372_set_measure_config(&measure_val, &odr_val, &hpf_val, &fifo_format, &fifo_mode, &fifo_samples);
-    log_debug(
-        "adxl372_set_measure_config(measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X) %s",
-        measure_val, odr_val, hpf_val, res != RT_EOK ? "failed" : "success"
-    );
-
     return 0;
 }
 
@@ -129,37 +112,82 @@ struct SensorData
     int cur_vol;
     int vcap_vol;
     int vbat_vol;
+    rt_int16_t *x_buf;
+    rt_int16_t *y_buf;
+    rt_int16_t *z_buf;
+    rt_uint16_t xyz_size;
+    rt_uint16_t *cur_buff;
+    int cur_buff_size;
 };
 struct SensorData sensor_data = {0};
 static struct rt_i2c_bus_device *iic_dev;
 char nmea_buf[1024] = {0};
-float ACC_XYZ_BUFF[1024][3] = {0};
-int read_acc_xyz_result = RT_EOK;
+unsigned int xyz_read_start_timestamp = 0;
 int collect_sensor_data()
 {
     rt_err_t res = RT_EOK;
     log_debug("collect sensor data");
-    iic_dev = rt_i2c_bus_device_find("i2c1");
+
+    rt_uint16_t milliscond = 520;
+    rt_uint16_t threshold = 10;         // 0.1 g
+    rt_uint8_t measure_val = 0x00;
+    rt_uint8_t odr_val = 0x40;          // 1600Hz
+    rt_uint8_t hpf_val = 0x03;
+    rt_uint8_t fifo_format = 0;         // FIFO store x y z.
+    rt_uint8_t fifo_mode = 1;           // stream mode.
+    rt_uint16_t fifo_samples = 170;
+
+    adc_dma_init();
+
+    // read cur_vol, vcap_vol, vbat_vol
+    rt_uint16_t vcap_vol, vbat_vol;
+    vcap_vol = vbat_vol = 0;
+
+    res = vcap_vol_read(&vcap_vol);
+    log_debug("vcap_vol_read %s, vcap_vol=%d", res == RT_EOK ? "success" : "failed", vcap_vol);
+    res = vbat_vol_read(&vbat_vol);
+    log_debug("vbat_vol_read %s, vbat_vol=%d", res == RT_EOK ? "success" : "failed", vbat_vol);
+    sensor_data.vcap_vol = (int)vcap_vol;
+    sensor_data.vbat_vol = (int)vbat_vol;
 
     if (wakeup_source_flag != RTC_SOURCE) {
-        read_acc_xyz_result = adxl372_measure_acc(ACC_XYZ_BUFF, 1024);
-        log_debug("adxl372_measure_acc %s", read_acc_xyz_result == RT_EOK ? "success" : "failed");
+        res = adxl372_init();
+        log_debug("adxl372_init %s", res != RT_EOK ? "failed" : "success");
+        res = adxl372_set_measure_config(&measure_val, &odr_val, &hpf_val, &fifo_format, &fifo_mode, &fifo_samples);
+        log_debug(
+            "adxl372_set_measure_config(measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X) %s",
+            measure_val, odr_val, hpf_val, res != RT_EOK ? "failed" : "success"
+        );
+        res = adxl372_enable_inactive_irq(&milliscond, &threshold);
+        log_debug(
+            "adxl372_enable_inactive_irq(milliscond=%d, threshold=%d) %s",
+            milliscond, threshold, res != RT_EOK ? "failed" : "success"
+        );
 
-        // read cur_vol, vcap_vol, vbat_vol
-        rt_uint16_t cur_vol = 0;
-        rt_uint16_t vcap_vol = 0;
-        rt_uint16_t vbat_vol = 0;
-        res = cur_vol_read(&cur_vol);
-        log_debug("cur_vol_read %s, cur_vol %dmv", res == RT_EOK ? "success" : "failed", cur_vol);
-        res = vcap_vol_read(&vcap_vol);
-        log_debug("vcap_vol_read %s, vcap_vol %dmv", res == RT_EOK ? "success" : "failed", vcap_vol);
-        res = vbat_vol_read(&vbat_vol);
-        log_debug("vbat_vol_read %s, vbat_vol %dmv", res == RT_EOK ? "success" : "failed", vbat_vol);
-        sensor_data.cur_vol = cur_vol;
-        sensor_data.vcap_vol = vcap_vol;
-        sensor_data.vbat_vol = vbat_vol;
+        cur_vol_read_start();
+        xyz_read_start_timestamp = (unsigned int)time(NULL);
+        res = adxl372_read_fifo_xyz(&(sensor_data.x_buf), &(sensor_data.y_buf), &(sensor_data.z_buf), &(sensor_data.xyz_size));
+        log_debug("adxl372_read_fifo_xyz res=%d, xyz_size=%d", res, sensor_data.xyz_size);
+        // for (rt_uint16_t i = 0; i < sensor_data.xyz_size; i++)
+        // {
+        //     log_debug("X=%d, Y=%d, Z=%d", sensor_data.x_buf[i], sensor_data.y_buf[i], sensor_data.z_buf[i]);
+        // }
+
+        cur_vol_read_stop();
+
+        rt_uint16_t *cur_buff;
+        rt_uint16_t cur_buff_size = 0;
+        res = cur_vol_read(&cur_buff, &cur_buff_size);
+        log_debug(
+            "cur_vol_read %s, cur_buff_size=%d, cur_buff=0x%08X",
+            res == RT_EOK ? "success" : "failed", cur_buff_size, cur_buff
+        );
+        sensor_data.cur_buff = cur_buff;
+        sensor_data.cur_buff_size = (int)cur_buff_size;
     }
     
+    iic_dev = rt_i2c_bus_device_find("i2c1");
+
     // temp1, temp2
     float temp1 = 0.0;
     float temp2 = 0.0;
@@ -187,15 +215,15 @@ int collect_sensor_data()
         sensor_data.humi = humi;
     }
 
-    if (wakeup_source_flag != RTC_SOURCE) {
-        // water level
-        float value = 0.0;
-        res = fdc1004_meas_data(iic_dev, &value);
-        log_debug("fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
-        if (res == RT_EOK) {
-            sensor_data.water_level = value;
-        }
+    // water level
+    float value = 0.0;
+    res = fdc1004_meas_data(iic_dev, &value);
+    log_debug("fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
+    if (res == RT_EOK) {
+        sensor_data.water_level = value;
+    }
 
+    if (wakeup_source_flag != RTC_SOURCE) {
         // read nmea
         nmea_item nmea_item = {0};
         for (int i=0; i < 30; i++) {
@@ -679,11 +707,6 @@ struct FileFormatData
     int vbat_vol;
 };
 
-int track_voltages[1024] = {0};
-int acc_x_list[1024] = {0};
-int acc_y_list[1024] = {0};
-int acc_z_list[1024] = {0};
-
 void save_sensor_data()
 {
     int length = 0;
@@ -712,21 +735,95 @@ void save_sensor_data()
     log_debug("write data file size: %d", sizeof(data));
 
     if (wakeup_source_flag != RTC_SOURCE) {
-        int sample_size = 1024;
+        unsigned int sample_size = (unsigned int)(sensor_data.xyz_size);
         data_save_as_file(&fs, (char *)&sample_size, sizeof(sample_size), true, true);
-        log_debug("write sample_size file size: %d", sizeof(sample_size));
+        log_debug("write sample_size: %d", sample_size);
 
-        data_save_as_file(&fs, (char *)acc_x_list, sizeof(acc_x_list), true, true);
-        log_debug("write acc_x_list file size: %d", sizeof(acc_x_list));
-        data_save_as_file(&fs, (char *)acc_y_list, sizeof(acc_y_list), true, true);
-        log_debug("write acc_y_list file size: %d", sizeof(acc_y_list));
-        data_save_as_file(&fs, (char *)acc_z_list, sizeof(acc_z_list), true, true);
-        log_debug("write acc_z_list file size: %d", sizeof(acc_z_list));
+        data_save_as_file(&fs, (char *)&xyz_read_start_timestamp, sizeof(xyz_read_start_timestamp), true, true);
+        log_debug("write xyz_read_start_timestamp: %d", xyz_read_start_timestamp);
 
-        data_save_as_file(&fs, (char *)(track_voltages), sizeof(track_voltages), true, true);
-        log_debug("write track_voltages file size: %d", sizeof(track_voltages));
+        data_save_as_file(&fs, (char *)(sensor_data.x_buf), sensor_data.xyz_size * 2, true, true);
+        data_save_as_file(&fs, (char *)(sensor_data.y_buf), sensor_data.xyz_size * 2, true, true);
+        data_save_as_file(&fs, (char *)(sensor_data.z_buf), sensor_data.xyz_size * 2, true, true);
+
+        data_save_as_file(&fs, (char *)(&(sensor_data.cur_buff_size)), sizeof(sensor_data.cur_buff_size), true, true);
+        log_debug("write sensor_data.cur_buff_size: %d", sensor_data.cur_buff_size);
+        data_save_as_file(&fs, (char *)(sensor_data.cur_buff), sensor_data.cur_buff_size * 2, true, true);
     }
 
+    // for test
+    char temp[32] = {0};
+    rt_kprintf("\n=====================================\n");
+    rt_kprintf("Separator: %d\n", data.separator);
+    rt_kprintf("YYYY: %d\n", data.year);
+    rt_kprintf("MM: %d\n", data.month);
+    rt_kprintf("DD: %d\n", data.day);
+    rt_kprintf("hh: %d\n", data.hour);
+    rt_kprintf("mm: %d\n", data.minute);
+
+    sprintf(temp, "%f", data.lat);
+    rt_kprintf("N: %s\n", temp);
+
+    rt_memset(temp, 0, 32);
+    sprintf(temp, "%f", data.lng);
+    rt_kprintf("E: %s\n", temp);
+
+    rt_kprintf("Z: %d\n", data.zone);
+
+    rt_memset(temp, 0, 32);
+    sprintf(temp, "%f", data.temp1);
+    rt_kprintf("TEMP1: %s\n", temp);
+
+    rt_memset(temp, 0, 32);
+    sprintf(temp, "%f", data.temp2);
+    rt_kprintf("TEMP2: %s\n", temp);
+
+    rt_memset(temp, 0, 32);
+    sprintf(temp, "%f", data.temp3);
+    rt_kprintf("HUM_TEMP: %s\n", temp);
+    
+    rt_memset(temp, 0, 32);
+    sprintf(temp, "%f", data.humi);
+    rt_kprintf("HUMI: %s\n", temp);
+    
+    rt_memset(temp, 0, 32);
+    sprintf(temp, "%f", data.water_level);
+    rt_kprintf("Water: %s\n", temp);
+
+    rt_kprintf("Capacitor_V: %d\n", data.vcap_vol);
+    rt_kprintf("Bat_V: %d\n", data.vbat_vol);
+    rt_kprintf("Sample_Size: %d\n", sensor_data.xyz_size);
+    rt_kprintf("Start_Timestamp: %u\n", xyz_read_start_timestamp);
+
+    int i = 0;
+    if (sensor_data.xyz_size > 0) {
+        rt_kprintf("X samples: ");
+        for (i = 0; i < sensor_data.xyz_size; i++) {
+            rt_kprintf("%d,", sensor_data.x_buf[i]);
+        }
+        rt_kprintf("\n");
+        rt_kprintf("Y samples: ");
+        for (i = 0; i < sensor_data.xyz_size; i++) {
+            rt_kprintf("%d,", sensor_data.y_buf[i]);
+        }
+        rt_kprintf("\n");
+        rt_kprintf("Z samples: ");
+        for (i = 0; i < sensor_data.xyz_size; i++) {
+            rt_kprintf("%d,", sensor_data.z_buf[i]);
+        }
+        rt_kprintf("\n");
+    }
+    rt_kprintf("Sample_Size2: %d\n", sensor_data.cur_buff_size);
+    if (sensor_data.cur_buff_size > 0) {
+        for (i = 0; i < sensor_data.cur_buff_size; i++) {
+            rt_kprintf("Track return voltages: ");
+            for (int i = 0; i < sensor_data.cur_buff_size; i++) {
+                rt_kprintf("%d,", sensor_data.cur_buff[i]);
+            }
+            rt_kprintf("\n");
+        }
+    }
+    rt_kprintf("\n=====================================\n");
     // 删除超过30天的文件
     delete_old_dirs(&fs);
 }
