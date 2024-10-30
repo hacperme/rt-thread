@@ -659,22 +659,6 @@ rt_err_t rt_device_control(rt_device_t dev, int cmd, void *arg) {
     return ((rt_device_control_api_ptr_t)(rt_device_control_addr))(dev, cmd, arg);
 }
 
-rt_uint32_t rt_adc_read(rt_adc_device_t dev, rt_int8_t channel) {
-    return ((rt_adc_read_api_ptr_t)(rt_adc_read_addr))(dev, channel);
-}
-
-rt_err_t rt_adc_enable(rt_adc_device_t dev, rt_int8_t channel) {
-    return ((rt_adc_enable_api_ptr_t)(rt_adc_enable_addr))(dev, channel);
-}
-
-rt_err_t rt_adc_disable(rt_adc_device_t dev, rt_int8_t channel) {
-    return ((rt_adc_disable_api_ptr_t)(rt_adc_disable_addr))(dev, channel);
-}
-
-rt_int16_t rt_adc_voltage(rt_adc_device_t dev, rt_int8_t channel) {
-    return ((rt_adc_voltage_api_ptr_t)(rt_adc_voltage_addr))(dev, channel);
-}
-
 rt_alarm_t rt_alarm_create(rt_alarm_callback_t callback, struct rt_alarm_setup *setup) {
     return ((rt_alarm_create_api_ptr_t)(rt_alarm_create_addr))(callback, setup);
 }
@@ -721,10 +705,6 @@ void rt_hwcrypto_crc_cfg(struct rt_hwcrypto_ctx *ctx, struct hwcrypto_crc_cfg *c
 
 struct rt_hwcrypto_device * rt_hwcrypto_dev_default(void) {
     return ((rt_hwcrypto_dev_default_api_ptr_t)(rt_hwcrypto_dev_default_addr))();
-}
-
-rt_err_t rt_hw_adc_register(rt_adc_device_t adc,const char *name, const struct rt_adc_ops *ops, const void *user_data) {
-    return ((rt_hw_adc_register_api_ptr_t)(rt_hw_adc_register_addr))(adc, name, ops, user_data);
 }
 
 rt_err_t rt_i2c_bus_device_register(struct rt_i2c_bus_device *bus, const char *bus_name) {
@@ -1352,5 +1332,433 @@ mbr_t mbr_init(void) {
 
 rt_err_t mbr_save(void) {
     return ((mbr_save_api_ptr_t)(mbr_save_addr))();
+}
+
+void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority) {
+    return ((HAL_NVIC_SetPriority_api_ptr_t)(HAL_NVIC_SetPriority_addr))(IRQn, PreemptPriority, SubPriority);
+}
+
+void HAL_NVIC_EnableIRQ(IRQn_Type IRQn) {
+    return ((HAL_NVIC_EnableIRQ_api_ptr_t)(HAL_NVIC_EnableIRQ_addr))(IRQn);
+}
+
+HAL_StatusTypeDef HAL_ADC_Init(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_Init_api_ptr_t)(HAL_ADC_Init_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADC_DeInit(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_DeInit_api_ptr_t)(HAL_ADC_DeInit_addr))(hadc);
+}
+
+void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_MspInit_api_ptr_t)(HAL_ADC_MspInit_addr))(hadc);
+}
+
+void HAL_ADC_MspDeInit(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_MspDeInit_api_ptr_t)(HAL_ADC_MspDeInit_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADC_Start(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_Start_api_ptr_t)(HAL_ADC_Start_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADC_Stop(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_Stop_api_ptr_t)(HAL_ADC_Stop_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADC_PollForConversion(ADC_HandleTypeDef *hadc, uint32_t Timeout) {
+    return ((HAL_ADC_PollForConversion_api_ptr_t)(HAL_ADC_PollForConversion_addr))(hadc, Timeout);
+}
+
+HAL_StatusTypeDef HAL_ADC_PollForEvent(ADC_HandleTypeDef *hadc, uint32_t EventType, uint32_t Timeout) {
+    return ((HAL_ADC_PollForEvent_api_ptr_t)(HAL_ADC_PollForEvent_addr))(hadc, EventType, Timeout);
+}
+
+HAL_StatusTypeDef HAL_ADC_Start_IT(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_Start_IT_api_ptr_t)(HAL_ADC_Start_IT_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADC_Stop_IT(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_Stop_IT_api_ptr_t)(HAL_ADC_Stop_IT_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADC_Start_DMA(ADC_HandleTypeDef *hadc, const uint32_t *pData, uint32_t Length) {
+    return ((HAL_ADC_Start_DMA_api_ptr_t)(HAL_ADC_Start_DMA_addr))(hadc, pData, Length);
+}
+
+HAL_StatusTypeDef HAL_ADC_Stop_DMA(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_Stop_DMA_api_ptr_t)(HAL_ADC_Stop_DMA_addr))(hadc);
+}
+
+uint32_t HAL_ADC_GetValue(const ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_GetValue_api_ptr_t)(HAL_ADC_GetValue_addr))(hadc);
+}
+
+void HAL_ADC_IRQHandler(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_IRQHandler_api_ptr_t)(HAL_ADC_IRQHandler_addr))(hadc);
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_ConvCpltCallback_api_ptr_t)(HAL_ADC_ConvCpltCallback_addr))(hadc);
+}
+
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_ConvHalfCpltCallback_api_ptr_t)(HAL_ADC_ConvHalfCpltCallback_addr))(hadc);
+}
+
+void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_LevelOutOfWindowCallback_api_ptr_t)(HAL_ADC_LevelOutOfWindowCallback_addr))(hadc);
+}
+
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_ErrorCallback_api_ptr_t)(HAL_ADC_ErrorCallback_addr))(hadc);
+}
+
+void HAL_ADC_CalibrationCpltCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_CalibrationCpltCallback_api_ptr_t)(HAL_ADC_CalibrationCpltCallback_addr))(hadc);
+}
+
+void HAL_ADC_VoltageRegulatorCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_VoltageRegulatorCallback_api_ptr_t)(HAL_ADC_VoltageRegulatorCallback_addr))(hadc);
+}
+
+void HAL_ADC_ADCReadyCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_ADCReadyCallback_api_ptr_t)(HAL_ADC_ADCReadyCallback_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADC_ConfigChannel(ADC_HandleTypeDef *hadc, ADC_ChannelConfTypeDef *pConfig) {
+    return ((HAL_ADC_ConfigChannel_api_ptr_t)(HAL_ADC_ConfigChannel_addr))(hadc, pConfig);
+}
+
+HAL_StatusTypeDef HAL_ADC_AnalogWDGConfig(ADC_HandleTypeDef *hadc, ADC_AnalogWDGConfTypeDef *pAnalogWDGConfig) {
+    return ((HAL_ADC_AnalogWDGConfig_api_ptr_t)(HAL_ADC_AnalogWDGConfig_addr))(hadc, pAnalogWDGConfig);
+}
+
+uint32_t HAL_ADC_GetState(const ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_GetState_api_ptr_t)(HAL_ADC_GetState_addr))(hadc);
+}
+
+uint32_t HAL_ADC_GetError(const ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADC_GetError_api_ptr_t)(HAL_ADC_GetError_addr))(hadc);
+}
+
+HAL_StatusTypeDef ADC_ConversionStop(ADC_HandleTypeDef *hadc, uint32_t ConversionGroup) {
+    return ((ADC_ConversionStop_api_ptr_t)(ADC_ConversionStop_addr))(hadc, ConversionGroup);
+}
+
+HAL_StatusTypeDef ADC_Enable(ADC_HandleTypeDef *hadc) {
+    return ((ADC_Enable_api_ptr_t)(ADC_Enable_addr))(hadc);
+}
+
+HAL_StatusTypeDef ADC_Disable(ADC_HandleTypeDef *hadc) {
+    return ((ADC_Disable_api_ptr_t)(ADC_Disable_addr))(hadc);
+}
+
+void ADC_DMAConvCplt(DMA_HandleTypeDef *hdma) {
+    return ((ADC_DMAConvCplt_api_ptr_t)(ADC_DMAConvCplt_addr))(hdma);
+}
+
+void ADC_DMAHalfConvCplt(DMA_HandleTypeDef *hdma) {
+    return ((ADC_DMAHalfConvCplt_api_ptr_t)(ADC_DMAHalfConvCplt_addr))(hdma);
+}
+
+void ADC_DMAError(DMA_HandleTypeDef *hdma) {
+    return ((ADC_DMAError_api_ptr_t)(ADC_DMAError_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_Calibration_Start(ADC_HandleTypeDef *hadc, uint32_t CalibrationMode, uint32_t SingleDiff) {
+    return ((HAL_ADCEx_Calibration_Start_api_ptr_t)(HAL_ADCEx_Calibration_Start_addr))(hadc, CalibrationMode, SingleDiff);
+}
+
+uint32_t HAL_ADCEx_Calibration_GetValue(ADC_HandleTypeDef *hadc, uint32_t SingleDiff) {
+    return ((HAL_ADCEx_Calibration_GetValue_api_ptr_t)(HAL_ADCEx_Calibration_GetValue_addr))(hadc, SingleDiff);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_LinearCalibration_GetValue(ADC_HandleTypeDef *hadc, uint32_t *pLinearCalib_Buffer) {
+    return ((HAL_ADCEx_LinearCalibration_GetValue_api_ptr_t)(HAL_ADCEx_LinearCalibration_GetValue_addr))(hadc, pLinearCalib_Buffer);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_Calibration_SetValue(ADC_HandleTypeDef *hadc, uint32_t SingleDiff, uint32_t CalibrationFactor) {
+    return ((HAL_ADCEx_Calibration_SetValue_api_ptr_t)(HAL_ADCEx_Calibration_SetValue_addr))(hadc, SingleDiff, CalibrationFactor);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_LinearCalibration_SetValue(ADC_HandleTypeDef *hadc, uint32_t *pLinearCalib_Buffer) {
+    return ((HAL_ADCEx_LinearCalibration_SetValue_api_ptr_t)(HAL_ADCEx_LinearCalibration_SetValue_addr))(hadc, pLinearCalib_Buffer);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_InjectedStart(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_InjectedStart_api_ptr_t)(HAL_ADCEx_InjectedStart_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_InjectedStop(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_InjectedStop_api_ptr_t)(HAL_ADCEx_InjectedStop_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_InjectedPollForConversion(ADC_HandleTypeDef *hadc, uint32_t Timeout) {
+    return ((HAL_ADCEx_InjectedPollForConversion_api_ptr_t)(HAL_ADCEx_InjectedPollForConversion_addr))(hadc, Timeout);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_InjectedStart_IT(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_InjectedStart_IT_api_ptr_t)(HAL_ADCEx_InjectedStart_IT_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_InjectedStop_IT(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_InjectedStop_IT_api_ptr_t)(HAL_ADCEx_InjectedStop_IT_addr))(hadc);
+}
+
+uint32_t HAL_ADCEx_InjectedGetValue(const ADC_HandleTypeDef *hadc, uint32_t InjectedRank) {
+    return ((HAL_ADCEx_InjectedGetValue_api_ptr_t)(HAL_ADCEx_InjectedGetValue_addr))(hadc, InjectedRank);
+}
+
+void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_InjectedConvCpltCallback_api_ptr_t)(HAL_ADCEx_InjectedConvCpltCallback_addr))(hadc);
+}
+
+void HAL_ADCEx_InjectedQueueOverflowCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_InjectedQueueOverflowCallback_api_ptr_t)(HAL_ADCEx_InjectedQueueOverflowCallback_addr))(hadc);
+}
+
+void HAL_ADCEx_LevelOutOfWindow2Callback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_LevelOutOfWindow2Callback_api_ptr_t)(HAL_ADCEx_LevelOutOfWindow2Callback_addr))(hadc);
+}
+
+void HAL_ADCEx_LevelOutOfWindow3Callback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_LevelOutOfWindow3Callback_api_ptr_t)(HAL_ADCEx_LevelOutOfWindow3Callback_addr))(hadc);
+}
+
+void HAL_ADCEx_EndOfSamplingCallback(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_EndOfSamplingCallback_api_ptr_t)(HAL_ADCEx_EndOfSamplingCallback_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_RegularStop(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_RegularStop_api_ptr_t)(HAL_ADCEx_RegularStop_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_RegularStop_IT(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_RegularStop_IT_api_ptr_t)(HAL_ADCEx_RegularStop_IT_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_RegularStop_DMA(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_RegularStop_DMA_api_ptr_t)(HAL_ADCEx_RegularStop_DMA_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_InjectedConfigChannel(ADC_HandleTypeDef *hadc, ADC_InjectionConfTypeDef *pConfigInjected) {
+    return ((HAL_ADCEx_InjectedConfigChannel_api_ptr_t)(HAL_ADCEx_InjectedConfigChannel_addr))(hadc, pConfigInjected);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_DisableVoltageRegulator(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_DisableVoltageRegulator_api_ptr_t)(HAL_ADCEx_DisableVoltageRegulator_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_ADCEx_EnterADCDeepPowerDownMode(ADC_HandleTypeDef *hadc) {
+    return ((HAL_ADCEx_EnterADCDeepPowerDownMode_api_ptr_t)(HAL_ADCEx_EnterADCDeepPowerDownMode_addr))(hadc);
+}
+
+HAL_StatusTypeDef HAL_DMA_Init(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMA_Init_api_ptr_t)(HAL_DMA_Init_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMA_DeInit(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMA_DeInit_api_ptr_t)(HAL_DMA_DeInit_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMA_Start(DMA_HandleTypeDef *const hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SrcDataSize) {
+    return ((HAL_DMA_Start_api_ptr_t)(HAL_DMA_Start_addr))(hdma, SrcAddress, DstAddress, SrcDataSize);
+}
+
+HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *const hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SrcDataSize) {
+    return ((HAL_DMA_Start_IT_api_ptr_t)(HAL_DMA_Start_IT_addr))(hdma, SrcAddress, DstAddress, SrcDataSize);
+}
+
+HAL_StatusTypeDef HAL_DMA_Abort(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMA_Abort_api_ptr_t)(HAL_DMA_Abort_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMA_Abort_IT(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMA_Abort_IT_api_ptr_t)(HAL_DMA_Abort_IT_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMA_PollForTransfer(DMA_HandleTypeDef *const hdma, HAL_DMA_LevelCompleteTypeDef CompleteLevel, uint32_t Timeout) {
+    return ((HAL_DMA_PollForTransfer_api_ptr_t)(HAL_DMA_PollForTransfer_addr))(hdma, CompleteLevel, Timeout);
+}
+
+void HAL_DMA_IRQHandler(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMA_IRQHandler_api_ptr_t)(HAL_DMA_IRQHandler_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMA_RegisterCallback(DMA_HandleTypeDef *const hdma, HAL_DMA_CallbackIDTypeDef CallbackID, void (*pCallback)(DMA_HandleTypeDef *const _hdma)) {
+    return ((HAL_DMA_RegisterCallback_api_ptr_t)(HAL_DMA_RegisterCallback_addr))(hdma, CallbackID, pCallback);
+}
+
+HAL_StatusTypeDef HAL_DMA_UnRegisterCallback(DMA_HandleTypeDef *const hdma, HAL_DMA_CallbackIDTypeDef CallbackID) {
+    return ((HAL_DMA_UnRegisterCallback_api_ptr_t)(HAL_DMA_UnRegisterCallback_addr))(hdma, CallbackID);
+}
+
+HAL_DMA_StateTypeDef HAL_DMA_GetState(DMA_HandleTypeDef const *const hdma) {
+    return ((HAL_DMA_GetState_api_ptr_t)(HAL_DMA_GetState_addr))(hdma);
+}
+
+uint32_t HAL_DMA_GetError(DMA_HandleTypeDef const *const hdma) {
+    return ((HAL_DMA_GetError_api_ptr_t)(HAL_DMA_GetError_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMA_ConfigChannelAttributes(DMA_HandleTypeDef *const hdma, uint32_t ChannelAttributes) {
+    return ((HAL_DMA_ConfigChannelAttributes_api_ptr_t)(HAL_DMA_ConfigChannelAttributes_addr))(hdma, ChannelAttributes);
+}
+
+HAL_StatusTypeDef HAL_DMA_GetConfigChannelAttributes(DMA_HandleTypeDef const *const hdma, uint32_t *const pChannelAttributes) {
+    return ((HAL_DMA_GetConfigChannelAttributes_api_ptr_t)(HAL_DMA_GetConfigChannelAttributes_addr))(hdma, pChannelAttributes);
+}
+
+HAL_StatusTypeDef HAL_DMA_GetLockChannelAttributes(DMA_HandleTypeDef const *const hdma, uint32_t *const pLockState) {
+    return ((HAL_DMA_GetLockChannelAttributes_api_ptr_t)(HAL_DMA_GetLockChannelAttributes_addr))(hdma, pLockState);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_Init(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMAEx_List_Init_api_ptr_t)(HAL_DMAEx_List_Init_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_DeInit(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMAEx_List_DeInit_api_ptr_t)(HAL_DMAEx_List_DeInit_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_Start(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMAEx_List_Start_api_ptr_t)(HAL_DMAEx_List_Start_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_Start_IT(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMAEx_List_Start_IT_api_ptr_t)(HAL_DMAEx_List_Start_IT_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_BuildNode(DMA_NodeConfTypeDef const *const pNodeConfig, DMA_NodeTypeDef *const pNode) {
+    return ((HAL_DMAEx_List_BuildNode_api_ptr_t)(HAL_DMAEx_List_BuildNode_addr))(pNodeConfig, pNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_GetNodeConfig(DMA_NodeConfTypeDef *const pNodeConfig, DMA_NodeTypeDef const *const pNode) {
+    return ((HAL_DMAEx_List_GetNodeConfig_api_ptr_t)(HAL_DMAEx_List_GetNodeConfig_addr))(pNodeConfig, pNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_InsertNode(DMA_QListTypeDef *const pQList, DMA_NodeTypeDef *const pPrevNode, DMA_NodeTypeDef *const pNewNode) {
+    return ((HAL_DMAEx_List_InsertNode_api_ptr_t)(HAL_DMAEx_List_InsertNode_addr))(pQList, pPrevNode, pNewNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_InsertNode_Head(DMA_QListTypeDef *const pQList, DMA_NodeTypeDef *const pNewNode) {
+    return ((HAL_DMAEx_List_InsertNode_Head_api_ptr_t)(HAL_DMAEx_List_InsertNode_Head_addr))(pQList, pNewNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_InsertNode_Tail(DMA_QListTypeDef *const pQList, DMA_NodeTypeDef *const pNewNode) {
+    return ((HAL_DMAEx_List_InsertNode_Tail_api_ptr_t)(HAL_DMAEx_List_InsertNode_Tail_addr))(pQList, pNewNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_RemoveNode(DMA_QListTypeDef *const pQList, DMA_NodeTypeDef *const pNode) {
+    return ((HAL_DMAEx_List_RemoveNode_api_ptr_t)(HAL_DMAEx_List_RemoveNode_addr))(pQList, pNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_RemoveNode_Head(DMA_QListTypeDef *const pQList) {
+    return ((HAL_DMAEx_List_RemoveNode_Head_api_ptr_t)(HAL_DMAEx_List_RemoveNode_Head_addr))(pQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_RemoveNode_Tail(DMA_QListTypeDef *const pQList) {
+    return ((HAL_DMAEx_List_RemoveNode_Tail_api_ptr_t)(HAL_DMAEx_List_RemoveNode_Tail_addr))(pQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_ReplaceNode(DMA_QListTypeDef *const pQList, DMA_NodeTypeDef *const pOldNode, DMA_NodeTypeDef *const pNewNode) {
+    return ((HAL_DMAEx_List_ReplaceNode_api_ptr_t)(HAL_DMAEx_List_ReplaceNode_addr))(pQList, pOldNode, pNewNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_ReplaceNode_Head(DMA_QListTypeDef *const pQList, DMA_NodeTypeDef *const pNewNode) {
+    return ((HAL_DMAEx_List_ReplaceNode_Head_api_ptr_t)(HAL_DMAEx_List_ReplaceNode_Head_addr))(pQList, pNewNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_ReplaceNode_Tail(DMA_QListTypeDef *const pQList, DMA_NodeTypeDef *const pNewNode) {
+    return ((HAL_DMAEx_List_ReplaceNode_Tail_api_ptr_t)(HAL_DMAEx_List_ReplaceNode_Tail_addr))(pQList, pNewNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_ResetQ(DMA_QListTypeDef *const pQList) {
+    return ((HAL_DMAEx_List_ResetQ_api_ptr_t)(HAL_DMAEx_List_ResetQ_addr))(pQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_InsertQ(DMA_QListTypeDef *const pSrcQList, DMA_NodeTypeDef const *const pPrevNode, DMA_QListTypeDef *const pDestQList) {
+    return ((HAL_DMAEx_List_InsertQ_api_ptr_t)(HAL_DMAEx_List_InsertQ_addr))(pSrcQList, pPrevNode, pDestQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_InsertQ_Head(DMA_QListTypeDef *const pSrcQList, DMA_QListTypeDef *const pDestQList) {
+    return ((HAL_DMAEx_List_InsertQ_Head_api_ptr_t)(HAL_DMAEx_List_InsertQ_Head_addr))(pSrcQList, pDestQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_InsertQ_Tail(DMA_QListTypeDef *const pSrcQList, DMA_QListTypeDef *const pDestQList) {
+    return ((HAL_DMAEx_List_InsertQ_Tail_api_ptr_t)(HAL_DMAEx_List_InsertQ_Tail_addr))(pSrcQList, pDestQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_SetCircularModeConfig(DMA_QListTypeDef *const pQList, DMA_NodeTypeDef *const pFirstCircularNode) {
+    return ((HAL_DMAEx_List_SetCircularModeConfig_api_ptr_t)(HAL_DMAEx_List_SetCircularModeConfig_addr))(pQList, pFirstCircularNode);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_SetCircularMode(DMA_QListTypeDef *const pQList) {
+    return ((HAL_DMAEx_List_SetCircularMode_api_ptr_t)(HAL_DMAEx_List_SetCircularMode_addr))(pQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_ClearCircularMode(DMA_QListTypeDef *const pQList) {
+    return ((HAL_DMAEx_List_ClearCircularMode_api_ptr_t)(HAL_DMAEx_List_ClearCircularMode_addr))(pQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_ConvertQToDynamic(DMA_QListTypeDef *const pQList) {
+    return ((HAL_DMAEx_List_ConvertQToDynamic_api_ptr_t)(HAL_DMAEx_List_ConvertQToDynamic_addr))(pQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_ConvertQToStatic(DMA_QListTypeDef *const pQList) {
+    return ((HAL_DMAEx_List_ConvertQToStatic_api_ptr_t)(HAL_DMAEx_List_ConvertQToStatic_addr))(pQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_LinkQ(DMA_HandleTypeDef *const hdma, DMA_QListTypeDef *const pQList) {
+    return ((HAL_DMAEx_List_LinkQ_api_ptr_t)(HAL_DMAEx_List_LinkQ_addr))(hdma, pQList);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_List_UnLinkQ(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMAEx_List_UnLinkQ_api_ptr_t)(HAL_DMAEx_List_UnLinkQ_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_ConfigDataHandling(DMA_HandleTypeDef *const hdma, DMA_DataHandlingConfTypeDef const *const pConfigDataHandling) {
+    return ((HAL_DMAEx_ConfigDataHandling_api_ptr_t)(HAL_DMAEx_ConfigDataHandling_addr))(hdma, pConfigDataHandling);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_ConfigTrigger(DMA_HandleTypeDef *const hdma, DMA_TriggerConfTypeDef const *const pConfigTrigger) {
+    return ((HAL_DMAEx_ConfigTrigger_api_ptr_t)(HAL_DMAEx_ConfigTrigger_addr))(hdma, pConfigTrigger);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_ConfigRepeatBlock(DMA_HandleTypeDef *const hdma, DMA_RepeatBlockConfTypeDef const *const pConfigRepeatBlock) {
+    return ((HAL_DMAEx_ConfigRepeatBlock_api_ptr_t)(HAL_DMAEx_ConfigRepeatBlock_addr))(hdma, pConfigRepeatBlock);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_Suspend(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMAEx_Suspend_api_ptr_t)(HAL_DMAEx_Suspend_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_Suspend_IT(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMAEx_Suspend_IT_api_ptr_t)(HAL_DMAEx_Suspend_IT_addr))(hdma);
+}
+
+HAL_StatusTypeDef HAL_DMAEx_Resume(DMA_HandleTypeDef *const hdma) {
+    return ((HAL_DMAEx_Resume_api_ptr_t)(HAL_DMAEx_Resume_addr))(hdma);
+}
+
+uint32_t HAL_DMAEx_GetFifoLevel(DMA_HandleTypeDef const *const hdma) {
+    return ((HAL_DMAEx_GetFifoLevel_api_ptr_t)(HAL_DMAEx_GetFifoLevel_addr))(hdma);
+}
+
+void get_adc_handle(ADC_HandleTypeDef **hadc) {
+    return ((get_adc_handle_api_ptr_t)(get_adc_handle_addr))(hadc);
+}
+
+void get_dma_node(DMA_NodeTypeDef **dma_node) {
+    return ((get_dma_node_api_ptr_t)(get_dma_node_addr))(dma_node);
+}
+
+void get_dma_qlist(DMA_QListTypeDef **dma_qlist) {
+    return ((get_dma_qlist_api_ptr_t)(get_dma_qlist_addr))(dma_qlist);
+}
+
+void get_dma_handle(DMA_HandleTypeDef **dma_handle) {
+    return ((get_dma_handle_api_ptr_t)(get_dma_handle_addr))(dma_handle);
 }
 

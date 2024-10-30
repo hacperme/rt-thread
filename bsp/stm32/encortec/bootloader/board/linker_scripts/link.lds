@@ -64,7 +64,6 @@ SECTIONS
         KEEP(build\kernel\components\drivers\ipc\ringbuffer.o(.text*))
         KEEP(build\kernel\components\drivers\ipc\waitqueue.o(.text*))
         KEEP(build\kernel\components\drivers\ipc\workqueue.o(.text*))
-        KEEP(build\kernel\components\drivers\misc\adc.o(.text*))
         KEEP(build\kernel\components\drivers\misc\rt_drv_pwm.o(.text*))
         KEEP(build\kernel\components\drivers\misc\rt_random.o(.text*))
         KEEP(build\kernel\components\drivers\mtd\mtd_nand.o(.text*))
@@ -108,8 +107,13 @@ SECTIONS
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_pwr_ex.o(.text*))
         KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_hash.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_dma.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_dma_ex.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_adc.o(.text*))
+        KEEP(build\libraries\STM32U5xx_HAL\STM32U5xx_HAL_Driver\Src\stm32u5xx_hal_adc_ex.o(.text*))
         KEEP(build\board\drivers\fatfs_nand_flash\drv_nand_flash.o(.text*))
         KEEP(build\board\drivers\fatfs_nand_flash\drv_fatfs_dhara_nand.o(.text*))
+        KEEP(build\board\drivers\adc_dma\adc_dma.o(.text*))
         KEEP(build\kernel\components\dfs\dfs_v1\src\dfs_posix.o(.text*))
         *(.text)                        /* remaining code */
         *(.text.*)                      /* remaining code */
