@@ -264,8 +264,9 @@ static rt_err_t MX_ADC1_IN_Enable(uint32_t adc_channel)
 }
 
 #define VOL_COLLECTION_MAX_TIME         20
+#define VOL_COLLECTION_LIMIT_TIME       23
 #define VOL_COLLECTION_RATE             1210
-#define CUR_VOL_BUFF_SIZE               (VOL_COLLECTION_MAX_TIME * VOL_COLLECTION_RATE)
+#define CUR_VOL_BUFF_SIZE               (VOL_COLLECTION_LIMIT_TIME * VOL_COLLECTION_RATE)
 #define VOL_BUFF_SIZE                   10
 #define ADC_VERF                        3300
 
@@ -423,10 +424,14 @@ rt_err_t cur_vol_read(rt_uint16_t **cur_buff, rt_uint16_t *buff_size)
         cur_remain_size, cur_sticks, cur_eticks, rt_tick_diff(cur_sticks, cur_eticks)
     );
 
-    rt_uint16_t coll_size = CUR_VOL_BUFF_SIZE;
-    if (rt_tick_diff(cur_sticks, cur_eticks) > 19 * 1000 && (CUR_VOL_BUFF_SIZE - cur_remain_size < rt_tick_diff(cur_sticks, cur_eticks)))
+    rt_uint16_t coll_size = 0;
+    if (cur_remain_size < ((VOL_COLLECTION_LIMIT_TIME - VOL_COLLECTION_MAX_TIME) * VOL_COLLECTION_RATE))
     {
-        coll_size = CUR_VOL_BUFF_SIZE;
+        coll_size = VOL_COLLECTION_MAX_TIME *  VOL_COLLECTION_RATE;
+    }
+    else if (rt_tick_diff(cur_sticks, cur_eticks) > 19 * 1000 && (CUR_VOL_BUFF_SIZE - cur_remain_size < rt_tick_diff(cur_sticks, cur_eticks)))
+    {
+        coll_size = VOL_COLLECTION_MAX_TIME *  VOL_COLLECTION_RATE;
     }
     else
     {
@@ -480,7 +485,7 @@ void test_vol_read(void)
         res_msg(res == RT_EOK), cur_buff_size, cur_buff, cur_vol_buff
     );
 
-    for (rt_uint16_t i = 0; i < cur_buff_size; i++)
+    for (rt_uint16_t i = 0; i < 10; i++)
     {
         log_debug("cur_vol cur_buff[%d]=%d", i, cur_buff[i]);
     }
