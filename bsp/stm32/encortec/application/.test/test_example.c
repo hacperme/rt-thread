@@ -59,14 +59,14 @@ int application_start(int argc, char *argv[]) {
     // extern void test_adxl372(int argc, char **argv);
     // test_adxl372(argc, argv);
 
-    extern void test_vol_read(void);
-    test_vol_read();
+    // extern void test_vol_read(void);
+    // test_vol_read();
 
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);
 
-    // extern void test_gnss(int argc, char **argv);
-    // test_gnss(argc, argv);
+    extern void test_gnss(int argc, char **argv);
+    test_gnss(argc, argv);
 
     // extern void save_app_bin(void);
     // save_app_bin();

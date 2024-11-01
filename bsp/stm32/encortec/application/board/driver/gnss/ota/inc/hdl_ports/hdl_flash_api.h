@@ -9,7 +9,7 @@ extern "C" {
 
 // ToDo Porting: Please use your platform API to implement them.
 // Host Flash API
-bool hdl_flash_init();
+bool hdl_flash_init(char *file);
 bool hdl_flash_read(uint32_t start_address, uint8_t *buffer, uint32_t length);
 bool hdl_flash_deinit();
 

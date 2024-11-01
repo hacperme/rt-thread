@@ -10,10 +10,9 @@
 #include "tools.h"
 #include "logging.h"
 
-rt_err_t crc8_check(const rt_uint8_t *input, rt_size_t length, const rt_uint8_t *cmp_val)
+rt_err_t hwcrypto_crc8(const rt_uint8_t *input, rt_size_t length, rt_uint32_t *value)
 {
     rt_err_t res = RT_ERROR;
-    rt_uint32_t crc_val = 0;
     struct rt_hwcrypto_ctx *ctx;
     struct hwcrypto_crc_cfg cfg = {
         .last_val = 0xFF,
@@ -29,15 +28,26 @@ rt_err_t crc8_check(const rt_uint8_t *input, rt_size_t length, const rt_uint8_t 
         return res;
     }
     rt_hwcrypto_crc_cfg(ctx, &cfg);
-    crc_val = rt_hwcrypto_crc_update(ctx, input, length);
-    log_debug("rt_hwcrypto_crc_update res=0x%02X", crc_val);
+    *value = rt_hwcrypto_crc_update(ctx, input, length);
+    log_debug("rt_hwcrypto_crc_update CRC8 value=0x%02X", *value);
     rt_hwcrypto_crc_destroy(ctx);
-
-    res = (rt_uint8_t)crc_val == *cmp_val ? RT_EOK : RT_ERROR;
+    res = RT_EOK;
     return res;
 }
 
-rt_err_t crc32_check(const rt_uint8_t *input, rt_size_t length, rt_uint32_t *result)
+rt_err_t crc8_check(const rt_uint8_t *input, rt_size_t length, const rt_uint8_t *cmp_val)
+{
+    rt_err_t res = RT_ERROR;
+    rt_uint32_t crc_val = 0;
+    res = hwcrypto_crc8(input, length, &crc_val);
+    if (res == RT_EOK)
+    {
+        res = (rt_uint8_t)crc_val == *cmp_val ? RT_EOK : RT_ERROR;
+    }
+    return res;
+}
+
+rt_err_t hwcrypto_crc32(const rt_uint8_t *input, rt_size_t length, rt_uint32_t *value)
 {
     rt_err_t res = RT_ERROR;
     struct rt_hwcrypto_ctx *ctx;
@@ -55,8 +65,8 @@ rt_err_t crc32_check(const rt_uint8_t *input, rt_size_t length, rt_uint32_t *res
         return res;
     }
     rt_hwcrypto_crc_cfg(ctx, &cfg);
-    *result = rt_hwcrypto_crc_update(ctx, input, length);
-    log_debug("rt_hwcrypto_crc_update res=0x%02X", *result);
+    *value = rt_hwcrypto_crc_update(ctx, input, length);
+    log_debug("rt_hwcrypto_crc_update res=0x%02X", *value);
     rt_hwcrypto_crc_destroy(ctx);
 
     res = RT_EOK;
@@ -91,12 +101,12 @@ void test_crc32_check(void)
 
     rt_uint32_t result = 0;
     rt_err_t res;
-    res = crc32_check((uint8_t *)aDataBuffer, BUFFER_SIZE * 4, &result);
-    log_debug("crc32_check res=%d, result=%p", res, result);
+    res = hwcrypto_crc32((uint8_t *)aDataBuffer, BUFFER_SIZE * 4, &result);
+    log_debug("hwcrypto_crc32 res=%d, result=%p", res, result);
 
     uint8_t data[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-    res = crc32_check((uint8_t *)data, 8, &result);
-    log_debug("crc32_check res=%d, result=%p", res, result);
+    res = hwcrypto_crc32((uint8_t *)data, 8, &result);
+    log_debug("hwcrypto_crc32 res=%d, result=%p", res, result);
 
     // extern uint32_t CRC32(uint8_t *data, uint32_t size);
     // result = 0;

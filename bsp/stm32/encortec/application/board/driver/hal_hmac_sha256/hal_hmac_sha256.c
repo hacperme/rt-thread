@@ -10,6 +10,7 @@
 #include "hal_hmac_sha256.h"
 #include "stm32u5xx_hal_hash.h"
 #include "logging.h"
+#include "tools.h"
 
 static HASH_HandleTypeDef hhash;
 static struct rt_mutex hal_hmac_sha256_mutex;
@@ -95,7 +96,7 @@ void test_hal_hmac_sha256(void)
 {
     rt_err_t res;
     res = hal_hmac_sha256_init();
-    log_debug("hal_hmac_sha256_init %s", res == RT_EOK ? "success" : "failed");
+    log_debug("hal_hmac_sha256_init %s", res_msg(res == RT_EOK));
 
     static rt_uint8_t key_buf[4] = {1, 2, 3, 4};
     static rt_uint8_t input_buf[32] = {0};
@@ -108,7 +109,7 @@ void test_hal_hmac_sha256(void)
     }
 
     res = hal_hmac_sha256(key_buf, 4, input_buf, 32, output_buf);
-    log_debug("hal_hmac_sha256 %s", res == RT_EOK ? "success" : "failed");
+    log_debug("hal_hmac_sha256 %s", res_msg(res == RT_EOK));
     if (res == RT_EOK)
     {
         for (i = 0; i < 32; i++)
@@ -122,7 +123,7 @@ void test_hal_hmac_sha256(void)
         input_buf[i] = i + 32;
     }
     res = hal_hmac_sha256(key_buf, 4, input_buf, 32, output_buf);
-    log_debug("hal_hmac_sha256 %s", res == RT_EOK ? "success" : "failed");
+    log_debug("hal_hmac_sha256 %s", res_msg(res == RT_EOK));
     if (res == RT_EOK)
     {
         for (i = 0; i < 32; i++)

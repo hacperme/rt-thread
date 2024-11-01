@@ -1,11 +1,12 @@
 #include "hdl_ports/hdl_os_util.h"
-// #include "mbedtls/md5.h"
+#include "rtthread.h"
+#include "logging.h"
 
 uint16_t hdl_compute_checksum(uint8_t *buf, uint32_t buf_len)
 {
     uint16_t checksum = 0;
     if (buf == NULL || buf_len == 0) {
-        HDL_LOGE("hdl_compute_checksum, invalid arg");
+        log_debug("hdl_compute_checksum, invalid arg");
         return 0;
     }
 

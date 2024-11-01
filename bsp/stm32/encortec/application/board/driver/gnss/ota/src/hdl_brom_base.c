@@ -1,4 +1,5 @@
 #include "hdl_brom_base.h"
+#include "rtthread.h"
 
 static uint8_t g_hdl_da_data_buf[DA_DATA_UNIT] = {0};
 
@@ -6,14 +7,107 @@ bool g_brom_task_stop = false;
 const unsigned char HDL_START_CMD[4]    = {0xA0, 0x0A, 0x50, 0x05};
 const unsigned char HDL_BROM_RSP_CMD[4] = {0x5F, 0xF5, 0xAF, 0xFA};
 
-static void brom_start_task(void *pvParameters)
+#define brom_task_size 0x1000
+static struct rt_thread brom_task;
+static char brom_task_stack[brom_task_size];
+static struct rt_semaphore brom_task_sem;
+bool brom_task_init_tag = false;
+bool brom_task_start_tag = false;
+
+static void brom_task_entry(void *pvParameters);
+static rt_err_t brom_task_init(void);
+static rt_err_t hdl_create_brom_task(void);
+static void hdl_delete_brom_task(void);
+
+static void brom_task_entry(void *pvParameters)
 {
     while (!g_brom_task_stop) {
         HDL_COM_PutByte(HDL_START_CMD[0]);
-        HDL_LOGI("brom_start_task put_char 0xA0");
+        HDL_LOGI("brom_task put_char 0xA0");
         hdl_delay(50);
     }
-    hdl_delete_task(NULL);
+
+    rt_sched_lock_level_t slvl;
+    rt_sched_lock(&slvl);
+    brom_task_start_tag = false;
+    rt_err_t res = rt_sem_release(&brom_task_sem);
+    log_debug("rt_sem_release brom_task_sem %s", res == RT_EOK ? "success" : "failed");
+    rt_sched_unlock(slvl);
+    res = rt_thread_suspend(rt_thread_self());
+    log_debug("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
+}
+
+static rt_err_t brom_task_init(void)
+{
+    rt_err_t res = brom_task_init_tag == true ? RT_EOK : RT_ERROR;
+    if (brom_task_init_tag == true) return res;
+
+    res = rt_sem_init(&brom_task_sem, "BromTaskSem", 0, RT_IPC_FLAG_PRIO);
+    log_info("rt_sem_init BromTaskSem %s.", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        return res;
+    }
+
+    res = rt_thread_init(
+        &brom_task,
+        "BromTask",
+        brom_task_entry,
+        RT_NULL,
+        brom_task_stack,
+        brom_task_size,
+        25,
+        4
+    );
+    log_info("rt_thread_init BromTask %s.", res == RT_EOK ? "success" : "failed");
+    if (res != RT_EOK)
+    {
+        rt_sem_detach(&brom_task_sem);
+        return res;
+    }
+
+    brom_task_init_tag = res == RT_EOK ? true : false;
+    return res;
+}
+
+static rt_err_t hdl_create_brom_task(void)
+{
+    rt_err_t res = brom_task_init();
+    log_info("brom_task_init %s.", res == RT_EOK ? "success" : "failed");
+
+    res = brom_task_init_tag == true ? RT_EOK : RT_ERROR;
+    if (brom_task_init_tag != true) return res;
+
+    g_brom_task_stop = false;
+    res = rt_thread_startup(&brom_task);
+    log_info("rt_thread_startup BromTask %s.", res == RT_EOK ? "success" : "failed");
+    brom_task_start_tag = res == RT_EOK ? true : false;
+
+    return res;
+}
+
+static void hdl_delete_brom_task(void)
+{
+    g_brom_task_stop = true;
+    rt_err_t res;
+    char _cnt_ = 3;
+    while (_cnt_ > 0)
+    {
+        res = rt_sem_take(&brom_task_sem, 500);
+        if (res == RT_EOK)
+        {
+            rt_sem_detach(&brom_task_sem);
+            rt_thread_detach(&brom_task);
+            brom_task_init_tag = false;
+            log_info("hdl_delete_brom_task success.");
+            break;
+        }
+        else
+        {
+            log_error("hdl_delete_brom_task failed.");
+        }
+        _cnt_--;
+    }
 }
 
 static void brom_write8_echo(uint8_t data)
@@ -52,22 +146,34 @@ static void brom_write32_echo(uint32_t data)
 bool hdl_brom_start()
 {
     char rx_data = 0;
+    uint8_t retry_cnt = 0;
+
 brom_start_retry:
+    retry_cnt++;
+    if (retry_cnt >= 4)
+    {
+        return false;
+    }
 
 #if defined (HDL_VIA_UART)
     // ToDo Note: For our UART, need to create asnyc_task to send START_CMD[0]=0xA0
     // continuously in UART Polling mode.
     // For your UART, you could try to use UART DMA mode, or create task like us.
-    g_brom_task_stop = false;
-    hdl_create_brom_start_task(brom_start_task);
-    while (1) {
+    hdl_create_brom_task();
+    uint16_t cnt = 100;
+    while (cnt > 0) {
         hdl_delay(20);
         rx_data = HDL_COM_GetByte();
         if (rx_data == HDL_BROM_RSP_CMD[0]) {
-            g_brom_task_stop = true;
             HDL_LOGI("hdl_brom_start 0xA0<->0x5F");
             break;
         }
+        cnt--;
+    }
+    hdl_delete_brom_task();
+    if (rx_data != HDL_BROM_RSP_CMD[0] && cnt == 0)
+    {
+        goto brom_start_retry;
     }
 #endif
 
@@ -148,13 +254,12 @@ exit:
     return success;
 }
 
-bool hdl_brom_send_da(const hdl_connect_arg_t *connect_arg,
-                      uint32_t da_flash_pos, uint32_t da_run_addr, uint32_t da_len)
+bool hdl_brom_send_da(const hdl_connect_arg_t *connect_arg, char *da_file, uint32_t da_run_addr, uint32_t da_len)
 {
     bool success = false;
-    bool ret = hdl_flash_init();
+    bool ret = hdl_flash_init(da_file);
     HDL_Require_Noerr_Action(ret, exit, "hdl_flash_init");
-    HDL_LOGI("hdl_brom_send_da 0x%08X 0x%08X %d", da_flash_pos, da_run_addr, da_len);
+    HDL_LOGI("hdl_brom_send_da %s 0x%08X %d", da_file, da_run_addr, da_len);
 
     // DA Init Callback
     if (connect_arg != NULL && connect_arg->conn_da_init_cb != NULL) {
@@ -175,7 +280,7 @@ bool hdl_brom_send_da(const hdl_connect_arg_t *connect_arg,
         memset(g_hdl_da_data_buf, 0, DA_DATA_UNIT);
         
         const unsigned int to_send_len = min(DA_DATA_UNIT, da_len - total_sent_len);
-        ret = hdl_flash_read(da_flash_pos + total_sent_len, g_hdl_da_data_buf, to_send_len);
+        ret = hdl_flash_read(total_sent_len, g_hdl_da_data_buf, to_send_len);
         if (ret) {
             const uint32_t sent_len = HDL_COM_PutByte_Buffer(g_hdl_da_data_buf, to_send_len);
             total_sent_len += sent_len;

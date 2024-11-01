@@ -44,8 +44,6 @@ typedef struct UpgradeNode {
     // struct UpgradeNode* next;
 } UpgradeNode; //使用1个静态数组，存储文件系统内的配置，要更新module
 
-
-
 void add_module(UpgradeModule module, UpgradeModuleType type, const char* path); //保存至文件,不需要链表
 void start_download(UpgradeNode* node);
 void start_upgrade(UpgradeNode* node);

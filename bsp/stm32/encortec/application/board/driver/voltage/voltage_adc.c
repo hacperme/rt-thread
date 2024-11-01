@@ -317,7 +317,7 @@ static rt_err_t adc_vol_read(rt_uint32_t adc_channel, rt_uint16_t *value)
     }
 
     res = MX_ADC1_IN_Enable(adc_channel);
-    log_debug("MX_ADC1_IN_Enable %s", res == RT_EOK ? "success" : "failed");
+    log_debug("MX_ADC1_IN_Enable %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -326,7 +326,7 @@ static rt_err_t adc_vol_read(rt_uint32_t adc_channel, rt_uint16_t *value)
     int hal_res;
     hal_res = HAL_ADC_Start_DMA(hadc1, (uint32_t *)vol_buff, VOL_BUFF_SIZE);
     res = hal_res == 0 ? RT_EOK : RT_ERROR;
-    log_debug("HAL_ADC_Start_DMA %s", res == RT_EOK ? "success" : "failed");
+    log_debug("HAL_ADC_Start_DMA %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -449,7 +449,7 @@ void test_vol_read(void)
     rt_err_t res;
 
     res = adc_dma_init();
-    log_debug("adc_dma_init %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adc_dma_init %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return;
@@ -459,25 +459,25 @@ void test_vol_read(void)
     vcap_vol = vbat_vol = 0;
 
     res = vcap_vol_read(&vcap_vol);
-    log_debug("vcap_vol_read %s, vcap_vol=%d", res == RT_EOK ? "success" : "failed", vcap_vol);
+    log_debug("vcap_vol_read %s, vcap_vol=%d", res_msg(res == RT_EOK), vcap_vol);
 
     res = vbat_vol_read(&vbat_vol);
-    log_debug("vbat_vol_read %s, vbat_vol=%d", res == RT_EOK ? "success" : "failed", vbat_vol);
+    log_debug("vbat_vol_read %s, vbat_vol=%d", res_msg(res == RT_EOK), vbat_vol);
 
     res = cur_vol_read_start();
-    log_debug("cur_vol_read_start %s", res == RT_EOK ? "success" : "failed");
+    log_debug("cur_vol_read_start %s", res_msg(res == RT_EOK));
 
     rt_thread_mdelay(100);
 
     res = cur_vol_read_stop();
-    log_debug("cur_vol_read_stop %s", res == RT_EOK ? "success" : "failed");
+    log_debug("cur_vol_read_stop %s", res_msg(res == RT_EOK));
 
     rt_uint16_t *cur_buff;
     rt_uint16_t cur_buff_size = 0;
     res = cur_vol_read(&cur_buff, &cur_buff_size);
     log_debug(
         "cur_vol_read %s, cur_buff_size=%d, cur_buff=0x%08X, cur_vol_buff=0x%08X",
-        res == RT_EOK ? "success" : "failed", cur_buff_size, cur_buff, cur_vol_buff
+        res_msg(res == RT_EOK), cur_buff_size, cur_buff, cur_vol_buff
     );
 
     for (rt_uint16_t i = 0; i < cur_buff_size; i++)

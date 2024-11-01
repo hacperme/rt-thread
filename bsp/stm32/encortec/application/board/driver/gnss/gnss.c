@@ -10,6 +10,9 @@
 #include <string.h>
 #include "gnss.h"
 #include "logging.h"
+#include "tools.h"
+
+#define GNSS_VERSION_CMD_HEAD "$PQTMVER"
 
 static rt_device_t GNSS_SERIAL = RT_NULL;
 
@@ -28,6 +31,9 @@ static const char NMEA_VALID_CHAR[4] = ",A,";
 static const char NMEA_START_CHAR[3] = "$G";
 static const char CRLF[3] = "\r\n";
 static const char NMEA_HEADRES[6][8] = {"$GNRMC", "$GNGGA", "$GNGLL", "$GNVTG", "$GNGSA", "$GPGSV"};
+static char GNSS_VERSION[32] = {0};
+static char GNSS_VERSION_BUILD_DATE[16] = {0};
+static char GNSS_VERSION_BUILD_TIME[16] = {0};
 
 void gnss_pwron_pin_init(void)
 {
@@ -62,6 +68,43 @@ rt_err_t eg915_gnssen_pin_enable(rt_uint8_t mode)
     return rt_pin_read(EG915_GNSSEN_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
+static rt_uint8_t is_version_nmea(char *item)
+{
+    rt_uint8_t res = 0;
+    res = rt_strstr(item, GNSS_VERSION_CMD_HEAD) == RT_NULL ? 0 : 1;
+    if (res == 0) return res;
+    res = rt_strstr(item, "ERROR") == RT_NULL ? 1 : 0;
+    if (res == 0) return res;
+
+    log_debug("query gnss version response %s", item);
+
+    const char comma = ',';
+    char *comma_index = &item[9];
+    char *last_index = comma_index;
+    comma_index = strchr(last_index, comma);
+    if (comma_index)
+    {
+        rt_memcpy(GNSS_VERSION, last_index, comma_index - last_index);
+        log_debug("GNSS_VERSION %s", GNSS_VERSION);
+    }
+    last_index = comma_index + 1;
+    comma_index = strchr(last_index, comma);
+    if (comma_index)
+    {
+        rt_memcpy(GNSS_VERSION_BUILD_DATE, last_index, comma_index - last_index);
+        log_debug("GNSS_VERSION_BUILD_DATE %s",GNSS_VERSION_BUILD_DATE);
+    }
+    last_index = comma_index + 1;
+    comma_index = strchr(last_index, '*');
+    if (comma_index)
+    {
+        rt_memcpy(GNSS_VERSION_BUILD_TIME, last_index, comma_index - last_index);
+        log_debug("GNSS_VERSION_BUILD_TIME %s",GNSS_VERSION_BUILD_TIME);
+    }
+
+    return res;
+}
+
 static void gnss_parse_nmea_item(char *item)
 {
     // log_debug("gnss_parse_nmea_item %s", item);
@@ -73,6 +116,10 @@ static void gnss_parse_nmea_item(char *item)
         gnss_parse_nmea_item(&item[result - item]);
         return;
     }
+
+    rt_uint8_t res = is_version_nmea(item);
+    if (res == 1) return;
+
     for (rt_uint8_t i = 0; i < 6; i++)
     {
         result = rt_strstr(item, NMEA_HEADRES[i]);
@@ -197,7 +244,7 @@ static void gnss_thread_entry(void *parameter)
     while (GNSS_THD_EXIT == 0)
     {
         res = rt_mutex_take(&GNSS_LOCK, 1000);
-        // log_debug("rt_mutex_take GNSS_LOCK %s", res == RT_EOK ? "success" : "failed");
+        // log_debug("rt_mutex_take GNSS_LOCK %s", res_msg(res == RT_EOK));
         if (res == RT_EOK)
         {
             rt_memset(nmea, 0, GNSS_BUFF_SIZE);
@@ -218,7 +265,7 @@ static void gnss_thread_entry(void *parameter)
             log_error("Take GNSS_LOCK to read nmea failed.");
         }
         res = rt_mutex_release(&GNSS_LOCK);
-        // log_debug("rt_mutex_release GNSS_LOCK %s", res == RT_EOK ? "success" : "failed");
+        // log_debug("rt_mutex_release GNSS_LOCK %s", res_msg(res == RT_EOK));
         rt_thread_mdelay(1000);
     }
     log_debug("Clear nmea, HGPS, NMEA_ITEMS");
@@ -230,35 +277,35 @@ static void gnss_thread_entry(void *parameter)
     rt_sched_lock_level_t slvl;
     rt_sched_lock(&slvl);
     res = rt_sem_release(&GNSS_THD_SUSPEND_SEM);
-    log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res_msg(res == RT_EOK));
     rt_sched_unlock(slvl);
     res = rt_thread_suspend(rt_thread_self());
-    log_debug("rt_thread_suspend rt_thread_self %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_thread_suspend rt_thread_self %s", res_msg(res == RT_EOK));
     // rt_schedule();
     // log_debug("rt_schedule");
     // rt_exit_critical();
 }
 
-static rt_err_t gnss_power_on(void)
+rt_err_t gnss_power_on(void)
 {
     return gnss_pwron_pin_enable(1);
 }
 
-static rt_err_t gnss_power_off(void)
+rt_err_t gnss_power_off(void)
 {
     rt_err_t res = gnss_pwron_pin_enable(0);
-    log_debug("gnss_pwron_pin_enable %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_pwron_pin_enable %s", res_msg(res == RT_EOK));
     return res;
 }
 
-static rt_err_t swith_gnss_source(rt_uint8_t mode)
+rt_err_t gnss_swith_source(rt_uint8_t mode)
 {
     // mode -- 0 GNSS LC76G Enable
     // mode -- 1 GNSS EG915 Enable
     return eg915_gnssen_pin_enable(mode);
 }
 
-static rt_err_t gnss_reset_init(void)
+rt_err_t gnss_reset_init(void)
 {
     return gnss_rst_pin_enable(1);
 }
@@ -319,9 +366,9 @@ static rt_err_t gnss_deinit(void)
     }
 
     res = rt_sem_detach(&GNSS_THD_SUSPEND_SEM);
-    log_debug("rt_sem_detach(&GNSS_THD_SUSPEND_SEM) %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_sem_detach(&GNSS_THD_SUSPEND_SEM) %s", res_msg(res == RT_EOK));
     res = rt_mutex_detach(&GNSS_LOCK);
-    log_debug("rt_mutex_detach(&GNSS_LOCK) %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_mutex_detach(&GNSS_LOCK) %s", res_msg(res == RT_EOK));
     GNSS_SERIAL = RT_NULL;
     GNSS_INIT_OVER = 0;
 
@@ -333,7 +380,7 @@ rt_err_t gnss_open(void)
     rt_err_t res = RT_EOK;
 
     res = gnss_init();
-    log_debug("gnss_init %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_init %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -341,21 +388,21 @@ rt_err_t gnss_open(void)
 
 #if defined(SOC_STM32U535VE) || defined(SOC_STM32U575VI)
     res = gnss_power_on();
-    log_debug("gnss_power_on %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_power_on %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         gnss_power_off();
         return res;
     }
     res = gnss_reset_init();
-    log_debug("gnss_reset_init %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_reset_init %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         gnss_power_off();
         return res;
     }
-    res = swith_gnss_source(0);
-    log_debug("swith_gnss_source(0) %s", res == RT_EOK ? "success" : "failed");
+    res = gnss_swith_source(0);
+    log_debug("gnss_swith_source(0) %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         gnss_power_off();
@@ -365,7 +412,7 @@ rt_err_t gnss_open(void)
 
     /* 以中断接收及轮询发送模式打开串口设备 */
     res = rt_device_open(GNSS_SERIAL, RT_DEVICE_FLAG_INT_RX);
-    log_debug("rt_device_open GNSS_SERIAL %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_device_open GNSS_SERIAL %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         gnss_power_off();
@@ -374,7 +421,7 @@ rt_err_t gnss_open(void)
 
     /* 创建 GNSS 线程 */
     res = rt_thread_init(&GNSS_READ_THD, "GNSSTHD", gnss_thread_entry, RT_NULL, GNSS_READ_THD_STACK, 0x1000, 25, 10);
-    log_debug("rt_thread_init GNSS_READ_THD %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_thread_init GNSS_READ_THD %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         gnss_power_off();
@@ -384,7 +431,7 @@ rt_err_t gnss_open(void)
 
     GNSS_THD_EXIT = 0;
     res = rt_thread_startup(&GNSS_READ_THD);
-    log_debug("gnss_thread_entry start %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_thread_entry start %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         gnss_power_off();
@@ -406,15 +453,15 @@ rt_err_t gnss_close(void)
     if (GNSS_SERIAL != RT_NULL)
     {
         res = rt_device_close(GNSS_SERIAL);
-        log_debug("rt_device_close %s", res == RT_EOK ? "success" : "failed");
+        log_debug("rt_device_close %s", res_msg(res == RT_EOK));
     }
 
     res = rt_sem_take(&GNSS_THD_SUSPEND_SEM, 2100);
-    log_debug("rt_sem_take GNSS_THD_SUSPEND_SEM %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_sem_take GNSS_THD_SUSPEND_SEM %s", res_msg(res == RT_EOK));
     if (res == RT_EOK)
     {
         res = rt_thread_detach(&GNSS_READ_THD);
-        log_debug("rt_thread_detach GNSS_READ_THD %s", res == RT_EOK ? "success" : "failed");
+        log_debug("rt_thread_detach GNSS_READ_THD %s", res_msg(res == RT_EOK));
     }
 
     do {
@@ -423,7 +470,7 @@ rt_err_t gnss_close(void)
     } while (res != RT_EOK);
 
     res = gnss_deinit();
-    log_debug("gnss_deinit %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_deinit %s", res_msg(res == RT_EOK));
 
 #if defined(SOC_STM32U535VE) || defined(SOC_STM32U575VI)
     res = gnss_power_off();
@@ -513,12 +560,42 @@ rt_err_t gnss_read_nmea_item(nmea_item_t nmea_item, rt_uint16_t timeout)
     return res;
 }
 
+rt_err_t gnss_query_version(char **gnss_version, char **gnss_build_date, char **gnss_build_time)
+{
+    rt_err_t res;
+    rt_ssize_t ret;
+
+    res = rt_strlen(GNSS_VERSION) > 0 ? RT_EOK : RT_ERROR;
+    if (res == RT_EOK) goto _exit_;
+
+    char query_ver_cmd[] = "$PQTMVERNO*58\r\n";
+    ret = rt_device_write(GNSS_SERIAL, 0, query_ver_cmd, rt_strlen(query_ver_cmd));
+    res = ret == rt_strlen(query_ver_cmd) ? RT_EOK : RT_ERROR;
+    // log_debug("send query_ver_cmd %s", res_msg(res == RT_EOK));
+    if (res != RT_EOK) return res;
+    rt_uint8_t cnt = 15;
+    do {
+        rt_thread_mdelay(100);
+        cnt--;
+    } while (rt_strlen(GNSS_VERSION) == 0 && cnt > 0);
+
+    res = rt_strlen(GNSS_VERSION) > 0 ? RT_EOK : RT_ERROR;
+    // log_debug("wait query gnss version %s", res_msg(res == RT_EOK));
+    if (res != RT_EOK) return res;
+
+_exit_:
+    *gnss_version = GNSS_VERSION;
+    *gnss_build_date = GNSS_VERSION_BUILD_DATE;
+    *gnss_build_time = GNSS_VERSION_BUILD_TIME;
+    return res;
+}
+
 #ifdef RT_USING_MSH
 static rt_err_t test_show_nmea_data(lwgps_t *gnss_data)
 {
     char msg[64];
     rt_err_t res = gnss_read_data(gnss_data, 1000);
-    log_debug("gnss_read_data %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_read_data %s", res_msg(res == RT_EOK));
     if (res == RT_EOK)
     {
         sprintf(msg, "GNSS Date: %d-%d-%d %d:%d:%d", gnss_data->year, gnss_data->month, gnss_data->date, 
@@ -542,7 +619,7 @@ static rt_err_t test_show_nmea_item(nmea_item_t test_nmea_item)
     rt_err_t result;
     rt_uint8_t i;
     res = gnss_read_nmea_item(test_nmea_item, 1000);
-    log_debug("gnss_read_nmea_item %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_read_nmea_item %s", res_msg(res == RT_EOK));
     if (res == RT_EOK)
     {
         log_debug("test_nmea_item->GNRMC: %s", test_nmea_item->GNRMC);
@@ -568,8 +645,21 @@ void test_gnss(int argc, char **argv)
 {
     rt_err_t res;
     res = gnss_open();
-    log_debug("gnss_open %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_open %s", res_msg(res == RT_EOK));
     rt_thread_mdelay(100); //at least 300 ms
+
+    char *gnss_version;
+    char *gnss_build_date;
+    char *gnss_build_time;
+    res = gnss_query_version(&gnss_version, &gnss_build_date, &gnss_build_time);
+    log_debug("gnss_query_version %s", res_msg(res == RT_EOK));
+    if (res == RT_EOK)
+    {
+        log_debug(
+            "gnss_version=%s, gnss_build_date=%s, gnss_build_time=%s",
+            gnss_version, gnss_build_date, gnss_build_time
+        );
+    }
 
     rt_uint8_t cnt = 3;
     lwgps_t gnss_data = {0};
@@ -587,7 +677,7 @@ void test_gnss(int argc, char **argv)
         rt_thread_mdelay(1000); //at least 300 ms
     }
     res = gnss_close();
-    log_debug("gnss_close %s", res == RT_EOK ? "success" : "failed");
+    log_debug("gnss_close %s", res_msg(res == RT_EOK));
 }
 
 // MSH_CMD_EXPORT(test_gnss, gnss data show);

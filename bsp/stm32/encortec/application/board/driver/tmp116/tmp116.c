@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "tmp116.h"
 #include "logging.h"
+#include "tools.h"
 
 rt_err_t tmp116_read_device_id(struct rt_i2c_bus_device *iic_dev, const rt_uint8_t addr, rt_uint16_t *dev_id)
 {
@@ -18,7 +19,7 @@ rt_err_t tmp116_read_device_id(struct rt_i2c_bus_device *iic_dev, const rt_uint8
     res = ret == 1 ? RT_EOK : RT_ERROR;
     log_debug(
         "rt_i2c_master_send addr=0x%02X reg=0x%02X %s ret=%d",
-        addr, TMP116_DEVICE_ID_REG, res == RT_EOK ? "success": "failed", ret
+        addr, TMP116_DEVICE_ID_REG, res_msg(res == RT_EOK), ret
     );
     if (res != RT_EOK)
     {
@@ -30,7 +31,7 @@ rt_err_t tmp116_read_device_id(struct rt_i2c_bus_device *iic_dev, const rt_uint8
     res = ret == 2 ? RT_EOK : RT_ERROR;
     log_debug(
         "rt_i2c_master_recv addr=0x%02X reg=0x%02X %s ret=%d, recv_buf 0x%02X 0x%02X",
-        addr, TMP116_DEVICE_ID_REG, res == RT_EOK ? "success": "failed", ret, recv_buf[0], recv_buf[1]
+        addr, TMP116_DEVICE_ID_REG, res_msg(res == RT_EOK), ret, recv_buf[0], recv_buf[1]
     );
     if (res == RT_EOK)
     {
@@ -51,7 +52,7 @@ rt_err_t tmp116_set_configuration(struct rt_i2c_bus_device *iic_dev, const rt_ui
     res = ret == size ? RT_EOK : RT_ERROR;
     log_debug(
         "rt_i2c_master_send addr=0x%02X reg=0x%02X val=0x%02X 0x%02X %s ret=%d",
-        addr, cfgs[0], cfgs[1], cfgs[2], res == RT_EOK ? "success": "failed", ret
+        addr, cfgs[0], cfgs[1], cfgs[2], res_msg(res == RT_EOK), ret
     );
     return res;
 }
@@ -64,7 +65,7 @@ rt_err_t tmp116_read_configuration(struct rt_i2c_bus_device *iic_dev, const rt_u
     res = ret == 1 ? RT_EOK : RT_ERROR;
     log_debug(
         "rt_i2c_master_send addr=0x%02X reg=0x%02X %s ret=%d",
-        addr, TMP116_CFGR_REG, res == RT_EOK ? "success": "failed", ret
+        addr, TMP116_CFGR_REG, res_msg(res == RT_EOK), ret
     );
     if (res != RT_EOK)
     {
@@ -76,7 +77,7 @@ rt_err_t tmp116_read_configuration(struct rt_i2c_bus_device *iic_dev, const rt_u
     res = ret == 2 ? RT_EOK : RT_ERROR;
     log_debug(
         "rt_i2c_master_recv addr=0x%02X reg=0x%02X %s ret=%d, recv_buf 0x%02X 0x%02X",
-        addr, TMP116_CFGR_REG, res == RT_EOK ? "success": "failed", ret, recv_buf[0], recv_buf[1]
+        addr, TMP116_CFGR_REG, res_msg(res == RT_EOK), ret, recv_buf[0], recv_buf[1]
     );
     if (res == RT_EOK)
     {
@@ -124,7 +125,7 @@ rt_err_t tmp116_measure_temperature(struct rt_i2c_bus_device *iic_dev, const rt_
     res = ret == 1 ? RT_EOK : RT_ERROR;
     log_debug(
         "rt_i2c_master_send addr=0x%02X reg=0x%02X %s ret=%d",
-        addr, TMP116_TEMP_REG, res == RT_EOK ? "success": "failed", ret
+        addr, TMP116_TEMP_REG, res_msg(res == RT_EOK), ret
     );
     if (res != RT_EOK)
     {
@@ -136,7 +137,7 @@ rt_err_t tmp116_measure_temperature(struct rt_i2c_bus_device *iic_dev, const rt_
     res = ret == 2 ? RT_EOK : RT_ERROR;
     log_debug(
         "rt_i2c_master_recv addr=0x%02X reg=0x%02X %s ret=%d, recv_buf 0x%02X 0x%02X",
-        addr, TMP116_TEMP_REG, res == RT_EOK ? "success": "failed", ret, recv_buf[0], recv_buf[1]
+        addr, TMP116_TEMP_REG, res_msg(res == RT_EOK), ret, recv_buf[0], recv_buf[1]
     );
     if (res == RT_EOK)
     {
@@ -151,10 +152,10 @@ rt_err_t temp116_read_temperture(struct rt_i2c_bus_device *iic_dev, const rt_uin
 
     rt_uint8_t cfg[2] = {0x0E, 0x20};
     res = tmp116_set_configuration(iic_dev, addr, cfg, 2);
-    log_debug("tmp116_set_configuration addr=0x%02X %s", addr, res != RT_EOK ? "failed" : "success");
+    log_debug("tmp116_set_configuration addr=0x%02X %s", addr, res_msg(res == RT_EOK));
 
     res = tmp116_measure_temperature(iic_dev, addr, temp);
-    log_debug("tmp116_measure_temperature addr=0x%02X %s temp=%f", addr, res != RT_EOK ? "failed" : "success", *temp);
+    log_debug("tmp116_measure_temperature addr=0x%02X %s temp=%f", addr, res_msg(res == RT_EOK), *temp);
 
     return res;
 }
@@ -168,14 +169,14 @@ rt_err_t test_temp116(void)
     static struct rt_i2c_bus_device *iic_dev;
 
     // res = sensor_pwron_pin_enable(1);
-    // log_info("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+    // log_info("sensor_pwron_pin_enable(1) %s", res_msg(res == RT_EOK));
 
     rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
     rt_pin_write(SENSOR_PWRON_PIN, 1);
 
     iic_dev = rt_i2c_bus_device_find(i2c_bus_name);
     res = !iic_dev ? RT_ERROR : RT_EOK;
-    log_info("rt_i2c_bus_device_find %s %s", i2c_bus_name, res != RT_EOK ? "failed" : "success");
+    log_info("rt_i2c_bus_device_find %s %s", i2c_bus_name, res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -190,7 +191,7 @@ rt_err_t test_temp116(void)
     {
         dev_id = 0;
         res = tmp116_read_device_id(iic_dev, addrs[i], &dev_id);
-        log_info("tmp116_read_device_id addr=0x%02X %s dev_id=0x%02X", addrs[i], res != RT_EOK ? "failed" : "success", dev_id);
+        log_info("tmp116_read_device_id addr=0x%02X %s dev_id=0x%02X", addrs[i], res_msg(res == RT_EOK), dev_id);
     }
 
     rt_uint8_t cnt = 10;
@@ -201,7 +202,7 @@ rt_err_t test_temp116(void)
 
             temp = -999.0;
             res = temp116_read_temperture(iic_dev, addrs[i], &temp);
-            sprintf(msg, "temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res != RT_EOK ? "failed" : "success", temp);
+            sprintf(msg, "temp116_read_temperture addr=0x%02X %s temp=%f", addrs[i], res_msg(res == RT_EOK), temp);
             // log_info(msg);
         }
         rt_thread_mdelay(500);

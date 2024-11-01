@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include "fdc1004.h"
 #include "logging.h"
+#include "tools.h"
 
 rt_err_t fdc1004_read_manufacturer_id(struct rt_i2c_bus_device *iic_dev, rt_uint16_t *manufacturer_id)
 {
@@ -316,14 +317,14 @@ rt_err_t test_fdc1004(int argc, char **argv)
     static struct rt_i2c_bus_device *iic_dev;
 
     // res = sensor_pwron_pin_enable(1);
-    // log_debug("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+    // log_debug("sensor_pwron_pin_enable(1) %s", res_msg(res == RT_EOK));
 
     rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
     rt_pin_write(SENSOR_PWRON_PIN, 1);
 
     iic_dev = rt_i2c_bus_device_find(i2c_bus_name);
     res = !iic_dev ? RT_ERROR : RT_EOK;
-    log_debug("rt_i2c_bus_device_find %s %s", i2c_bus_name, res != RT_EOK ? "failed" : "success");
+    log_debug("rt_i2c_bus_device_find %s %s", i2c_bus_name, res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -331,24 +332,24 @@ rt_err_t test_fdc1004(int argc, char **argv)
 
     rt_uint16_t manufacturer_id = 0x00;
     res = fdc1004_read_manufacturer_id(iic_dev, &manufacturer_id);
-    log_debug("fdc1004_read_manufacturer_id %s 0x%02X", res != RT_EOK ? "failed" : "success", manufacturer_id);
+    log_debug("fdc1004_read_manufacturer_id %s 0x%02X", res_msg(res == RT_EOK), manufacturer_id);
 
     rt_uint16_t dev_id = 0x00;
     res = dfc1004_read_device_id(iic_dev, &dev_id);
-    log_debug("dfc1004_read_device_id %s 0x%02X", res != RT_EOK ? "failed" : "success", dev_id);
+    log_debug("dfc1004_read_device_id %s 0x%02X", res_msg(res == RT_EOK), dev_id);
 
     /* FDC1004_CLEVEL0 need to be saved to naflash. */
     if (FDC1004_CLEVEL0 == 0)
     {
         res = fdc1004_check_clevel0(iic_dev);
-        log_debug("fdc1004_check_clevel0 %s 0x%02X", res != RT_EOK ? "failed" : "success", FDC1004_CLEVEL0);
+        log_debug("fdc1004_check_clevel0 %s 0x%02X", res_msg(res == RT_EOK), FDC1004_CLEVEL0);
     }
 
     float value = 0.0;
     res = fdc1004_meas_data(iic_dev, &value);
     char msg[128];
-    // sprintf(msg, "fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
-    log_debug("fdc1004_meas_data %s, value=%f", res != RT_EOK ? "failed" : "success", value);
+    // sprintf(msg, "fdc1004_meas_data %s, value=%f", res_msg(res == RT_EOK), value);
+    log_debug("fdc1004_meas_data %s, value=%f", res_msg(res == RT_EOK), value);
 }
 
 // MSH_CMD_EXPORT(test_fdc1004, test fdc1004);

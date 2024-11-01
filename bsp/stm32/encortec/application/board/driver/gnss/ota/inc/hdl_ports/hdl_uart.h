@@ -2,6 +2,7 @@
 #define __HDL_UART_H__
 
 #include "hdl_debug.h"
+#include "gnss.h"
 
 #ifdef __cplusplus
 extern "C" {

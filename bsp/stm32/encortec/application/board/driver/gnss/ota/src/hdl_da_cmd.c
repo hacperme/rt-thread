@@ -1,4 +1,5 @@
 #include "hdl_da_cmd.h"
+#include "tools.h"
 
 #define RACE_DA_GET_FLASH_ADDRESS   (0x210E)
 #define RACE_DA_GET_FLASH_SIZE      (0x210F)
@@ -88,7 +89,7 @@ bool hdl_da_get_flash_id(uint8_t *pManufacturerId, uint8_t *pDeviceId1, uint8_t 
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
 
     // response
-    RACE_ID_RES res     
+    RACE_ID_RES res;
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
@@ -119,7 +120,8 @@ bool hdl_format_race(uint32_t addr, uint32_t len)
         send.id_ = RACE_DA_ERASE_BYTES;
         send.addr_ = addr;
         send.size_ = len;
-        send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
+        hwcrypto_crc32(&send, sizeof(send)-sizeof(send.crc_), &send.crc_);
+        // send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
         HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
 
         // response
@@ -214,9 +216,11 @@ bool hdl_download_race(uint32_t addr, const uint8_t *data)
 
 bool hdl_da_download(hdl_image_t *image, hdl_download_cb download_cb, void *download_cb_arg)
 {
+    bool res = false;
     const uint32_t start_addr = image->image_slave_flash_addr;
     const uint32_t image_len = image->image_len;
     const uint32_t packet_num = ((image_len - 1) / DA_SEND_PACKET_LEN) + 1;
+    hdl_flash_init(image->image_host_file);
     
     uint32_t packet_sent_num = 0;
     while (packet_sent_num < packet_num) 
@@ -227,7 +231,7 @@ bool hdl_da_download(hdl_image_t *image, hdl_download_cb download_cb, void *down
 
         memset(g_hdl_fw_data_buf, 0, sizeof(g_hdl_fw_data_buf));
 
-        const uint32_t host_addr = image->image_host_flash_addr+start_offset;
+        const uint32_t host_addr = start_offset;
         if (hdl_flash_read(host_addr, g_hdl_fw_data_buf, cur_packet_len))
         {
             uint8_t *packet_buf = g_hdl_fw_data_buf;
@@ -241,7 +245,7 @@ bool hdl_da_download(hdl_image_t *image, hdl_download_cb download_cb, void *down
             if (!hdl_download_race(slave_addr, packet_buf))
             {
                 HDL_LOGE("hdl_download_race addr=0x%08X fail!", slave_addr);
-                return false;
+                goto _exit_;
             }
             
             // Download Progress callback
@@ -258,8 +262,11 @@ bool hdl_da_download(hdl_image_t *image, hdl_download_cb download_cb, void *down
         
         packet_sent_num++;
     }
-    
-    return true;
+    res = true;
+
+_exit_:
+    hdl_flash_deinit();
+    return res;
 }
 
 bool hdl_finish_race(bool enable)

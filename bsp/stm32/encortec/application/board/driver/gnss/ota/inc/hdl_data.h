@@ -16,7 +16,8 @@ typedef void (*hdl_readback_cb)(void *usr_arg, char *cur_image_name,
                                 uint32_t read_len, uint32_t readback_total_len);
 
 typedef struct {
-    uint32_t        da_flash_addr; // Or da_file if your host have file system
+    // uint32_t        da_flash_addr; // Or da_file if your host have file system
+    char            da_file;
     uint32_t        da_run_addr;
     uint32_t        da_len;
 } hdl_da_info_t;
@@ -48,7 +49,8 @@ typedef struct {
 } hdl_format_arg_t;
 
 typedef struct _hdl_image_t {
-    uint32_t        image_host_flash_addr; // Or image_file if your host have file system
+    // uint32_t        image_host_flash_addr; // Or image_file if your host have file system
+    char *          image_host_file;
     uint32_t        image_slave_flash_addr;
     uint32_t        image_len;
     char           *image_name;

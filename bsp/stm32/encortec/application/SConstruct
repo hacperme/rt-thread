@@ -87,6 +87,7 @@ driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/data_save_as_file"),
     os.path.join(SDK_ROOT, "application/board/driver/fdc1004"),
     os.path.join(SDK_ROOT, "application/board/driver/gnss"),
+    os.path.join(SDK_ROOT, "application/board/driver/gnss/ota/inc"),
     os.path.join(SDK_ROOT, "application/board/driver/hdc3021"),
     os.path.join(SDK_ROOT, "application/board/driver/lpm"),
     os.path.join(SDK_ROOT, "application/board/driver/tmp116"),
@@ -138,12 +139,14 @@ main/main.c
 main/syscalls.c
 rt_api/rt_api.c
 logging/logging.c
-.test/test_example.c
-.test/test_file.c
-.test/test_wdg.c
 """
 )
 
+app_c_files += [
+    ".test/test_example.c",
+    # ".test/test_file.c",
+    # ".test/test_wdg.c",
+]
 
 # driver_c_files = [os.path.join("board/driver", i, "%s.c" % i) for i in driver_list if os.path.isdir(os.path.join(SDK_ROOT, "application/board/driver", i))]
 driver_c_files = [
@@ -152,6 +155,14 @@ driver_c_files = [
     "board/driver/data_save_as_file/data_save_as_file.c",
     "board/driver/fdc1004/fdc1004.c",
     "board/driver/gnss/gnss.c",
+    "board/driver/gnss/ota/src/hdl_ports/hdl_flash_api.c",
+    "board/driver/gnss/ota/src/hdl_ports/hdl_os_util.c",
+    "board/driver/gnss/ota/src/hdl_ports/hdl_uart.c",
+    "board/driver/gnss/ota/src/hdl_api.c",
+    "board/driver/gnss/ota/src/hdl_brom_base.c",
+    "board/driver/gnss/ota/src/hdl_channel.c",
+    "board/driver/gnss/ota/src/hdl_da_cmd.c",
+    "board/driver/gnss/ota/src/hdl_demo.c",
     "board/driver/hdc3021/hdc3021.c",
     "board/driver/lpm/lpm.c",
     "board/driver/tmp116/tmp116.c",
@@ -174,6 +185,7 @@ cloud_c_files = [
     "board/cloud/settings.c",
     "board/cloud/control.c",
 ]
+
 app_c_files += driver_c_files
 
 app_c_files += cloud_c_files

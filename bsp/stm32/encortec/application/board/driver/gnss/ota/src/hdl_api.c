@@ -79,7 +79,7 @@ bool hdl_connect(const hdl_da_info_t *da_info, const hdl_connect_arg_t *connect_
 #endif
 
     // Brom Send DA
-    success = hdl_brom_send_da(connect_arg, da_info->da_flash_addr, da_info->da_run_addr, da_info->da_len);
+    success = hdl_brom_send_da(connect_arg, da_info->da_file, da_info->da_run_addr, da_info->da_len);
     HDL_Require_Noerr_Action(success, exit, "hdl_brom_send_da");
 
     // Brom Jump to DA
@@ -129,8 +129,8 @@ bool hdl_download(const hdl_download_arg_t *download_arg, const hdl_da_report_t 
     // Check Image Flash_Addr & Size
     hdl_image_t *image = download_arg->download_images;
     while (image != NULL) {
-        HDL_LOGI("Download Image (%s) BL=%d 0x%08X->0x%08X %d",
-                 image->image_name, image->image_is_bootloader, image->image_host_flash_addr,
+        HDL_LOGI("Download Image (%s) BL=%d %s->0x%08X %d",
+                 image->image_name, image->image_is_bootloader, image->image_host_file,
                  image->image_slave_flash_addr, image->image_len);
 
         if (!check_address_range(image->image_slave_flash_addr, image->image_len, da_report))
