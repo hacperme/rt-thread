@@ -65,8 +65,11 @@ int application_start(int argc, char *argv[]) {
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);
 
-    extern void test_gnss(int argc, char **argv);
-    test_gnss(argc, argv);
+    // extern void test_gnss(int argc, char **argv);
+    // test_gnss(argc, argv);
+
+    extern void test_drv_hash(void);
+    test_drv_hash();
 
     // extern void save_app_bin(void);
     // save_app_bin();

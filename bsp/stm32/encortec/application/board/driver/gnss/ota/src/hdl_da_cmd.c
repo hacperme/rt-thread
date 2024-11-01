@@ -120,7 +120,7 @@ bool hdl_format_race(uint32_t addr, uint32_t len)
         send.id_ = RACE_DA_ERASE_BYTES;
         send.addr_ = addr;
         send.size_ = len;
-        hwcrypto_crc32(&send, sizeof(send)-sizeof(send.crc_), &send.crc_);
+        hwcrypto_crc32((const rt_uint8_t *)&send, sizeof(send)-sizeof(send.crc_), &send.crc_);
         // send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
         HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
 
@@ -191,7 +191,8 @@ bool hdl_download_race(uint32_t addr, const uint8_t *data)
         send.addr_ = addr;
         send.size_ = DA_SEND_PACKET_LEN;
         memcpy(send.buf_, data, send.size_);
-        send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
+        hwcrypto_crc32((const rt_uint8_t *)&send, sizeof(send)-sizeof(send.crc_), &send.crc_);
+        // send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
         HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
 
         // response

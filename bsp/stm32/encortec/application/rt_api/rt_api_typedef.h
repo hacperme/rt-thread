@@ -423,4 +423,7 @@ typedef void (*get_adc_handle_api_ptr_t)(ADC_HandleTypeDef **hadc);
 typedef void (*get_dma_node_api_ptr_t)(DMA_NodeTypeDef **dma_node);
 typedef void (*get_dma_qlist_api_ptr_t)(DMA_QListTypeDef **dma_qlist);
 typedef void (*get_dma_handle_api_ptr_t)(DMA_HandleTypeDef **dma_handle);
+typedef HAL_StatusTypeDef (*HAL_HASH_MD5_Start_api_ptr_t)(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout);
+typedef HAL_StatusTypeDef (*HAL_HASH_MD5_Accmlt_api_ptr_t)(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size);
+typedef HAL_StatusTypeDef (*HAL_HASH_MD5_Accmlt_End_api_ptr_t)(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout);
 #endif

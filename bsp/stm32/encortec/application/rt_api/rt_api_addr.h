@@ -266,6 +266,9 @@
 #define HAL_PWREx_EnterSHUTDOWNMode_addr 0x080193B1
 #define HAL_HASH_Init_addr 0x0801A575
 #define HAL_HASH_DeInit_addr 0x0801A61D
+#define HAL_HASH_MD5_Start_addr 0x0801A6E9
+#define HAL_HASH_MD5_Accmlt_addr 0x0801A717
+#define HAL_HASH_MD5_Accmlt_End_addr 0x0801A73B
 #define HAL_DMA_Init_addr 0x0801C789
 #define HAL_DMA_DeInit_addr 0x0801C9E5
 #define HAL_DMA_Start_addr 0x0801CB99
