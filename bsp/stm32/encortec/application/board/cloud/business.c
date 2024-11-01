@@ -815,13 +815,11 @@ void save_sensor_data()
     }
     rt_kprintf("Sample_Size2: %d\n", sensor_data.cur_buff_size);
     if (sensor_data.cur_buff_size > 0) {
+        rt_kprintf("Track return voltages: ");
         for (i = 0; i < sensor_data.cur_buff_size; i++) {
-            rt_kprintf("Track return voltages: ");
-            for (int i = 0; i < sensor_data.cur_buff_size; i++) {
                 rt_kprintf("%d,", sensor_data.cur_buff[i]);
-            }
-            rt_kprintf("\n");
         }
+        rt_kprintf("\n");
     }
     rt_kprintf("\n=====================================\n");
     // 删除超过30天的文件

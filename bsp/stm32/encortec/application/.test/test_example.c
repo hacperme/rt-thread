@@ -59,8 +59,8 @@ int application_start(int argc, char *argv[]) {
     // extern void test_adxl372(int argc, char **argv);
     // test_adxl372(argc, argv);
 
-    extern void test_vol_read(void);
-    test_vol_read();
+    // extern void test_vol_read(void);
+    // test_vol_read();
 
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);
@@ -99,11 +99,11 @@ int application_start(int argc, char *argv[]) {
     // extern void data_save_as_file_test();
     // data_save_as_file_test();
 
-    // extern int delete_directory(const char *dir);
-    // delete_directory("/data");
+    extern int delete_directory(const char *dir);
+    delete_directory("/data");
 
-    // extern void main_business_entry(void);
-    // main_business_entry();
+    extern void main_business_entry(void);
+    main_business_entry();
 
     // extern void esp_data_stransf_example(void);
     // esp_data_stransf_example();

@@ -752,7 +752,8 @@ rt_err_t cat1_set_network_config()
         goto ERROR;
     }
   
-    result = at_obj_exec_cmd(client, resp, "AT+QICSGP=1,1,\"%s\",\"\",\"\",1", "QUECTEL.VF.STD");
+    // result = at_obj_exec_cmd(client, resp, "AT+QICSGP=1,1,\"%s\",\"\",\"\",1", "QUECTEL.VF.STD");
+	result = at_obj_exec_cmd(client, resp, "AT+QICSGP=1,1,\"%s\",\"\",\"\",1", "bicsapn");
     if (result != RT_EOK) {
         LOG_E("set apn result: %d", result);
         goto ERROR;
