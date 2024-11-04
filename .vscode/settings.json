@@ -46,6 +46,8 @@
         "ota_app.h": "c",
         "string": "c",
         "stm32u5xx_hal.h": "c",
-        "stm32u5xx_hal_conf.h": "c"
+        "stm32u5xx_hal_conf.h": "c",
+        "upgrade_manager.h": "c",
+        "drv_fatfs_dhara_nand.h": "c"
     }
 }

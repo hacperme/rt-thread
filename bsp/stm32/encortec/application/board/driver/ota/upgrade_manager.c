@@ -2,181 +2,246 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dirent.h>
+#include <unistd.h>
+#include "rtthread.h"
+#include "logging.h"
 
-static UpgradeNode* head = NULL;
-static UpgradeStatus overall_status = UPGRADE_STATUS_IDLE;
-void add_module(UpgradeModule module, UpgradeModuleType type, const char* path) {
-    UpgradeNode* new_node = (UpgradeNode*)malloc(sizeof(UpgradeNode));
-    if (!new_node) {
-        printf("Memory allocation failed!\n");
-        return;
+static UpgradeNode ota_node = {0};
+static char upgrade_manager_init_tag = 0;
+
+int upgrade_manager_init(void)
+{
+    if (access(OTA_PATH, F_OK) != 0) mkdir(OTA_PATH, 0755);
+
+    if (access(OTA_CFG_FILE, F_OK) != 0)
+    {
+        FILE *ota_file = fopen(OTA_CFG_FILE, "ab");
+        if (ota_file == NULL) return -1;
+    
+        size_t wres;
+        for (int i = 0; i < 5; i++)
+        {
+            ota_node.module = (UpgradeModule)i;
+            ota_node.status = UPGRADE_STATUS_NO_PLAN;
+            wres = fwrite(&ota_node, 1, rt_sizeof(ota_node), ota_file);
+            if (wres != rt_sizeof(ota_node)) break;
+        }
+        fclose(ota_file);
+        if (wres != rt_sizeof(ota_node)) return -2;
     }
-    new_node->module = module;
-    new_node->type = type;
-    strncpy(new_node->path, path, sizeof(new_node->path) - 1);
-    new_node->path[sizeof(new_node->path) - 1] = '\0';
-    new_node->status = UPGRADE_STATUS_IDLE;
-    new_node->download_progress = 0;
-    new_node->upgrade_progress = 0;
-    new_node->next = NULL;
 
-    if (!head) {
-        head = new_node;
+    upgrade_manager_init_tag = 1;
+    return 0;
+}
+
+int exit_upgrade_plan(void)
+{
+    int res = 0;
+    for (int i = 0; i < 5; i++)
+    {
+        if (get_module((UpgradeModule)i, &ota_node) == 0)
+        {
+            if (ota_node.status != UPGRADE_STATUS_NO_PLAN)
+            {
+                res++;
+                break;
+            }
+        }
+    }
+    return res;
+}
+
+int get_module(UpgradeModule module, UpgradeNode *node)
+{
+    size_t rres;
+    FILE *ota_file = fopen(OTA_CFG_FILE, "rb");
+    if (ota_file == NULL) return -1;
+    fseek(ota_file, rt_sizeof(*node) * module, SEEK_SET);
+    rt_memset(node, 0, rt_sizeof(*node));
+    rres = fread(node, 1, rt_sizeof(*node), ota_file);
+    fclose(ota_file);
+    return rres == rt_sizeof(*node) ? 0 : -1;
+}
+
+void save_module(UpgradeNode *node)
+{
+    FILE *ota_file = fopen(OTA_CFG_FILE, "ab");
+    fseek(ota_file, rt_sizeof(*node) * node->module, SEEK_SET);
+    fwrite(node, 1, rt_sizeof(*node), ota_file);
+    fclose(ota_file);
+}
+
+void clear_module(UpgradeNode *node) {
+    node->status = UPGRADE_STATUS_NO_PLAN;
+    node->download_progress = 0;
+    node->upgrade_progress = 0;
+    node->try_count = 0;
+    rt_memset(&node->plan, 0, rt_sizeof(node->plan));
+    rt_memset(&node->ops, 0, rt_sizeof(node->ops));
+    save_module(node);
+}
+
+void init_module(UpgradeNode *node, UpgradePlan *plan, UpgradeModuleOps *ops)
+{
+    node->status = UPGRADE_STATUS_ON_PLAN;
+    node->download_progress = 0;
+    node->upgrade_progress = 0;
+    node->try_count = 0;
+    rt_memset(&node->plan, 0, rt_sizeof(node->plan));
+    rt_memcpy(&node->plan, plan, rt_sizeof(*plan));
+    rt_memset(&node->ops, 0, rt_sizeof(node->ops));
+    rt_memcpy(&node->ops, ops, rt_sizeof(*ops));
+}
+
+void set_module(UpgradeModule module, UpgradePlan *plan, UpgradeModuleOps *ops)
+{
+    get_module(module, &ota_node);
+    init_module(&ota_node, plan, ops);
+    save_module(&ota_node);
+}
+
+static void start_download(UpgradeNode* node) {
+    char retry_cnt = 0;
+    node->status = UPGRADE_STATUS_DOWNLOADING;
+    save_module(node);
+    while (retry_cnt < 2)
+    {
+        node->ops.download(&node->download_progress);
+        node->status = node->ops.get_status();
+        log_debug("Download progress for module %d: %d%%", node->module, node->download_progress);
+        if (node->status == UPGRADE_STATUS_DOWNLOADED)
+        {
+            node->ops.verify();
+            node->status = node->ops.get_status();
+            if (node->status != UPGRADE_STATUS_VERIFIED)
+            {
+                retry_cnt++;
+                log_error("Verification failed for module %d, will retry...", node->module);
+            }
+        }
+        else
+        {
+            retry_cnt++;
+            log_error("Download failed for module %d, will retry...\n", node->module);
+        }
+        save_module(node);
+    }
+}
+
+static void start_upgrade(UpgradeNode* node) {
+    node->status = UPGRADE_STATUS_UPGRADING;
+    save_module(node);
+    node->ops.prepare();
+    node->ops.apply(&node->upgrade_progress);
+    log_debug("Upgrade progress for module %d: %d%%", node->module, node->upgrade_progress);
+    node->status = node->ops.get_status();
+    if (node->status == UPGRADE_STATUS_SUCCESS) {
+        log_debug("Upgrade successful for module %d at %s", node->module, node->plan.file[0].file_name);
     } else {
-        UpgradeNode* current = head;
-        while (current->next) {
-            current = current->next;
+        log_debug("Upgrade failed for module %d", node->module);
+    }
+    save_module(node);
+}
+
+// TODO: Report OTA Result to cloud by NB.
+void report_upgrade_results(void)
+{
+    // 1. Report over to call clear_module.
+    // 2. Report ST Upgrade result not in here.
+}
+
+// TODO: Enable NB enviroment to download OTA file.
+void prepare_upgrade_module(void)
+{
+
+}
+
+void upgrade_all_module(void) {
+    prepare_upgrade_module();
+
+    int i;
+    char st_upgrade = 0;
+    for (i = 0; i < 5; i++)
+    {
+        if (get_module((UpgradeModule)i, &ota_node) == 0)
+        {
+            if (ota_node.status == UPGRADE_STATUS_NO_PLAN || ota_node.status == UPGRADE_STATUS_SUCCESS || \
+                ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING)
+            {
+                continue;
+            }
+            if (ota_node.try_count < OTA_RETRY_CNT)
+            {
+                ota_node.try_count++;
+                save_module(&ota_node);
+                start_download(&ota_node);
+            }
+            else
+            {
+                ota_node.status = UPGRADE_STATUS_FAILED;
+                save_module(&ota_node);
+            }
         }
-        current->next = new_node;
-    }
-}
-
-void remove_module(UpgradeNode* node) {
-    if (!head || !node) return;
-
-    if (head == node) {
-        head = head->next;
-        free(node);
-        return;
-    }
-
-    UpgradeNode* current = head;
-    while (current->next && current->next != node) {
-        current = current->next;
-    }
-
-    if (current->next == node) {
-        current->next = node->next;
-        free(node);
-    }
-}
-
-void start_download(UpgradeNode* node) {
-    int progress = 0;
-    node->module.prepare();
-    node->module.download(&progress);
-    node->download_progress = progress;
-
-    printf("Download progress for module %d: %d%%\n", node->type, progress);
-
-    if (node->module.get_status() == UPGRADE_STATUS_FAILED) {
-        printf("Download failed for module %d at %s, will retry...\n", node->type, node->path);
-        node->status = UPGRADE_STATUS_FAILED;
-    } else {
-        node->module.verify();
-        if (node->module.get_status() == UPGRADE_STATUS_VERIFIED) {
-            node->status = UPGRADE_STATUS_VERIFIED;
-        } else {
-            printf("Verification failed for module %d at %s, will retry...\n", node->type, node->path);
-            node->status = UPGRADE_STATUS_FAILED;
-        }
-    }
-}
-
-void start_upgrade(UpgradeNode* node) {
-    if (node->status == UPGRADE_STATUS_VERIFIED) {
-        int progress = 0;
-        node->module.apply(&progress);
-        node->upgrade_progress = progress;
-
-        printf("Upgrade progress for module %d: %d%%\n", node->type, progress);
-
-        if (node->module.get_status() == UPGRADE_STATUS_SUCCESS) {
-            node->status = UPGRADE_STATUS_SUCCESS;
-            printf("Upgrade successful for module %d at %s\n", node->type, node->path);
-            remove_module(node);
-        } else {
-            node->status = UPGRADE_STATUS_FAILED;
-            printf("Upgrade failed for module %d at %s, will retry...\n", node->type, node->path);
+        else
+        {
+            log_debug("get module %d failed.", i);
         }
     }
-}
 
-void retry_failed_module(UpgradeNode* node) {
-    if (node->status == UPGRADE_STATUS_FAILED) {
-        printf("Retrying module %d at %s...\n", node->type, node->path);
-        start_download(node);
-        if (node->status == UPGRADE_STATUS_VERIFIED) {
-            start_upgrade(node);
-        }
-    }
-}
-
-void print_upgrade_results(void) {
-    UpgradeNode* current = head;
-    printf("Upgrade Results:\n");
-    while (current) {
-        printf("Module %d at %s - Status: %d, Download Progress: %d%%, Upgrade Progress: %d%%\n",
-               current->type, current->path, current->status, current->download_progress, current->upgrade_progress);
-        current = current->next;
-    }
-}
-
-UpgradeStatus check_overall_status(void) {
-    UpgradeNode* current = head;
-    while (current) {
-        if (current->status == UPGRADE_STATUS_FAILED) {
-            return UPGRADE_STATUS_FAILED;
-        }
-        current = current->next;
-    }
-    return UPGRADE_STATUS_SUCCESS;
-}
-
-
-extern UpgradeModule esp_module;
-
-// 业务结束后，开启升级  或 开机前调用
-int upgrade_all_module(void) {
-    // add_module(nb_module, UPGRADE_MODULE_NB, "/fota/nb/");
-    // add_module(cat1_module, UPGRADE_MODULE_CAT1, "/fota/cat1/");
-    // add_module(gnss_module, UPGRADE_MODULE_GNSS, "/fota/gnss/");
-    // add_module(esp_module, UPGRADE_MODULE_ESP, "/fota/esp/");
-    // add_module(st_module, UPGRADE_MODULE_ST, "/fota/st/");
-
-    //从文件系统中拿结构体，保存至/fota/config.bin
-
-    UpgradeNode* current;
-
-    // 下载和升级过程
-    while ((current = head) != NULL) {
-        // 遍历链表中的每个模块进行下载和升级
-        while (current != NULL) {
-            if (current->status == UPGRADE_STATUS_IDLE || current->status == UPGRADE_STATUS_FAILED) {
-                // 先进行下载
-                start_download(current);
-
-                // 如果下载成功，进行升级
-                if (current->status == UPGRADE_STATUS_VERIFIED) {
-                    start_upgrade(current);
-                }
-
-                // 如果升级仍然失败，则重新尝试
-                if (current->status == UPGRADE_STATUS_FAILED) {
-                    retry_failed_module(current);
+    for (i = 0; i < 5; i++)
+    {
+        if (get_module((UpgradeModule)i, &ota_node) == 0)
+        {
+            if (ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING)
+            {
+                start_upgrade(&ota_node);
+                if (i == UPGRADE_MODULE_ST)
+                {
+                    st_upgrade = 1;
                 }
             }
-
-            // 继续下一个节点
-            current = current->next;
-        }
-
-        // 打印当前所有模块的升级结果
-        print_upgrade_results(); // 同时加上上报， 确保上报成功
-
-        //删除链表
-
-        // 检查整体状态
-        if (check_overall_status() == UPGRADE_STATUS_SUCCESS) {
-            printf("All modules upgraded successfully.\n");
-            break;
         }
     }
 
-    // 确保所有节点都已被释放
-    printf("Upgrade process completed.\n"); 
+    report_upgrade_results();
+    if (st_upgrade == 1)
+    {
+        rt_hw_cpu_reset();
+    }
+}
 
-    //有STM32,重启STM32 // STM升级状态有重启后查询版本号或接口查询升级状态，后上报至云
+extern UpgradeModuleOps esp_module;
 
-    return 0;
+static void test_set_esp_ota_plan(void)
+{
+    // 收到 ESP 升级计划, 记录升级相关信息并设置升级记录
+    UpgradePlan esp_plan = {0};
+    char test_msg[] = "xxx";
+    rt_memcpy(esp_plan.source_version, test_msg, rt_sizeof(test_msg));
+    rt_memcpy(esp_plan.target_version, test_msg, rt_sizeof(test_msg));
+    esp_plan.file_cnt = 1;
+    rt_memcpy(esp_plan.file[0].file_name, test_msg, rt_sizeof(test_msg));
+    rt_memcpy(esp_plan.file[0].download_addr, test_msg, rt_sizeof(test_msg));
+    rt_memcpy(esp_plan.file[0].file_md5, test_msg, rt_sizeof(test_msg));
+    set_module(UPGRADE_MODULE_ESP, &esp_plan, &esp_module);
+}
+
+void test_upgrade_process(void)
+{
+    // 设备上电即进行初始化
+    upgrade_manager_init();
+    // TODO: 开机初始化后，检测ST是否有升级结果，并进行上报。
+
+    test_set_esp_ota_plan();
+    // set_module(UPGRADE_MODULE_NB, &nb_plan, &nb_module);
+    // set_module(UPGRADE_MODULE_CAT1, &cat1_plan, &cat1_module);
+    // set_module(UPGRADE_MODULE_GNSS, &gnss_plan, &gnss_module);
+    // set_module(UPGRADE_MODULE_ST &st_plan, &st_module);
+
+    // 业务结束后 & 业务开始之前, 先检测是否有升级, 有则开启升级
+    if (exit_upgrade_plan() > 0)
+    {
+        upgrade_all_module();
+    }
 }
