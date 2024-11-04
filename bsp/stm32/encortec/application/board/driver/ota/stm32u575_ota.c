@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "ota_app.h"
+#include "upgrade_manager.h"
+#include "tools.h"
 
 rt_err_t set_stm32u575_ota_option(ota_tag_e ota_tag, char *ota_file_name)
 {
@@ -64,6 +66,44 @@ void test_stm32u575_ota_app(void)
         rt_hw_cpu_reset();
     }
 }
+
+static UpgradeStatus stm32_ota_status;
+void stm32u575_ota_download(int* progress, UpgradeNode *node)
+{
+    // TODO: Download OTA File.
+    stm32_ota_status = UPGRADE_STATUS_DOWNLOADED;
+}
+
+void stm32u575_ota_verify(UpgradeNode *node)
+{
+    // TODO: Verfity file md5.
+    stm32_ota_status = UPGRADE_STATUS_VERIFIED;
+}
+
+void stm32u575_ota_prepare(void)
+{
+    return;
+}
+
+void stm32u575_ota_apply(int* progress, UpgradeNode *node)
+{
+    rt_err_t res = set_stm32u575_ota_option(OTA_YES, node->plan.file[0].file_name);
+    log_debug("set_stm32u575_ota_option %s", res_msg(res == RT_EOK));
+    stm32_ota_status = res == RT_EOK ? UPGRADE_STATUS_UPGRADING : UPGRADE_STATUS_FAILED;
+}
+
+UpgradeStatus stm32u575_ota_get_status(void)
+{
+    return stm32_ota_status;
+}
+
+UpgradeModuleOps stm32u575_ota_ops = {
+    .download = stm32u575_ota_download,
+    .verify = stm32u575_ota_verify,
+    .prepare = stm32u575_ota_prepare,
+    .apply = stm32u575_ota_apply,
+    .get_status = stm32u575_ota_get_status
+};
 
 #if 0
 #define flash_page_size 0x2000

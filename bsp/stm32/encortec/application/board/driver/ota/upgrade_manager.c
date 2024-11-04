@@ -107,12 +107,12 @@ static void start_download(UpgradeNode* node) {
     save_module(node);
     while (retry_cnt < 2)
     {
-        node->ops.download(&node->download_progress);
+        node->ops.download(&node->download_progress, node);
         node->status = node->ops.get_status();
         log_debug("Download progress for module %d: %d%%", node->module, node->download_progress);
         if (node->status == UPGRADE_STATUS_DOWNLOADED)
         {
-            node->ops.verify();
+            node->ops.verify(node);
             node->status = node->ops.get_status();
             if (node->status != UPGRADE_STATUS_VERIFIED)
             {
@@ -133,7 +133,7 @@ static void start_upgrade(UpgradeNode* node) {
     node->status = UPGRADE_STATUS_UPGRADING;
     save_module(node);
     node->ops.prepare();
-    node->ops.apply(&node->upgrade_progress);
+    node->ops.apply(&node->upgrade_progress, node);
     log_debug("Upgrade progress for module %d: %d%%", node->module, node->upgrade_progress);
     node->status = node->ops.get_status();
     if (node->status == UPGRADE_STATUS_SUCCESS) {
@@ -196,7 +196,7 @@ void upgrade_all_module(void) {
             if (ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING)
             {
                 start_upgrade(&ota_node);
-                if (i == UPGRADE_MODULE_ST)
+                if (i == UPGRADE_MODULE_ST && ota_node.status == UPGRADE_STATUS_UPGRADING)
                 {
                     st_upgrade = 1;
                 }

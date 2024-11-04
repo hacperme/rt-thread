@@ -32,10 +32,10 @@ typedef enum {
 } UpgradeStatus;
 
 typedef struct {
-    void (*download)(int* progress);
-    void (*verify)(void);
+    void (*download)(int* progress, UpgradeNode *node);
+    void (*verify)(UpgradeNode *node);
     void (*prepare)(void);// 包含掉电，上电过程
-    void (*apply)(int* progress);
+    void (*apply)(int* progress, UpgradeNode *node);
     UpgradeStatus (*get_status)(void);
 } UpgradeModuleOps;
 

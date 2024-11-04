@@ -39,10 +39,10 @@ UpgradeStatus esp_get_status(void) {
     return esp_status;
 }
 
-UpgradeModule esp_module = {
-    .prepare = esp_prepare,
+UpgradeModuleOps esp_module = {
     .download = esp_download,
     .verify = esp_verify,
+    .prepare = esp_prepare,
     .apply = esp_apply,
     .get_status = esp_get_status
 };
