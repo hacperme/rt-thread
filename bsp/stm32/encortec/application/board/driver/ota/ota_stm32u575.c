@@ -1,5 +1,5 @@
 /*
- * @FilePath: stm32u575_ota.c
+ * @FilePath: ota_stm32u575.c
  * @Author: Jack Sun (jack.sun@quectel.com)
  * @brief     : <Description>
  * @version   : v1.0.0
@@ -7,7 +7,8 @@
  * @copyright : Copyright (c) 2024
  */
 
-#include "stm32u575_ota.h"
+#include "rtthread.h"
+#include "rtdevice.h"
 #include "fal.h"
 #include "logging.h"
 #include <unistd.h>
@@ -22,10 +23,7 @@ rt_err_t set_stm32u575_ota_option(ota_tag_e ota_tag, char *ota_file_name)
 
     mbr_t mbr = RT_NULL;
     mbr = mbr_init();
-    if (mbr == RT_NULL)
-    {
-        goto _exit_;
-    }
+    if (mbr == RT_NULL) goto _exit_;
 
     mbr->ota_tag = ota_tag;
     mbr->ota_state = OTA_DEFAULT;
@@ -44,15 +42,27 @@ rt_err_t clear_stm32u575_ota_option(void)
 
     mbr_t mbr = RT_NULL;
     mbr = mbr_init();
-    if (mbr == RT_NULL)
-    {
-        goto _exit_;
-    }
+    if (mbr == RT_NULL) goto _exit_;
 
     mbr->ota_tag = OTA_NO;
     mbr->ota_state = OTA_DEFAULT;
     rt_memset(mbr->ota_file, 0, sizeof(mbr->ota_file));
     res = RT_EOK;
+
+_exit_:
+    return res;
+}
+
+rt_err_t get_stm32u575_ota_status(ota_state_e *st_ota_state)
+{
+    rt_err_t res = RT_ERROR;
+
+    mbr_t mbr = RT_NULL;
+    mbr = mbr_init();
+    res = mbr == RT_NULL ? RT_ERROR : RT_EOK;
+    if (res != RT_EOK) goto _exit_;
+
+    *st_ota_state = mbr->ota_state;
 
 _exit_:
     return res;
@@ -74,12 +84,6 @@ void stm32u575_ota_download(int* progress, UpgradeNode *node)
     stm32_ota_status = UPGRADE_STATUS_DOWNLOADED;
 }
 
-void stm32u575_ota_verify(UpgradeNode *node)
-{
-    // TODO: Verfity file md5.
-    stm32_ota_status = UPGRADE_STATUS_VERIFIED;
-}
-
 void stm32u575_ota_prepare(void)
 {
     return;
@@ -99,7 +103,6 @@ UpgradeStatus stm32u575_ota_get_status(void)
 
 UpgradeModuleOps stm32u575_ota_ops = {
     .download = stm32u575_ota_download,
-    .verify = stm32u575_ota_verify,
     .prepare = stm32u575_ota_prepare,
     .apply = stm32u575_ota_apply,
     .get_status = stm32u575_ota_get_status

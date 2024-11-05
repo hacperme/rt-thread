@@ -1,14 +1,7 @@
 #include "upgrade_manager.h"
 #include <stdio.h>
 
-static UpgradeStatus esp_status = UPGRADE_STATUS_IDLE;
-
-void esp_prepare(void) {
-    printf("Preparing ESP upgrade...\n");
-    // 可在此处打开esp32 电源，//check 版本号*
-    esp_status = UPGRADE_STATUS_DOWNLOADING;
-    //
-}
+static UpgradeStatus esp_status;
 
 void esp_download(int* progress) {
     printf("Downloading ESP firmware...\n");
@@ -21,10 +14,11 @@ void esp_download(int* progress) {
     //保存到文件系统
 }
 
-void esp_verify(void) {
-    printf("Verifying ESP firmware...\n");
-    // MD5 校验
-    esp_status = UPGRADE_STATUS_VERIFIED;
+void esp_prepare(void) {
+    printf("Preparing ESP upgrade...\n");
+    // 可在此处打开esp32 电源，//check 版本号*
+    esp_status = UPGRADE_STATUS_DOWNLOADING;
+    //
 }
 
 void esp_apply(int* progress) {
@@ -41,7 +35,6 @@ UpgradeStatus esp_get_status(void) {
 
 UpgradeModuleOps esp_module = {
     .download = esp_download,
-    .verify = esp_verify,
     .prepare = esp_prepare,
     .apply = esp_apply,
     .get_status = esp_get_status

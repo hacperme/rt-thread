@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include "rtthread.h"
 #include "logging.h"
+#include "drv_hash.h"
+
+#define MD5_FILE_BUFFER_SIZE 1024
 
 static UpgradeNode ota_node = {0};
 static char upgrade_manager_init_tag = 0;
@@ -101,6 +104,18 @@ void set_module(UpgradeModule module, UpgradePlan *plan, UpgradeModuleOps *ops)
     save_module(&ota_node);
 }
 
+static int md5cmp(char *str1, char *str2)
+{
+    int res = 0;
+    for (int i = 0; i < 16; i++)
+    {
+        res = str1[i] == str2[i] ? 0 : -1;
+        if (res != 0) break;
+    }
+    return res;
+}
+
+// TODO: 这里应该是一个同一的接口直接下载，这里看是否还需要每个模块单独一个download方法
 static void start_download(UpgradeNode* node) {
     char retry_cnt = 0;
     node->status = UPGRADE_STATUS_DOWNLOADING;
@@ -110,23 +125,73 @@ static void start_download(UpgradeNode* node) {
         node->ops.download(&node->download_progress, node);
         node->status = node->ops.get_status();
         log_debug("Download progress for module %d: %d%%", node->module, node->download_progress);
-        if (node->status == UPGRADE_STATUS_DOWNLOADED)
-        {
-            node->ops.verify(node);
-            node->status = node->ops.get_status();
-            if (node->status != UPGRADE_STATUS_VERIFIED)
-            {
-                retry_cnt++;
-                log_error("Verification failed for module %d, will retry...", node->module);
-            }
-        }
-        else
+        if (node->status != UPGRADE_STATUS_DOWNLOADED)
         {
             retry_cnt++;
             log_error("Download failed for module %d, will retry...\n", node->module);
         }
         save_module(node);
     }
+}
+
+static void start_verify(UpgradeNode* node)
+{
+    if (node->status != UPGRADE_STATUS_DOWNLOADED) goto _exit_;
+    if (node->module == UPGRADE_MODULE_NB)
+    {
+        node->status = UPGRADE_STATUS_VERIFIED;
+        goto _exit_;
+    }
+    char file_buff[MD5_FILE_BUFFER_SIZE] = {0};
+    uint32_t i, j;
+    uint32_t file_size = 0;
+    uint16_t last_size = 0;
+    uint32_t file_range = 0;
+    char file_cmp_md5[16] = {0};
+    for (i = 0; i < node->plan.file_cnt; i++)
+    {
+        FILE *ota_file = fopen(node->plan.file[i].file_name, "rb");
+        if (ota_file == NULL)
+        {
+            log_error("OTA File %s is opened failed.", node->plan.file[i].file_name);
+            node->status = UPGRADE_STATUS_VERIFY_FAILED;
+            goto _exit_;
+        }
+
+        // Get file size.
+        fseek(ota_file, 0, SEEK_END);
+        file_size = ftell(ota_file);
+
+        // Compute file MD5.
+        drv_hash_md5_create();
+        fseek(ota_file, 0, SEEK_SET);
+        file_range = (file_size % MD5_FILE_BUFFER_SIZE == 0) ? (file_size / MD5_FILE_BUFFER_SIZE - 1) : (file_size / MD5_FILE_BUFFER_SIZE);
+        for (j = 0; j < file_range; j++)
+        {
+            rt_memset(file_buff, 0, MD5_FILE_BUFFER_SIZE);
+            fread(file_buff, 1, MD5_FILE_BUFFER_SIZE, ota_file);
+            drv_hash_md5_update(file_buff, MD5_FILE_BUFFER_SIZE);
+        }
+        rt_memset(file_buff, 0, MD5_FILE_BUFFER_SIZE);
+        last_size = (file_size % MD5_FILE_BUFFER_SIZE == 0) ? MD5_FILE_BUFFER_SIZE : (file_size - j * MD5_FILE_BUFFER_SIZE);
+        fread(file_buff, 1, last_size, ota_file);
+        drv_hash_md5_finsh(file_buff, last_size, file_cmp_md5);
+        fclose(ota_file);
+    
+        if (md5cmp(node->plan.file[i].file_md5, file_cmp_md5) == 0)
+        {
+            node->status = UPGRADE_STATUS_VERIFIED;
+        }
+        else
+        {
+            node->status = UPGRADE_STATUS_VERIFY_FAILED;
+            goto _exit_;
+        }
+    }
+
+_exit_:
+    save_module(node);
+    return;
 }
 
 static void start_upgrade(UpgradeNode* node) {
@@ -176,6 +241,7 @@ void upgrade_all_module(void) {
                 ota_node.try_count++;
                 save_module(&ota_node);
                 start_download(&ota_node);
+                start_verify(&ota_node);
             }
             else
             {

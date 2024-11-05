@@ -2,7 +2,7 @@
 #define UPGRADE_MANAGER_H
 
 #define MODULE_MAX_OTA_FILE_COUNT   5
-#define MODULE_FILE_NAME_LENGTH     64
+#define MODULE_FILE_NAME_LENGTH     256
 #define MODULE_DOWNLOAD_ADDR_LENGTH 1024
 
 #define OTA_PATH                    "/fota"
@@ -33,7 +33,6 @@ typedef enum {
 
 typedef struct {
     void (*download)(int* progress, UpgradeNode *node);
-    void (*verify)(UpgradeNode *node);
     void (*prepare)(void);// 包含掉电，上电过程
     void (*apply)(int* progress, UpgradeNode *node);
     UpgradeStatus (*get_status)(void);
@@ -43,6 +42,7 @@ typedef struct {
     char file_name[MODULE_FILE_NAME_LENGTH];
     char download_addr[MODULE_DOWNLOAD_ADDR_LENGTH];
     char file_md5[16];
+    uint32_t file_size;
 } UpgradeFile;
 
 typedef struct {
