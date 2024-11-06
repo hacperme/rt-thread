@@ -35,6 +35,7 @@ typedef struct {
     void (*download)(int* progress, UpgradeNode *node);
     void (*prepare)(void);// 包含掉电，上电过程
     void (*apply)(int* progress, UpgradeNode *node);
+    void (*finish)(UpgradeNode *node);
     UpgradeStatus (*get_status)(void);
 } UpgradeModuleOps;
 

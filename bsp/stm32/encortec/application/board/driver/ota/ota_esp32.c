@@ -3,7 +3,7 @@
 
 static UpgradeStatus esp_status;
 
-void esp_download(int* progress) {
+void esp_download(int* progress, UpgradeNode* node) {
     printf("Downloading ESP firmware...\n");
 
     //下发命令控制NB下载ESP32升级包，同时接受NB反馈的下载进度比
@@ -21,7 +21,7 @@ void esp_prepare(void) {
     //
 }
 
-void esp_apply(int* progress) {
+void esp_apply(int* progress, UpgradeNode* node) {
     printf("Applying ESP firmware...\n");
 
     //下发命令控制ESP32升级,同时接受esp32 升级进度的百分比， 以5%位单位
@@ -33,9 +33,12 @@ UpgradeStatus esp_get_status(void) {
     return esp_status;
 }
 
+void esp_finish(UpgradeNode* node) {}
+
 UpgradeModuleOps esp_module = {
     .download = esp_download,
     .prepare = esp_prepare,
     .apply = esp_apply,
+    .finish = esp_finish,
     .get_status = esp_get_status
 };

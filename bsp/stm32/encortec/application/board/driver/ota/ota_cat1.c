@@ -81,9 +81,7 @@ void cat1_ota_download(int* progress, UpgradeNode *node)
 
 void cat1_ota_prepare(void)
 {
-    // TODO: 1. CAT1 上电
-
-    // 2. AT模块初始化
+    // 1. AT模块初始化
     rt_err_t res;
 
     res = rt_sem_init(&start_trans_file_sem, "cat1stfs", 0, RT_IPC_FLAG_PRIO);
@@ -151,6 +149,8 @@ void cat1_ota_prepare(void)
         rt_sem_detach(&fota_end_sem);
         rt_sem_detach(&rdy_sem);
     }
+
+    // TODO: 2. CAT1 上电
 
     return;
 }
@@ -268,10 +268,23 @@ UpgradeStatus cat1_ota_get_status(void)
     return cat1_ota_status;
 }
 
+void cat1_ota_finish(UpgradeNode *node)
+{
+    at_delete_resp(cat1_at_resp);
+    cat1_at_client = RT_NULL;
+    rt_sem_detach(&start_trans_file_sem);
+    rt_sem_detach(&end_trans_file_sem);
+    rt_sem_detach(&fota_end_sem);
+    rt_sem_detach(&rdy_sem);
+
+    // TODO: Shutdown CAT1.
+}
+
 UpgradeModuleOps cat1_ota_ops = {
     .download = cat1_ota_download,
     .prepare = cat1_ota_prepare,
     .apply = cat1_ota_apply,
+    .finish = cat1_ota_finish,
     .get_status = cat1_ota_get_status
 };
 

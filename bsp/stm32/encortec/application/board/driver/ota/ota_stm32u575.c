@@ -101,10 +101,13 @@ UpgradeStatus stm32u575_ota_get_status(void)
     return stm32_ota_status;
 }
 
+void stm32u575_ota_finish(UpgradeNode *node){}
+
 UpgradeModuleOps stm32u575_ota_ops = {
     .download = stm32u575_ota_download,
     .prepare = stm32u575_ota_prepare,
     .apply = stm32u575_ota_apply,
+    .finish = stm32u575_ota_finish,
     .get_status = stm32u575_ota_get_status
 };
 
