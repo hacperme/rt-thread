@@ -1,12 +1,7 @@
 #include "upgrade_manager.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <dirent.h>
-#include <unistd.h>
-#include "rtthread.h"
-#include "logging.h"
+#include "dfs_fs.h"
 #include "drv_hash.h"
+#include "logging.h"
 
 #define MD5_FILE_BUFFER_SIZE 1024
 
@@ -27,11 +22,11 @@ int upgrade_manager_init(void)
         {
             ota_node.module = (UpgradeModule)i;
             ota_node.status = UPGRADE_STATUS_NO_PLAN;
-            wres = fwrite(&ota_node, 1, rt_sizeof(ota_node), ota_file);
-            if (wres != rt_sizeof(ota_node)) break;
+            wres = fwrite(&ota_node, 1, sizeof(ota_node), ota_file);
+            if (wres != sizeof(ota_node)) break;
         }
         fclose(ota_file);
-        if (wres != rt_sizeof(ota_node)) return -2;
+        if (wres != sizeof(ota_node)) return -2;
     }
 
     upgrade_manager_init_tag = 1;
@@ -60,18 +55,18 @@ int get_module(UpgradeModule module, UpgradeNode *node)
     size_t rres;
     FILE *ota_file = fopen(OTA_CFG_FILE, "rb");
     if (ota_file == NULL) return -1;
-    fseek(ota_file, rt_sizeof(*node) * module, SEEK_SET);
-    rt_memset(node, 0, rt_sizeof(*node));
-    rres = fread(node, 1, rt_sizeof(*node), ota_file);
+    fseek(ota_file, sizeof(*node) * module, SEEK_SET);
+    rt_memset(node, 0, sizeof(*node));
+    rres = fread(node, 1, sizeof(*node), ota_file);
     fclose(ota_file);
-    return rres == rt_sizeof(*node) ? 0 : -1;
+    return rres == sizeof(*node) ? 0 : -1;
 }
 
 void save_module(UpgradeNode *node)
 {
     FILE *ota_file = fopen(OTA_CFG_FILE, "ab");
-    fseek(ota_file, rt_sizeof(*node) * node->module, SEEK_SET);
-    fwrite(node, 1, rt_sizeof(*node), ota_file);
+    fseek(ota_file, sizeof(*node) * node->module, SEEK_SET);
+    fwrite(node, 1, sizeof(*node), ota_file);
     fclose(ota_file);
 }
 
@@ -80,8 +75,8 @@ void clear_module(UpgradeNode *node) {
     node->download_progress = 0;
     node->upgrade_progress = 0;
     node->try_count = 0;
-    rt_memset(&node->plan, 0, rt_sizeof(node->plan));
-    rt_memset(&node->ops, 0, rt_sizeof(node->ops));
+    rt_memset(&node->plan, 0, sizeof(node->plan));
+    rt_memset(&node->ops, 0, sizeof(node->ops));
     save_module(node);
 }
 
@@ -91,10 +86,10 @@ void init_module(UpgradeNode *node, UpgradePlan *plan, UpgradeModuleOps *ops)
     node->download_progress = 0;
     node->upgrade_progress = 0;
     node->try_count = 0;
-    rt_memset(&node->plan, 0, rt_sizeof(node->plan));
-    rt_memcpy(&node->plan, plan, rt_sizeof(*plan));
-    rt_memset(&node->ops, 0, rt_sizeof(node->ops));
-    rt_memcpy(&node->ops, ops, rt_sizeof(*ops));
+    rt_memset(&node->plan, 0, sizeof(node->plan));
+    rt_memcpy(&node->plan, plan, sizeof(*plan));
+    rt_memset(&node->ops, 0, sizeof(node->ops));
+    rt_memcpy(&node->ops, ops, sizeof(*ops));
 }
 
 void set_module(UpgradeModule module, UpgradePlan *plan, UpgradeModuleOps *ops)
@@ -122,7 +117,7 @@ static void start_download(UpgradeNode* node) {
     save_module(node);
     while (retry_cnt < 2)
     {
-        node->ops.download(&node->download_progress, node);
+        node->ops.download(&node->download_progress, (void *)node);
         node->status = node->ops.get_status();
         log_debug("Download progress for module %d: %d%%", node->module, node->download_progress);
         if (node->status != UPGRADE_STATUS_DOWNLOADED)
@@ -198,7 +193,7 @@ static void start_upgrade(UpgradeNode* node) {
     node->status = UPGRADE_STATUS_UPGRADING;
     save_module(node);
     node->ops.prepare();
-    node->ops.apply(&node->upgrade_progress, node);
+    node->ops.apply(&node->upgrade_progress, (void *)node);
     log_debug("Upgrade progress for module %d: %d%%", node->module, node->upgrade_progress);
     node->status = node->ops.get_status();
     if (node->status == UPGRADE_STATUS_SUCCESS) {
@@ -206,6 +201,7 @@ static void start_upgrade(UpgradeNode* node) {
     } else {
         log_debug("Upgrade failed for module %d", node->module);
     }
+    node->ops.finish((void *)node);
     save_module(node);
 }
 
@@ -284,12 +280,12 @@ static void test_set_esp_ota_plan(void)
     // 收到 ESP 升级计划, 记录升级相关信息并设置升级记录
     UpgradePlan esp_plan = {0};
     char test_msg[] = "xxx";
-    rt_memcpy(esp_plan.source_version, test_msg, rt_sizeof(test_msg));
-    rt_memcpy(esp_plan.target_version, test_msg, rt_sizeof(test_msg));
+    rt_memcpy(esp_plan.source_version, test_msg, sizeof(test_msg));
+    rt_memcpy(esp_plan.target_version, test_msg, sizeof(test_msg));
     esp_plan.file_cnt = 1;
-    rt_memcpy(esp_plan.file[0].file_name, test_msg, rt_sizeof(test_msg));
-    rt_memcpy(esp_plan.file[0].download_addr, test_msg, rt_sizeof(test_msg));
-    rt_memcpy(esp_plan.file[0].file_md5, test_msg, rt_sizeof(test_msg));
+    rt_memcpy(esp_plan.file[0].file_name, test_msg, sizeof(test_msg));
+    rt_memcpy(esp_plan.file[0].download_addr, test_msg, sizeof(test_msg));
+    rt_memcpy(esp_plan.file[0].file_md5, test_msg, sizeof(test_msg));
     set_module(UPGRADE_MODULE_ESP, &esp_plan, &esp_module);
 }
 

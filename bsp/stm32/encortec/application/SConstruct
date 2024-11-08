@@ -144,6 +144,7 @@ logging/logging.c
 
 app_c_files += [
     ".test/test_example.c",
+    ".test/test_st_at.c",
     # ".test/test_file.c",
     # ".test/test_wdg.c",
 ]
@@ -177,7 +178,9 @@ driver_c_files = [
     # "board/driver/esp32/esp32.c",
     "board/driver/esp32/at_data_transf.c",
     "board/driver/drv_hash/drv_hash.c",
-    "board/driver/ota/stm32u575_ota.c",
+    "board/driver/ota/ota_cat1.c",
+    "board/driver/ota/ota_stm32u575.c",
+    "board/driver/ota/upgrade_manager.c",
 ]
 
 cloud_c_files = [

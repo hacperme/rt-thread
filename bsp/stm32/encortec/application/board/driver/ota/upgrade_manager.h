@@ -1,6 +1,13 @@
 #ifndef UPGRADE_MANAGER_H
 #define UPGRADE_MANAGER_H
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <unistd.h>
+#include "rtthread.h"
+
 #define MODULE_MAX_OTA_FILE_COUNT   5
 #define MODULE_FILE_NAME_LENGTH     256
 #define MODULE_DOWNLOAD_ADDR_LENGTH 1024
@@ -32,10 +39,10 @@ typedef enum {
 } UpgradeStatus;
 
 typedef struct {
-    void (*download)(int* progress, UpgradeNode *node);
+    void (*download)(int* progress, void *node);
     void (*prepare)(void);// 包含掉电，上电过程
-    void (*apply)(int* progress, UpgradeNode *node);
-    void (*finish)(UpgradeNode *node);
+    void (*apply)(int* progress, void *node);
+    void (*finish)(void *node);
     UpgradeStatus (*get_status)(void);
 } UpgradeModuleOps;
 

@@ -50,30 +50,30 @@ static
 void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size)
 {
     log_info("[cat1_ota_urc][%s]", data);
-    if (strncmp(data, AT_QIND_HEAD, rt_strlen(AT_QIND_HEAD)) == 0)
+    if (rt_strncmp(data, AT_QIND_HEAD, rt_strlen(AT_QIND_HEAD)) == 0)
     {
-        if (strncmp(data, AT_QIND_FILESTART, rt_strlen(AT_QIND_FILESTART)) == 0)
+        if (rt_strncmp(data, AT_QIND_FILESTART, rt_strlen(AT_QIND_FILESTART)) == 0)
         {
             rt_sem_release(&start_trans_file_sem);
         }
-        else if (strncmp(data, AT_QIND_FILEEND, rt_strlen(AT_QIND_FILEEND)) == 0)
+        else if (rt_strncmp(data, AT_QIND_FILEEND, rt_strlen(AT_QIND_FILEEND)) == 0)
         {
             trans_file_res = data[rt_strlen(AT_QIND_FILEEND) + 1] == '0' ? 1 : 0;
             rt_sem_release(&end_trans_file_sem);
         }
-        else if (strncmp(data, AT_QIND_FOTA_END, rt_strlen(AT_QIND_FOTA_END)) == 0)
+        else if (rt_strncmp(data, AT_QIND_FOTA_END, rt_strlen(AT_QIND_FOTA_END)) == 0)
         {
             fota_res = data[rt_strlen(AT_QIND_FOTA_END) + 1] == '0' ? 1 : 0;
             rt_sem_release(&fota_end_sem);
         }
     }
-    else if (strncmp(data, AT_RDY_HEAD, rt_strlen(AT_RDY_HEAD)) == 0)
+    else if (rt_strncmp(data, AT_RDY_HEAD, rt_strlen(AT_RDY_HEAD)) == 0)
     {
-            rt_sem_release(&rdy_sem);
+        rt_sem_release(&rdy_sem);
     }
 }
 
-void cat1_ota_download(int* progress, UpgradeNode *node)
+void cat1_ota_download(int* progress, void *node)
 {
     // TODO: Download OTA File.
     cat1_ota_status = UPGRADE_STATUS_DOWNLOADED;
@@ -188,7 +188,7 @@ rt_err_t start_cat1_ota_cmd(uint32_t file_size)
     if (res != RT_EOK) return res;
 
     char cmd[64] = {0};
-    rt_snprintf(cmd, rt_sizeof(cmd), "AT+QFOTADL=\"FILE:%d\",1,100,100", file_size);
+    rt_snprintf(cmd, sizeof(cmd), "AT+QFOTADL=\"FILE:%d\",1,100,100", file_size);
     at_resp_set_info(cat1_at_resp, CAT1_AT_BUFF_SIZE, 0, 3000);
     ret = at_obj_exec_cmd(cat1_at_client, cat1_at_resp, cmd);
     res = ret == 0 ? RT_EOK : RT_ERROR;
@@ -229,8 +229,9 @@ rt_err_t transfer_cat1_ota_file(char *file_name)
     return res;
 }
 
-void cat1_ota_apply(int* progress, UpgradeNode *node)
+void cat1_ota_apply(int* progress, void *node)
 {
+    UpgradeNode *_node = (UpgradeNode *)node;
     cat1_ota_status = UPGRADE_STATUS_UPGRADING;
     if (cat1_at_client == RT_NULL) goto _failed_;
 
@@ -239,11 +240,11 @@ void cat1_ota_apply(int* progress, UpgradeNode *node)
     log_info("open_cat1_fota_urc %s", res_msg(res == RT_EOK));
     if (res != RT_EOK) goto _failed_;
 
-    res = start_cat1_ota_cmd(node->plan.file[0].file_size);
+    res = start_cat1_ota_cmd(_node->plan.file[0].file_size);
     log_info("start_cat1_ota_cmd %s", res_msg(res == RT_EOK));
     if (res != RT_EOK) goto _failed_;
 
-    res = transfer_cat1_ota_file(node->plan.file[0].file_name);
+    res = transfer_cat1_ota_file(_node->plan.file[0].file_name);
     log_info("transfer_cat1_ota_file %s", res_msg(res == RT_EOK));
     if (res != RT_EOK) goto _failed_;
 
@@ -256,7 +257,7 @@ void cat1_ota_apply(int* progress, UpgradeNode *node)
     res = rt_sem_take(&rdy_sem, 30 * 1000);
     log_info("rt_sem_take rdy_sem %s", res_msg(res == RT_EOK));
     cat1_ota_status = res == RT_EOK ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
-    return res;
+    return;
 
 _failed_:
     cat1_ota_status = UPGRADE_STATUS_FAILED;
@@ -268,7 +269,7 @@ UpgradeStatus cat1_ota_get_status(void)
     return cat1_ota_status;
 }
 
-void cat1_ota_finish(UpgradeNode *node)
+void cat1_ota_finish(void *node)
 {
     at_delete_resp(cat1_at_resp);
     cat1_at_client = RT_NULL;

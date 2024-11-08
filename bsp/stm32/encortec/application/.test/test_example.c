@@ -53,14 +53,17 @@ int application_start(int argc, char *argv[]) {
         log_debug("fatfs mount success.");
     }
 
+    // extern void test_st_at(void);
+    // test_st_at();
+
     // extern void test_hal_hmac_sha256(void);
     // test_hal_hmac_sha256();
 
     // extern void test_adxl372(int argc, char **argv);
     // test_adxl372(argc, argv);
 
-    extern void test_vol_read(void);
-    test_vol_read();
+    // extern void test_vol_read(void);
+    // test_vol_read();
 
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);

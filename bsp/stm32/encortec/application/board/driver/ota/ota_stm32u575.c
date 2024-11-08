@@ -78,7 +78,7 @@ void test_stm32u575_ota_app(void)
 }
 
 static UpgradeStatus stm32_ota_status;
-void stm32u575_ota_download(int* progress, UpgradeNode *node)
+void stm32u575_ota_download(int* progress, void *node)
 {
     // TODO: Download OTA File.
     stm32_ota_status = UPGRADE_STATUS_DOWNLOADED;
@@ -89,9 +89,10 @@ void stm32u575_ota_prepare(void)
     return;
 }
 
-void stm32u575_ota_apply(int* progress, UpgradeNode *node)
+void stm32u575_ota_apply(int* progress, void *node)
 {
-    rt_err_t res = set_stm32u575_ota_option(OTA_YES, node->plan.file[0].file_name);
+    UpgradeNode *_node = (UpgradeNode *)node;
+    rt_err_t res = set_stm32u575_ota_option(OTA_YES, _node->plan.file[0].file_name);
     log_debug("set_stm32u575_ota_option %s", res_msg(res == RT_EOK));
     stm32_ota_status = res == RT_EOK ? UPGRADE_STATUS_UPGRADING : UPGRADE_STATUS_FAILED;
 }
@@ -101,7 +102,7 @@ UpgradeStatus stm32u575_ota_get_status(void)
     return stm32_ota_status;
 }
 
-void stm32u575_ota_finish(UpgradeNode *node){}
+void stm32u575_ota_finish(void *node){}
 
 UpgradeModuleOps stm32u575_ota_ops = {
     .download = stm32u575_ota_download,
