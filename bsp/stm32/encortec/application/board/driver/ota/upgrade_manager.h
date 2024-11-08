@@ -33,17 +33,17 @@ typedef enum {
     UPGRADE_STATUS_DOWNLOADING_FAILED,
     UPGRADE_STATUS_VERIFY_FAILED,
     UPGRADE_STATUS_VERIFIED,
+    UPGRADE_STATUS_PREPARE_OK,
+    UPGRADE_STATUS_PREPARE_FAILED,
     UPGRADE_STATUS_UPGRADING,
     UPGRADE_STATUS_SUCCESS,
     UPGRADE_STATUS_FAILED,
 } UpgradeStatus;
 
 typedef struct {
-    void (*download)(int* progress, void *node);
-    void (*prepare)(void);// 包含掉电，上电过程
+    void (*prepare)(void *node);  // 包含掉电，上电过程
     void (*apply)(int* progress, void *node);
     void (*finish)(void *node);
-    UpgradeStatus (*get_status)(void);
 } UpgradeModuleOps;
 
 typedef struct {

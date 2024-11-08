@@ -117,14 +117,8 @@ static void start_download(UpgradeNode* node) {
     save_module(node);
     while (retry_cnt < 2)
     {
-        node->ops.download(&node->download_progress, (void *)node);
-        node->status = node->ops.get_status();
-        log_debug("Download progress for module %d: %d%%", node->module, node->download_progress);
-        if (node->status != UPGRADE_STATUS_DOWNLOADED)
-        {
-            retry_cnt++;
-            log_error("Download failed for module %d, will retry...\n", node->module);
-        }
+        // TODO: Download File Option.
+        node->status = UPGRADE_STATUS_DOWNLOADED;
         save_module(node);
     }
 }
@@ -190,19 +184,22 @@ _exit_:
 }
 
 static void start_upgrade(UpgradeNode* node) {
-    node->status = UPGRADE_STATUS_UPGRADING;
+    node->ops.prepare((void *)node);
     save_module(node);
-    node->ops.prepare();
-    node->ops.apply(&node->upgrade_progress, (void *)node);
-    log_debug("Upgrade progress for module %d: %d%%", node->module, node->upgrade_progress);
-    node->status = node->ops.get_status();
-    if (node->status == UPGRADE_STATUS_SUCCESS) {
-        log_debug("Upgrade successful for module %d at %s", node->module, node->plan.file[0].file_name);
-    } else {
-        log_debug("Upgrade failed for module %d", node->module);
+    if (node->status == UPGRADE_STATUS_PREPARE_OK)
+    {
+        node->status = UPGRADE_STATUS_UPGRADING;
+        save_module(node);
+        node->ops.apply(&node->upgrade_progress, (void *)node);
+        save_module(node);
+        if (node->status == UPGRADE_STATUS_SUCCESS) {
+            log_info("Upgrade successful for module %d at %s", node->module, node->plan.file[0].file_name);
+        } else {
+            log_error("Upgrade failed for module %d", node->module);
+        }
+        node->ops.finish((void *)node);
+        save_module(node);
     }
-    node->ops.finish((void *)node);
-    save_module(node);
 }
 
 // TODO: Report OTA Result to cloud by NB.
@@ -228,7 +225,8 @@ void upgrade_all_module(void) {
         if (get_module((UpgradeModule)i, &ota_node) == 0)
         {
             if (ota_node.status == UPGRADE_STATUS_NO_PLAN || ota_node.status == UPGRADE_STATUS_SUCCESS || \
-                ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING)
+                ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING || \
+                ota_node.status == UPGRADE_STATUS_PREPARE_OK || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
             {
                 continue;
             }
@@ -237,11 +235,14 @@ void upgrade_all_module(void) {
                 ota_node.try_count++;
                 save_module(&ota_node);
                 start_download(&ota_node);
-                start_verify(&ota_node);
+                if (ota_node.status == UPGRADE_STATUS_DOWNLOADED)
+                {
+                    start_verify(&ota_node);
+                }
             }
             else
             {
-                ota_node.status = UPGRADE_STATUS_FAILED;
+                ota_node.status = UPGRADE_STATUS_DOWNLOADING_FAILED;
                 save_module(&ota_node);
             }
         }
@@ -255,7 +256,8 @@ void upgrade_all_module(void) {
     {
         if (get_module((UpgradeModule)i, &ota_node) == 0)
         {
-            if (ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING)
+            if (ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING || \
+                ota_node.status == UPGRADE_STATUS_PREPARE_OK || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
             {
                 start_upgrade(&ota_node);
                 if (i == UPGRADE_MODULE_ST && ota_node.status == UPGRADE_STATUS_UPGRADING)

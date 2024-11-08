@@ -28,7 +28,6 @@
 #define AT_QIND_FILEEND "+QIND: \"FOTA\",\"FILEEND\""
 #define AT_QIND_FOTA_END "+QIND: \"FOTA\",\"END\""
 
-static UpgradeStatus cat1_ota_status;
 static at_client_t cat1_at_client = RT_NULL;
 static at_response_t cat1_at_resp = RT_NULL;
 
@@ -45,9 +44,7 @@ static struct at_urc cat1_ota_urc_table[] = {
     {AT_RDY_HEAD,        "\r\n", cat1_ota_urc}
 };
 
-static 
-
-void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size)
+static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size)
 {
     log_info("[cat1_ota_urc][%s]", data);
     if (rt_strncmp(data, AT_QIND_HEAD, rt_strlen(AT_QIND_HEAD)) == 0)
@@ -73,31 +70,26 @@ void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size)
     }
 }
 
-void cat1_ota_download(int* progress, void *node)
-{
-    // TODO: Download OTA File.
-    cat1_ota_status = UPGRADE_STATUS_DOWNLOADED;
-}
-
-void cat1_ota_prepare(void)
+void cat1_ota_prepare(void *node)
 {
     // 1. AT模块初始化
     rt_err_t res;
+    UpgradeNode *_node = (UpgradeNode *)node;
 
     res = rt_sem_init(&start_trans_file_sem, "cat1stfs", 0, RT_IPC_FLAG_PRIO);
-    if (res != RT_EOK) return;
+    if (res != RT_EOK) goto _failed_;
     res = rt_sem_init(&end_trans_file_sem, "cat1etfs", 0, RT_IPC_FLAG_PRIO);
     if (res != RT_EOK)
     {
         rt_sem_detach(&start_trans_file_sem);
-        return;
+        goto _failed_;
     }
     res = rt_sem_init(&fota_end_sem, "cat1fes", 0, RT_IPC_FLAG_PRIO);
     if (res != RT_EOK)
     {
         rt_sem_detach(&start_trans_file_sem);
         rt_sem_detach(&end_trans_file_sem);
-        return;
+        goto _failed_;
     }
     res = rt_sem_init(&rdy_sem, "cat1rdy", 0, RT_IPC_FLAG_PRIO);
     if (res != RT_EOK)
@@ -105,7 +97,7 @@ void cat1_ota_prepare(void)
         rt_sem_detach(&start_trans_file_sem);
         rt_sem_detach(&end_trans_file_sem);
         rt_sem_detach(&fota_end_sem);
-        return;
+        goto _failed_;
     }
 
     cat1_at_client = at_client_get(CAT1_UART);
@@ -125,7 +117,7 @@ void cat1_ota_prepare(void)
         rt_sem_detach(&end_trans_file_sem);
         rt_sem_detach(&fota_end_sem);
         rt_sem_detach(&rdy_sem);
-        return;
+        goto _failed_;
     }
     cat1_at_resp = at_create_resp(CAT1_AT_BUFF_SIZE, 0, 3000);
     if (!cat1_at_resp)
@@ -135,7 +127,7 @@ void cat1_ota_prepare(void)
         rt_sem_detach(&end_trans_file_sem);
         rt_sem_detach(&fota_end_sem);
         rt_sem_detach(&rdy_sem);
-        return;
+        goto _failed_;
     }
 
     int ret = at_obj_set_urc_table(cat1_at_client, cat1_ota_urc_table, sizeof(cat1_ota_urc_table) / sizeof(cat1_ota_urc_table[0]));
@@ -148,10 +140,16 @@ void cat1_ota_prepare(void)
         rt_sem_detach(&end_trans_file_sem);
         rt_sem_detach(&fota_end_sem);
         rt_sem_detach(&rdy_sem);
+        goto _failed_;
     }
 
     // TODO: 2. CAT1 上电
 
+    _node->status = UPGRADE_STATUS_PREPARE_OK;
+    return;
+
+_failed_:
+    _node->status = UPGRADE_STATUS_PREPARE_FAILED;
     return;
 }
 
@@ -232,7 +230,6 @@ rt_err_t transfer_cat1_ota_file(char *file_name)
 void cat1_ota_apply(int* progress, void *node)
 {
     UpgradeNode *_node = (UpgradeNode *)node;
-    cat1_ota_status = UPGRADE_STATUS_UPGRADING;
     if (cat1_at_client == RT_NULL) goto _failed_;
 
     rt_err_t res;
@@ -256,17 +253,12 @@ void cat1_ota_apply(int* progress, void *node)
 
     res = rt_sem_take(&rdy_sem, 30 * 1000);
     log_info("rt_sem_take rdy_sem %s", res_msg(res == RT_EOK));
-    cat1_ota_status = res == RT_EOK ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
+    _node->status = res == RT_EOK ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
     return;
 
 _failed_:
-    cat1_ota_status = UPGRADE_STATUS_FAILED;
+    _node->status = UPGRADE_STATUS_FAILED;
     return;
-}
-
-UpgradeStatus cat1_ota_get_status(void)
-{
-    return cat1_ota_status;
 }
 
 void cat1_ota_finish(void *node)
@@ -282,10 +274,8 @@ void cat1_ota_finish(void *node)
 }
 
 UpgradeModuleOps cat1_ota_ops = {
-    .download = cat1_ota_download,
     .prepare = cat1_ota_prepare,
     .apply = cat1_ota_apply,
     .finish = cat1_ota_finish,
-    .get_status = cat1_ota_get_status
 };
 

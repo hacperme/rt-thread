@@ -179,6 +179,7 @@ driver_c_files = [
     "board/driver/esp32/at_data_transf.c",
     "board/driver/drv_hash/drv_hash.c",
     "board/driver/ota/ota_cat1.c",
+    "board/driver/ota/ota_esp32.c",
     "board/driver/ota/ota_stm32u575.c",
     "board/driver/ota/upgrade_manager.c",
 ]
