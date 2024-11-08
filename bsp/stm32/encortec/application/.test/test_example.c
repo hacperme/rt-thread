@@ -53,6 +53,9 @@ int application_start(int argc, char *argv[]) {
         log_debug("fatfs mount success.");
     }
 
+    extern void test_cat1_at_ota(void);
+    test_cat1_at_ota();
+
     // extern void test_st_at(void);
     // test_st_at();
 

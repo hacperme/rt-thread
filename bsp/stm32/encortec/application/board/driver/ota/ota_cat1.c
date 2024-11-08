@@ -18,11 +18,13 @@
 #include "tools.h"
 #include "board.h"
 #include "at.h"
+#include "lpm.h"
 
 #define CAT1_AT_BUFF_SIZE 512
 #define CAT1_SEND_FILE_SIZE 32
 
 #define AT_RDY_HEAD "RDY"
+#define AT_SHUTDOWN_HEAD "POWERED DOWN"
 #define AT_QIND_HEAD "+QIND:"
 #define AT_QIND_FILESTART "+QIND: \"FOTA\",\"FILESTART\""
 #define AT_QIND_FILEEND "+QIND: \"FOTA\",\"FILEEND\""
@@ -36,17 +38,19 @@ static struct rt_semaphore start_trans_file_sem;
 static struct rt_semaphore end_trans_file_sem;
 static struct rt_semaphore fota_end_sem;
 static struct rt_semaphore rdy_sem;
+static struct rt_semaphore shutdown_sem;
 static char trans_file_res = 0;
 static char fota_res = 0;
 
 static struct at_urc cat1_ota_urc_table[] = {
     {AT_QIND_HEAD,       "\r\n", cat1_ota_urc},
-    {AT_RDY_HEAD,        "\r\n", cat1_ota_urc}
+    {AT_RDY_HEAD,        "\r\n", cat1_ota_urc},
+	{AT_SHUTDOWN_HEAD,   "\r\n", cat1_ota_urc}
 };
 
 static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size)
 {
-    log_info("[cat1_ota_urc][%s]", data);
+    log_info("[cat1_ota_urc] %s", data);
     if (rt_strncmp(data, AT_QIND_HEAD, rt_strlen(AT_QIND_HEAD)) == 0)
     {
         if (rt_strncmp(data, AT_QIND_FILESTART, rt_strlen(AT_QIND_FILESTART)) == 0)
@@ -67,6 +71,10 @@ static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t s
     else if (rt_strncmp(data, AT_RDY_HEAD, rt_strlen(AT_RDY_HEAD)) == 0)
     {
         rt_sem_release(&rdy_sem);
+    }
+    else if (rt_strncmp(data, AT_SHUTDOWN_HEAD, rt_strlen(AT_SHUTDOWN_HEAD)) == 0)
+    {
+        rt_sem_release(&shutdown_sem);
     }
 }
 
@@ -99,6 +107,15 @@ void cat1_ota_prepare(void *node)
         rt_sem_detach(&fota_end_sem);
         goto _failed_;
     }
+    res = rt_sem_init(&shutdown_sem, "cat1shtd", 0, RT_IPC_FLAG_PRIO);
+    if (res != RT_EOK)
+    {
+        rt_sem_detach(&start_trans_file_sem);
+        rt_sem_detach(&end_trans_file_sem);
+        rt_sem_detach(&fota_end_sem);
+        rt_sem_detach(&rdy_sem);
+        goto _failed_;
+    }
 
     cat1_at_client = at_client_get(CAT1_UART);
     if (cat1_at_client == RT_NULL)
@@ -117,6 +134,7 @@ void cat1_ota_prepare(void *node)
         rt_sem_detach(&end_trans_file_sem);
         rt_sem_detach(&fota_end_sem);
         rt_sem_detach(&rdy_sem);
+        rt_sem_detach(&shutdown_sem);
         goto _failed_;
     }
     cat1_at_resp = at_create_resp(CAT1_AT_BUFF_SIZE, 0, 3000);
@@ -127,6 +145,7 @@ void cat1_ota_prepare(void *node)
         rt_sem_detach(&end_trans_file_sem);
         rt_sem_detach(&fota_end_sem);
         rt_sem_detach(&rdy_sem);
+        rt_sem_detach(&shutdown_sem);
         goto _failed_;
     }
 
@@ -140,12 +159,15 @@ void cat1_ota_prepare(void *node)
         rt_sem_detach(&end_trans_file_sem);
         rt_sem_detach(&fota_end_sem);
         rt_sem_detach(&rdy_sem);
+        rt_sem_detach(&shutdown_sem);
         goto _failed_;
     }
 
-    // TODO: 2. CAT1 上电
+    res = cat1_power_on();
 
-    _node->status = UPGRADE_STATUS_PREPARE_OK;
+    res = rt_sem_take(&rdy_sem, 20 * 1000);
+
+    _node->status = res == RT_EOK ? UPGRADE_STATUS_PREPARE_OK : UPGRADE_STATUS_PREPARE_FAILED;
     return;
 
 _failed_:
@@ -263,14 +285,18 @@ _failed_:
 
 void cat1_ota_finish(void *node)
 {
+    cat1_power_on();
+    rt_err_t res = rt_sem_take(&shutdown_sem, 10 * 1000);
+
     at_delete_resp(cat1_at_resp);
     cat1_at_client = RT_NULL;
     rt_sem_detach(&start_trans_file_sem);
     rt_sem_detach(&end_trans_file_sem);
     rt_sem_detach(&fota_end_sem);
     rt_sem_detach(&rdy_sem);
-
-    // TODO: Shutdown CAT1.
+    rt_sem_detach(&shutdown_sem);
+    cat1_power_off();
+    log_debug("cat1_power_off");
 }
 
 UpgradeModuleOps cat1_ota_ops = {
@@ -279,3 +305,79 @@ UpgradeModuleOps cat1_ota_ops = {
     .finish = cat1_ota_finish,
 };
 
+rt_err_t cat1_at_set_regression(rt_uint8_t enable)
+{
+    rt_err_t res = cat1_at_client == RT_NULL ? RT_ERROR : RT_EOK;
+    if (res != RT_EOK) return res;
+    res = enable == 0 || enable == 1 ? RT_ERROR : RT_EOK;
+    if (res != RT_EOK) return res;
+
+    char cmd[8] = {0};
+    rt_snprintf(cmd, sizeof(cmd), "ATE%d", enable);
+    at_resp_set_info(cat1_at_resp, CAT1_AT_BUFF_SIZE, 0, 3000);
+    res = at_obj_exec_cmd(cat1_at_client, cat1_at_resp, cmd);
+    return res;
+}
+
+static char cat1_version[64] = {0};
+rt_err_t cat1_at_query_version(void)
+{
+    rt_err_t res = cat1_at_client == RT_NULL ? RT_ERROR : RT_EOK;
+    if (res != RT_EOK) return res;
+
+    char cmd[] = "AT+QGMR";
+    at_resp_set_info(cat1_at_resp, CAT1_AT_BUFF_SIZE, 4, 3000);
+    res = at_obj_exec_cmd(cat1_at_client, cat1_at_resp, cmd);
+    if (res >= 0)
+    {
+        int ret = at_resp_parse_line_args(cat1_at_resp, 2, "%s\r\n", cat1_version);
+        res = ret > 0 ? RT_EOK : RT_ERROR;
+        if (res == RT_EOK)
+        {
+            log_debug("CAT1version %s, size=%d", cat1_version, rt_strlen(cat1_version));
+        }
+    }
+    return res;
+}
+
+static char cat1_sub_edition[8] = {0};
+rt_err_t cat1_at_query_subedition(void)
+{
+    rt_err_t res = cat1_at_client == RT_NULL ? RT_ERROR : RT_EOK;
+    if (res != RT_EOK) return res;
+
+    char cmd[] = "AT+CSUB";
+    at_resp_set_info(cat1_at_resp, CAT1_AT_BUFF_SIZE, 4, 3000);
+    res = at_obj_exec_cmd(cat1_at_client, cat1_at_resp, cmd);
+    if (res >= 0)
+    {
+        rt_memset(cat1_sub_edition, 0, 8);
+        int ret = at_resp_parse_line_args(cat1_at_resp, 2, "SubEdition: %s", cat1_sub_edition);
+        res = ret > 0 ? RT_EOK : RT_ERROR;
+        if (res == RT_EOK)
+        {
+            log_debug("CAT1 SUB Edition %s, size=%d", cat1_sub_edition, rt_strlen(cat1_sub_edition));
+        }
+    }
+    return res;
+}
+
+void test_cat1_at_ota(void)
+{
+    UpgradeNode cat1_node = {0};
+    cat1_node.module = UPGRADE_MODULE_CAT1;
+    cat1_node.status = UPGRADE_STATUS_ON_PLAN;
+    cat1_node.ops = cat1_ota_ops;
+    cat1_node.ops.prepare(&cat1_node);
+    log_debug("cat1_node prepare %s", res_msg(cat1_node.status == UPGRADE_STATUS_PREPARE_OK));
+    if (cat1_node.status != UPGRADE_STATUS_PREPARE_OK) return;
+
+    rt_err_t res;
+    res = cat1_at_query_version();
+    log_debug("cat1_at_query_version %s", res_msg(res == RT_EOK));
+
+    res = cat1_at_query_subedition();
+    log_debug("cat1_at_query_subedition %s", res_msg(res == RT_EOK));
+
+    cat1_node.ops.finish(&cat1_node);
+}
