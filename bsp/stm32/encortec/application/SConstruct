@@ -145,7 +145,7 @@ logging/logging.c
 app_c_files += [
     ".test/test_example.c",
     ".test/test_st_at.c",
-    # ".test/test_file.c",
+    ".test/test_file.c",
     # ".test/test_wdg.c",
 ]
 

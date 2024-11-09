@@ -1,6 +1,7 @@
 #include "upgrade_manager.h"
 #include "dfs_fs.h"
 #include "drv_hash.h"
+#include "tools.h"
 #include "logging.h"
 
 #define MD5_FILE_BUFFER_SIZE 1024
@@ -10,11 +11,14 @@ static char upgrade_manager_init_tag = 0;
 
 int upgrade_manager_init(void)
 {
+    rt_err_t res = drv_hash_init();
+    log_debug("drv_hash_init %s", res_msg(res == RT_EOK));
+
     if (access(OTA_PATH, F_OK) != 0) mkdir(OTA_PATH, 0755);
 
     if (access(OTA_CFG_FILE, F_OK) != 0)
     {
-        FILE *ota_file = fopen(OTA_CFG_FILE, "ab");
+        FILE *ota_file = fopen(OTA_CFG_FILE, "wb");
         if (ota_file == NULL) return -1;
     
         size_t wres;
@@ -23,6 +27,7 @@ int upgrade_manager_init(void)
             ota_node.module = (UpgradeModule)i;
             ota_node.status = UPGRADE_STATUS_NO_PLAN;
             wres = fwrite(&ota_node, 1, sizeof(ota_node), ota_file);
+            log_debug("init module %d %s", ota_node.module, res_msg(wres == sizeof(ota_node)));
             if (wres != sizeof(ota_node)) break;
         }
         fclose(ota_file);
@@ -33,13 +38,27 @@ int upgrade_manager_init(void)
     return 0;
 }
 
+rt_err_t delete_ota_cfg_file(void)
+{
+    rt_err_t res;
+    res = upgrade_manager_init_tag == 0 ? RT_EOK : RT_ERROR;
+    if (res != RT_EOK) return res;
+    res = access(OTA_CFG_FILE, F_OK) != 0 ? RT_EOK : RT_ERROR;
+    if (res == RT_EOK) return res;
+
+    res = remove(OTA_CFG_FILE);
+    return res;
+}
+
 int exit_upgrade_plan(void)
 {
+    log_debug("exit_upgrade_plan");
     int res = 0;
     for (int i = 0; i < 5; i++)
     {
         if (get_module((UpgradeModule)i, &ota_node) == 0)
         {
+            log_debug("ota_node.module=%d ota_node.status=%d", ota_node.module, ota_node.status);
             if (ota_node.status != UPGRADE_STATUS_NO_PLAN)
             {
                 res++;
@@ -52,22 +71,31 @@ int exit_upgrade_plan(void)
 
 int get_module(UpgradeModule module, UpgradeNode *node)
 {
+    int ret;
     size_t rres;
+    rt_memset(node, 0, sizeof(*node));
+
     FILE *ota_file = fopen(OTA_CFG_FILE, "rb");
     if (ota_file == NULL) return -1;
-    fseek(ota_file, sizeof(*node) * module, SEEK_SET);
-    rt_memset(node, 0, sizeof(*node));
+    ret = fseek(ota_file, sizeof(*node) * module, SEEK_SET);
+    log_debug("fseek offset=%d, ret=%d", sizeof(*node) * module, ret);
     rres = fread(node, 1, sizeof(*node), ota_file);
-    fclose(ota_file);
+    log_debug("fread rres=%d, sizeof(*node)=%d", rres, sizeof(*node));
+    ret = fclose(ota_file);
+    log_debug("fclose ret=%d", ret);
     return rres == sizeof(*node) ? 0 : -1;
 }
 
 void save_module(UpgradeNode *node)
 {
-    FILE *ota_file = fopen(OTA_CFG_FILE, "ab");
-    fseek(ota_file, sizeof(*node) * node->module, SEEK_SET);
-    fwrite(node, 1, sizeof(*node), ota_file);
-    fclose(ota_file);
+    int ret;
+    FILE *ota_file = fopen(OTA_CFG_FILE, "wb");
+    ret = fseek(ota_file, sizeof(*node) * node->module, SEEK_SET);
+    log_debug("fseek offset=%d, ret=%d", sizeof(*node) * node->module, ret);
+    size_t wret = fwrite(node, 1, sizeof(*node), ota_file);
+    log_debug("fwrite wret=%d, sizeof(*node)=%d", wret, sizeof(*node));
+    ret = fclose(ota_file);
+    log_debug("fclose ret=%d", ret);
 }
 
 void clear_module(UpgradeNode *node) {
@@ -96,6 +124,12 @@ void set_module(UpgradeModule module, UpgradePlan *plan, UpgradeModuleOps *ops)
 {
     get_module(module, &ota_node);
     init_module(&ota_node, plan, ops);
+    log_debug("ota_node.status=%d", ota_node.status);
+    log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
+    log_debug("ota_node.plan.file[0].file_name=%s", ota_node.plan.file[0].file_name);
+    log_debug("ota_node.ops.prepare=0x%08X", ota_node.ops.prepare);
+    log_debug("ota_node.ops.apply=0x%08X", ota_node.ops.apply);
+    log_debug("ota_node.ops.finish=0x%08X", ota_node.ops.finish);
     save_module(&ota_node);
 }
 
@@ -111,19 +145,22 @@ static int md5cmp(char *str1, char *str2)
 }
 
 // TODO: 这里应该是一个同一的接口直接下载，这里看是否还需要每个模块单独一个download方法
-static void start_download(UpgradeNode* node) {
+void start_download(UpgradeNode* node) {
     char retry_cnt = 0;
     node->status = UPGRADE_STATUS_DOWNLOADING;
     save_module(node);
     while (retry_cnt < 2)
     {
         // TODO: Download File Option.
+
         node->status = UPGRADE_STATUS_DOWNLOADED;
         save_module(node);
+        retry_cnt++;
+        if (node->status == UPGRADE_STATUS_DOWNLOADED) break;
     }
 }
 
-static void start_verify(UpgradeNode* node)
+void start_verify(UpgradeNode* node)
 {
     if (node->status != UPGRADE_STATUS_DOWNLOADED) goto _exit_;
     if (node->module == UPGRADE_MODULE_NB)
@@ -137,53 +174,86 @@ static void start_verify(UpgradeNode* node)
     uint16_t last_size = 0;
     uint32_t file_range = 0;
     char file_cmp_md5[16] = {0};
+    rt_err_t res;
+    size_t ret;
+    if (res != RT_EOK)
+    {
+        node->status = UPGRADE_STATUS_VERIFY_FAILED;
+        return;
+    }
     for (i = 0; i < node->plan.file_cnt; i++)
     {
         FILE *ota_file = fopen(node->plan.file[i].file_name, "rb");
         if (ota_file == NULL)
         {
             log_error("OTA File %s is opened failed.", node->plan.file[i].file_name);
-            node->status = UPGRADE_STATUS_VERIFY_FAILED;
             goto _exit_;
         }
 
         // Get file size.
         fseek(ota_file, 0, SEEK_END);
         file_size = ftell(ota_file);
+        log_debug("file %s size=%d", node->plan.file[i].file_name, file_size);
 
         // Compute file MD5.
-        drv_hash_md5_create();
+        res = drv_hash_md5_create();
+        log_debug("drv_hash_md5_create %s", res_msg(res == RT_EOK));
+        if (res != RT_EOK)
+        {
+            fclose(ota_file);
+            goto _exit_;
+        }
         fseek(ota_file, 0, SEEK_SET);
         file_range = (file_size % MD5_FILE_BUFFER_SIZE == 0) ? (file_size / MD5_FILE_BUFFER_SIZE - 1) : (file_size / MD5_FILE_BUFFER_SIZE);
+        log_debug("file_range %d", file_range);
         for (j = 0; j < file_range; j++)
         {
             rt_memset(file_buff, 0, MD5_FILE_BUFFER_SIZE);
-            fread(file_buff, 1, MD5_FILE_BUFFER_SIZE, ota_file);
-            drv_hash_md5_update(file_buff, MD5_FILE_BUFFER_SIZE);
+            ret = fread(file_buff, 1, MD5_FILE_BUFFER_SIZE, ota_file);
+            res = ret == MD5_FILE_BUFFER_SIZE ? RT_EOK : RT_ERROR;
+            if (res != RT_EOK) break;
+            res = drv_hash_md5_update(file_buff, MD5_FILE_BUFFER_SIZE);
+            log_debug("j=%d ftell=%d fread ret=%d drv_hash_md5_update %s", j, ftell(ota_file), ret, res_msg(res == RT_EOK));
+            if (res != RT_EOK) break;
         }
         rt_memset(file_buff, 0, MD5_FILE_BUFFER_SIZE);
-        last_size = (file_size % MD5_FILE_BUFFER_SIZE == 0) ? MD5_FILE_BUFFER_SIZE : (file_size - j * MD5_FILE_BUFFER_SIZE);
-        fread(file_buff, 1, last_size, ota_file);
-        drv_hash_md5_finsh(file_buff, last_size, file_cmp_md5);
+        last_size = (file_size % MD5_FILE_BUFFER_SIZE == 0) ? MD5_FILE_BUFFER_SIZE : (file_size % MD5_FILE_BUFFER_SIZE);
+        ret = fread(file_buff, 1, last_size, ota_file);
+        res = drv_hash_md5_finsh((rt_uint8_t *)file_buff, (rt_uint32_t)last_size, (rt_uint8_t *)file_cmp_md5);
+        log_debug("ftell=%d fread ret=%d drv_hash_md5_finsh %s, last_size=%d", ftell(ota_file), ret, res_msg(res == RT_EOK), last_size);
+        log_debug(
+            "file_cmp_md5 %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
+            file_cmp_md5[0], file_cmp_md5[1], file_cmp_md5[2], file_cmp_md5[3],
+            file_cmp_md5[4], file_cmp_md5[5], file_cmp_md5[6], file_cmp_md5[7],
+            file_cmp_md5[8], file_cmp_md5[9], file_cmp_md5[10], file_cmp_md5[11],
+            file_cmp_md5[12], file_cmp_md5[13], file_cmp_md5[14], file_cmp_md5[15]
+        );
+        drv_hash_md5_destroy();
         fclose(ota_file);
     
         if (md5cmp(node->plan.file[i].file_md5, file_cmp_md5) == 0)
         {
+            node->plan.file[i].verified = 1;
+            if (node->plan.file[i].file_size != file_size) node->plan.file[i].file_size = file_size;
             node->status = UPGRADE_STATUS_VERIFIED;
         }
         else
         {
-            node->status = UPGRADE_STATUS_VERIFY_FAILED;
+            node->plan.file[i].verified = 0;
             goto _exit_;
         }
     }
+    return;
 
 _exit_:
-    save_module(node);
+    log_debug("start_verify _exit_");
+    node->status = UPGRADE_STATUS_VERIFY_FAILED;
     return;
 }
 
-static void start_upgrade(UpgradeNode* node) {
+void start_upgrade(UpgradeNode* node)
+{
+    log_debug("start_upgrade");
     node->ops.prepare((void *)node);
     save_module(node);
     if (node->status == UPGRADE_STATUS_PREPARE_OK)
@@ -215,7 +285,9 @@ void prepare_upgrade_module(void)
 
 }
 
-void upgrade_all_module(void) {
+void upgrade_all_module(void)
+{
+    log_debug("upgrade_all_module");
     prepare_upgrade_module();
 
     int i;
@@ -224,6 +296,7 @@ void upgrade_all_module(void) {
     {
         if (get_module((UpgradeModule)i, &ota_node) == 0)
         {
+            log_debug("ota_node.module=%d ota_node.status=%d", ota_node.module, ota_node.status);
             if (ota_node.status == UPGRADE_STATUS_NO_PLAN || ota_node.status == UPGRADE_STATUS_SUCCESS || \
                 ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING || \
                 ota_node.status == UPGRADE_STATUS_PREPARE_OK || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
@@ -238,6 +311,7 @@ void upgrade_all_module(void) {
                 if (ota_node.status == UPGRADE_STATUS_DOWNLOADED)
                 {
                     start_verify(&ota_node);
+                    save_module(&ota_node);
                 }
             }
             else
@@ -256,6 +330,7 @@ void upgrade_all_module(void) {
     {
         if (get_module((UpgradeModule)i, &ota_node) == 0)
         {
+            log_debug("ota_node.module=%d ota_node.status=%d", ota_node.module, ota_node.status);
             if (ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING || \
                 ota_node.status == UPGRADE_STATUS_PREPARE_OK || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
             {
@@ -291,17 +366,54 @@ static void test_set_esp_ota_plan(void)
     set_module(UPGRADE_MODULE_ESP, &esp_plan, &esp_module);
 }
 
+static void test_set_cat1_ota_plan(void)
+{
+    extern UpgradeModuleOps cat1_ota_ops;
+    char file1_name[] = "./cat1-qth-v01.bin";
+    char file1_md5[] = {6, 73, 117, 129, 62, 60, 123, 108, 38, 217, 147, 161, 43, 45, 147, 27};
+    // char file2_name[] = "./cat1-v01-qth.bin";
+    // char file2_md5[] = {109, 192, 43, 174, 109, 50, 104, 77, 215, 18, 137, 77, 12, 70, 111, 78};
+
+    UpgradePlan cat1_plan = {0};
+    cat1_plan.file_cnt = 1;
+    rt_memcpy(cat1_plan.file[0].file_name, file1_name, sizeof(file1_name));
+    log_debug("cat1_plan.file[0].file_name %s", cat1_plan.file[0].file_name);
+    rt_memcpy(cat1_plan.file[0].file_md5, file1_md5, sizeof(file1_md5));
+    log_debug("cat1_plan.file[0].file_md5 %s", cat1_plan.file[0].file_md5);
+
+    set_module(UPGRADE_MODULE_CAT1, &cat1_plan, &cat1_ota_ops);
+
+    int res = get_module(UPGRADE_MODULE_CAT1, &ota_node);
+    log_debug("get_module UPGRADE_MODULE_CAT1 %s", res_msg(res == 0));
+    if (res != 0) return;
+    log_debug("ota_node.status=%d", ota_node.status);
+    log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
+    log_debug("ota_node.plan.file[0].file_name=%s", ota_node.plan.file[0].file_name);
+    log_debug("ota_node.ops.prepare=0x%08X", ota_node.ops.prepare);
+    log_debug("ota_node.ops.apply=0x%08X", ota_node.ops.apply);
+    log_debug("ota_node.ops.finish=0x%08X", ota_node.ops.finish);
+    ota_node.status = UPGRADE_STATUS_DOWNLOADED;
+    log_debug("ota_node.status=%d", ota_node.status);
+    save_module(&ota_node);
+}
+
 void test_upgrade_process(void)
 {
+    rt_err_t res;
+
+    // TODO: 待删除，测试代码，用于清除升级配置文件。
+    res = delete_ota_cfg_file();
+    log_debug("delete_ota_cfg_file res=%d", res);
+
     // 设备上电即进行初始化
-    upgrade_manager_init();
+    res = upgrade_manager_init();
+    log_debug("upgrade_manager_init %s", res_msg(res == 0));
+
     // TODO: 开机初始化后，检测ST是否有升级结果，并进行上报。
 
-    test_set_esp_ota_plan();
-    // set_module(UPGRADE_MODULE_NB, &nb_plan, &nb_module);
-    // set_module(UPGRADE_MODULE_CAT1, &cat1_plan, &cat1_module);
-    // set_module(UPGRADE_MODULE_GNSS, &gnss_plan, &gnss_module);
-    // set_module(UPGRADE_MODULE_ST &st_plan, &st_module);
+    // TODO: 收到升级计划后，进行设置
+    // test_set_esp_ota_plan();
+    test_set_cat1_ota_plan();
 
     // 业务结束后 & 业务开始之前, 先检测是否有升级, 有则开启升级
     if (exit_upgrade_plan() > 0)

@@ -102,7 +102,7 @@ rt_err_t drv_hash_md5_update(rt_uint8_t *in_buffer, rt_uint32_t in_buffer_size)
     rt_mutex_take(&drv_hash_mutex, RT_WAITING_FOREVER);
 
     int ret = HAL_HASH_MD5_Accmlt(&hhash, in_buffer, in_buffer_size);
-    log_debug("HAL_HASH_MD5_Accmlt ret=%d", ret);
+    // log_debug("HAL_HASH_MD5_Accmlt ret=%d", ret);
     res = ret == HAL_OK ? RT_EOK : RT_ERROR;
 
     rt_mutex_release(&drv_hash_mutex);
@@ -124,12 +124,25 @@ rt_err_t drv_hash_md5_finsh(rt_uint8_t *in_buffer, rt_uint32_t in_buffer_size, r
     rt_mutex_take(&drv_hash_mutex, RT_WAITING_FOREVER);
 
     int ret = HAL_HASH_MD5_Accmlt_End(&hhash, in_buffer, in_buffer_size, out_buffer, 0xFF);
-    log_debug("HAL_HASH_MD5_Accmlt_End ret=%d", ret);
+    // log_debug("HAL_HASH_MD5_Accmlt_End ret=%d", ret);
     res = ret == HAL_OK ? RT_EOK : RT_ERROR;
+
+    rt_mutex_release(&drv_hash_mutex);
+
+    return res;
+}
+
+rt_err_t drv_hash_md5_destroy(void)
+{
+    rt_err_t res = drv_hash_md5_create_tag == 0 ? RT_EOK : RT_ERROR;
+    if (res == RT_EOK) return res;
+
+    rt_mutex_take(&drv_hash_mutex, RT_WAITING_FOREVER);
 
     __HAL_HASH_RESET_HANDLE_STATE(&hhash);
     HAL_HASH_DeInit(&hhash);
     drv_hash_md5_create_tag = 0;
+    res = RT_EOK;
 
     rt_mutex_release(&drv_hash_mutex);
 
@@ -177,6 +190,7 @@ static rt_err_t test_hash_hmac_sha256(void)
     return res;
 }
 
+#define test_md5_buffer_size 255
 static rt_err_t test_hash_md5(void)
 {
     rt_err_t res;
@@ -185,15 +199,15 @@ static rt_err_t test_hash_md5(void)
     res = drv_hash_md5_create();
     log_debug("drv_hash_md5_create %s", res_msg(res == RT_EOK));
 
-    rt_uint8_t in_buff[100] = {0};
+    rt_uint8_t in_buff[test_md5_buffer_size] = {0};
     rt_uint8_t out_buff[16] = {0};
     rt_uint16_t i;
     rt_uint16_t buff_range = sizeof(in_buff) % 32 == 0 ? (sizeof(in_buff) / 32 - 1) : (sizeof(in_buff) / 32);
     log_debug("buff_range=%d", buff_range);
-    for (i = 0; i < 100; i++) in_buff[i] = i;
+    for (i = 0; i < test_md5_buffer_size; i++) in_buff[i] = i;
     for (i = 0; i < buff_range; i++)
     {
-        res = drv_hash_md5_update(&in_buff[i * 32], 32);
+        res = drv_hash_md5_update(in_buff + (i * 32), 32);
         log_debug("drv_hash_md5_update %s", res_msg(res == RT_EOK));
         if (res != RT_EOK) break;
     }
@@ -201,7 +215,7 @@ static rt_err_t test_hash_md5(void)
     {
         rt_uint16_t last_buff_size = sizeof(in_buff) % 32 == 0 ? 32 : (sizeof(in_buff) % 32);
         log_debug("i=%d, last_buff_size=%d", i, last_buff_size);
-        drv_hash_md5_finsh(&in_buff[i * 32], last_buff_size, out_buff);
+        drv_hash_md5_finsh(in_buff + (i * 32), last_buff_size, out_buff);
         log_debug("drv_hash_md5_finsh %s", res_msg(res == RT_EOK));
         log_debug(
             "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
@@ -210,12 +224,13 @@ static rt_err_t test_hash_md5(void)
             out_buff[14], out_buff[15]
         );
     }
+    drv_hash_md5_destroy();
 
     /* 模拟小字符串MD5加密 */
     res = drv_hash_md5_create();
     log_debug("drv_hash_md5_create %s", res_msg(res == RT_EOK));
     rt_memset(out_buff, 0, 16);
-    drv_hash_md5_finsh(in_buff, 100, out_buff);
+    drv_hash_md5_finsh(in_buff, test_md5_buffer_size, out_buff);
     log_debug("drv_hash_md5_finsh %s", res_msg(res == RT_EOK));
     log_debug(
         "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
@@ -223,6 +238,7 @@ static rt_err_t test_hash_md5(void)
         out_buff[7], out_buff[8], out_buff[9], out_buff[10], out_buff[11], out_buff[12], out_buff[13],
         out_buff[14], out_buff[15]
     );
+    drv_hash_md5_destroy();
 
     return res;
 }

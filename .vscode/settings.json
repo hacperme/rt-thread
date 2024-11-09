@@ -49,6 +49,7 @@
         "stm32u5xx_hal_conf.h": "c",
         "upgrade_manager.h": "c",
         "drv_fatfs_dhara_nand.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "drv_hash.h": "c"
     }
 }

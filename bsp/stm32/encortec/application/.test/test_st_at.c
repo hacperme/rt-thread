@@ -50,10 +50,7 @@ void lpuart_parse_msg(char *data, rt_size_t size)
         char *file_name_end = file_name_start;
         for (int i = 0; i < size - 2 - rt_strlen(ST_AT_CMD_TRANSFILE); i++)
         {
-            if (file_name_end[0] == ',')
-            {
-                break;
-            }
+            if (file_name_end[0] == ',') break;
             file_name_end++;
         }
         rt_memset(trans_file_name, 0, sizeof(trans_file_name));
@@ -155,9 +152,31 @@ rt_err_t st_lpuart_init(void)
     return res;
 }
 
+
+void show_data_file(void)
+{
+    FILE *file = fopen("./cat1-qth-v01.bin", "rb");
+    rt_uint32_t file_size = 182280;
+    char file_data[16];
+    for (rt_uint32_t i = 0; i < file_size; i += 16)
+    {
+        rt_memset(file_data, 0, 16);
+        fread(file_data, 1, 16, file);
+        log_debug(
+            "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+            file_data[0], file_data[1], file_data[2], file_data[3],
+            file_data[4], file_data[5], file_data[6], file_data[7],
+            file_data[8], file_data[9], file_data[10], file_data[11],
+            file_data[12], file_data[13], file_data[14], file_data[15]
+        );
+    }
+}
+
+
 void test_st_at(void)
 {
     rt_err_t res;
     res = st_lpuart_init();
     log_debug("st_lpuart_init %s", res_msg(res == RT_EOK));
+    // show_data_file();
 }

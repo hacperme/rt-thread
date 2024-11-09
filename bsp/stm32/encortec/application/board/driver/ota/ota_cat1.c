@@ -271,11 +271,10 @@ void cat1_ota_apply(int* progress, void *node)
     log_info("rt_sem_take fota_end_sem %s", res_msg(res == RT_EOK));
     if (res == RT_EOK) res = fota_res == 1 ? RT_EOK : RT_ERROR;
     log_info("fota_res %s", res_msg(res == RT_EOK));
-    if (res != RT_EOK) goto _failed_;
 
     res = rt_sem_take(&rdy_sem, 30 * 1000);
     log_info("rt_sem_take rdy_sem %s", res_msg(res == RT_EOK));
-    _node->status = res == RT_EOK ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
+    _node->status = fota_res == 1 ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
     return;
 
 _failed_:
@@ -287,15 +286,15 @@ void cat1_ota_finish(void *node)
 {
     cat1_power_on();
     rt_err_t res = rt_sem_take(&shutdown_sem, 10 * 1000);
+    cat1_power_off();
 
-    at_delete_resp(cat1_at_resp);
-    cat1_at_client = RT_NULL;
     rt_sem_detach(&start_trans_file_sem);
     rt_sem_detach(&end_trans_file_sem);
     rt_sem_detach(&fota_end_sem);
     rt_sem_detach(&rdy_sem);
     rt_sem_detach(&shutdown_sem);
-    cat1_power_off();
+    at_delete_resp(cat1_at_resp);
+    cat1_at_client = RT_NULL;
     log_debug("cat1_power_off");
 }
 
@@ -319,8 +318,7 @@ rt_err_t cat1_at_set_regression(rt_uint8_t enable)
     return res;
 }
 
-static char cat1_version[64] = {0};
-rt_err_t cat1_at_query_version(void)
+rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size)
 {
     rt_err_t res = cat1_at_client == RT_NULL ? RT_ERROR : RT_EOK;
     if (res != RT_EOK) return res;
@@ -330,6 +328,7 @@ rt_err_t cat1_at_query_version(void)
     res = at_obj_exec_cmd(cat1_at_client, cat1_at_resp, cmd);
     if (res >= 0)
     {
+        rt_memset(cat1_version, 0, size);
         int ret = at_resp_parse_line_args(cat1_at_resp, 2, "%s\r\n", cat1_version);
         res = ret > 0 ? RT_EOK : RT_ERROR;
         if (res == RT_EOK)
@@ -340,8 +339,7 @@ rt_err_t cat1_at_query_version(void)
     return res;
 }
 
-static char cat1_sub_edition[8] = {0};
-rt_err_t cat1_at_query_subedition(void)
+rt_err_t cat1_at_query_subedition(char *cat1_sub_edition, rt_size_t size)
 {
     rt_err_t res = cat1_at_client == RT_NULL ? RT_ERROR : RT_EOK;
     if (res != RT_EOK) return res;
@@ -351,7 +349,7 @@ rt_err_t cat1_at_query_subedition(void)
     res = at_obj_exec_cmd(cat1_at_client, cat1_at_resp, cmd);
     if (res >= 0)
     {
-        rt_memset(cat1_sub_edition, 0, 8);
+        rt_memset(cat1_sub_edition, 0, size);
         int ret = at_resp_parse_line_args(cat1_at_resp, 2, "SubEdition: %s", cat1_sub_edition);
         res = ret > 0 ? RT_EOK : RT_ERROR;
         if (res == RT_EOK)
@@ -373,10 +371,12 @@ void test_cat1_at_ota(void)
     if (cat1_node.status != UPGRADE_STATUS_PREPARE_OK) return;
 
     rt_err_t res;
-    res = cat1_at_query_version();
+    char cat1_version[64] = {0};
+    res = cat1_at_query_version(cat1_version, 64);
     log_debug("cat1_at_query_version %s", res_msg(res == RT_EOK));
 
-    res = cat1_at_query_subedition();
+    char cat1_sub_edition[8] = {0};
+    res = cat1_at_query_subedition(cat1_sub_edition, 8);
     log_debug("cat1_at_query_subedition %s", res_msg(res == RT_EOK));
 
     cat1_node.ops.finish(&cat1_node);

@@ -22,7 +22,6 @@ typedef enum {
     UPGRADE_MODULE_GNSS,
     UPGRADE_MODULE_ESP,
     UPGRADE_MODULE_ST,
-    UPGRADE_MODULE_NONE
 } UpgradeModule;
 
 typedef enum {
@@ -51,6 +50,7 @@ typedef struct {
     char download_addr[MODULE_DOWNLOAD_ADDR_LENGTH];
     char file_md5[16];
     uint32_t file_size;
+    char verified;
 } UpgradeFile;
 
 typedef struct {
@@ -77,8 +77,9 @@ void save_module(UpgradeNode *node);
 void clear_module(UpgradeNode *node);
 void init_module(UpgradeNode *node, UpgradePlan *plan, UpgradeModuleOps *ops);
 void set_module(UpgradeModule module, UpgradePlan *plan, UpgradeModuleOps *ops);
-static void start_download(UpgradeNode* node);
-static void start_upgrade(UpgradeNode* node);
+// static void start_download(UpgradeNode* node);
+// static void start_verify(UpgradeNode* node);
+// static void start_upgrade(UpgradeNode* node);
 void report_upgrade_results(void);
 void prepare_upgrade_module(void);
 void upgrade_all_module(void);

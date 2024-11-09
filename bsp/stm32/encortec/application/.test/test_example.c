@@ -56,6 +56,12 @@ int application_start(int argc, char *argv[]) {
     extern void test_cat1_at_ota(void);
     test_cat1_at_ota();
 
+    // extern void test_struct_file_option(void);
+    // test_struct_file_option();
+
+    // extern void test_upgrade_process(void);
+    // test_upgrade_process();
+
     // extern void test_st_at(void);
     // test_st_at();
 

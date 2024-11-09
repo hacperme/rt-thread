@@ -116,3 +116,66 @@ _close_file_:
 
     return;
 }
+
+typedef struct
+{
+    char a;
+    char b[10];
+    char c[10];
+} test_st;
+
+#define test_file "./test.cfg"
+
+void read_struct(test_st *data)
+{
+    int ret;
+    FILE *tf = fopen(test_file, "rb");
+
+    ret = fread(data, 1, sizeof(*data), tf);
+    log_debug("fread ret=%d", ret);
+
+    ret = fclose(tf);
+    log_debug("fclose ret=%d", ret);
+
+}
+
+void save_struct(test_st *data)
+{
+    int ret;
+    FILE *tf = fopen(test_file, "ab");
+
+    ret = fwrite(data, 1, sizeof(*data), tf);
+    log_debug("fwrite ret=%d", ret);
+
+    ret = fclose(tf);
+    log_debug("fclose ret=%d", ret);
+}
+
+void test_struct_file_option(void)
+{
+    // test_st data = {
+    //     .a = 1,
+    //     .b = "testb",
+    //     .c = "testc"
+    // };
+
+    // log_debug("111 data.a=%d", data.a);
+    // log_debug("111 data.b=%s", data.b);
+    // log_debug("111 data.c=%s", data.c);
+
+    // save_struct(&data);
+
+    // rt_memset(&data, 0, sizeof(data));
+    // log_debug("222 data.a=%d", data.a);
+    // log_debug("222 data.b=%s", data.b);
+    // log_debug("222 data.c=%s", data.c);
+
+    // read_struct(&data);
+
+    // log_debug("333 data.a=%d", data.a);
+    // log_debug("333 data.b=%s", data.b);
+    // log_debug("333 data.c=%s", data.c);
+
+    list_files("/");
+    list_files("/fota");
+}

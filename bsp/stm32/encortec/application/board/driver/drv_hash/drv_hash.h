@@ -20,5 +20,6 @@ rt_err_t drv_hash_hmac_sha256(rt_uint8_t *key, rt_uint32_t key_length, rt_uint8_
 rt_err_t drv_hash_md5_create(void);
 rt_err_t drv_hash_md5_update(rt_uint8_t *in_buffer, rt_uint32_t in_buffer_size);
 rt_err_t drv_hash_md5_finsh(rt_uint8_t *in_buffer, rt_uint32_t in_buffer_size, rt_uint8_t *out_buffer);
+rt_err_t drv_hash_md5_destroy(void);
 
 #endif
