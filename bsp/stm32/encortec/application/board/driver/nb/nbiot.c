@@ -773,7 +773,7 @@ rt_err_t nbiot_recv_ctrl_data(int req_length, struct ServerCtrlData *server_ctrl
         if (result > 0) {
             log_debug("cur_len: %d, remain_len: %d, remain_pieces: %d", cur_len, remain_len, remain_pieces);
             if (cur_len <= 0 && remain_pieces <= 0) {
-                if (retry_times >= 30) {
+                if (retry_times >= 10) {
                     break;
                 }
             }

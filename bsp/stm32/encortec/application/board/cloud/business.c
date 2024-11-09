@@ -683,8 +683,8 @@ void stm32_sleep()
     int remaining = 0;
     remaining = settings_params->nb_collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
     log_debug("remaining: %d", remaining);
-    // rtc_set_wakeup(remaining > 0 ? remaining : 10);
-    // shut_down();
+    rtc_set_wakeup(remaining > 0 ? remaining : 10);
+    shut_down();
 }
 
 struct FileFormatData
@@ -714,12 +714,18 @@ void save_sensor_data()
     log_debug("save sensor data");
 
     struct FileFormatData data = {0};
+
+    time_t rawtime;
+    time(&rawtime);
+    rt_kprintf("save_sensor_data get raw time: %d\n", rawtime);
+    struct tm *utc_time = gmtime(&rawtime);
+
     data.separator = wakeup_source_flag == RTC_SOURCE ? 0xaa : 0xff;
-    data.year = current_time.year + 2000;
-    data.month = current_time.month;
-    data.day = current_time.day;
-    data.hour = current_time.hour;
-    data.minute = current_time.minute;
+    data.year = utc_time->tm_year+1900;
+    data.month = utc_time->tm_mon+1;
+    data.day = utc_time->tm_mday;
+    data.hour = utc_time->tm_hour;
+    data.minute = utc_time->tm_min;
     data.lat = sensor_data.lat;
     data.lng = sensor_data.lng;
     data.zone = 0;
@@ -924,7 +930,6 @@ void main_business_entry(void)
                 rv = nbiot_wait_network_ready();
                 if (rv == NBIOT_NETWORK_NOT_RDY) {
                     nbiot_deinit();
-                    save_sensor_data();
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_NETWORK_RETRY) {
@@ -936,7 +941,6 @@ void main_business_entry(void)
                     sm_set_status(NBIOT_WAIT_NETWORK_RDY);
                 }
                 else {
-                    save_sensor_data();
                     sm_set_status(NBIOT_WAIT_SERVER_CONNECT);
                 }
                 break;
@@ -944,6 +948,7 @@ void main_business_entry(void)
                 rv = nbiot_wait_server_connect_ready();
                 if (rv == NBIOT_SERVER_CONNECT_NOT_RDY) {
                     nbiot_deinit();
+                    save_sensor_data();
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_SERVER_CONNECT_RDY) {
@@ -991,6 +996,8 @@ void main_business_entry(void)
                 }
                 break;
             case CAT1_INIT:
+                save_sensor_data();
+                rt_thread_mdelay(10000);
                 if (cat1_init() != RT_EOK) {
                     sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
