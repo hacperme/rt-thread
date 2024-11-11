@@ -80,7 +80,7 @@ void test_stm32u575_ota_app(void)
 void stm32u575_ota_prepare(void *node)
 {
     UpgradeNode *_node = (UpgradeNode *)node;
-    _node->status = UPGRADE_STATUS_PREPARE_OK;
+    _node->status = UPGRADE_STATUS_PREPARED;
 }
 
 void stm32u575_ota_apply(int* progress, void *node)

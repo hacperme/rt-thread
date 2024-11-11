@@ -213,7 +213,7 @@ void start_verify(UpgradeNode* node)
             res = ret == MD5_FILE_BUFFER_SIZE ? RT_EOK : RT_ERROR;
             if (res != RT_EOK) break;
             res = drv_hash_md5_update(file_buff, MD5_FILE_BUFFER_SIZE);
-            log_debug("j=%d ftell=%d fread ret=%d drv_hash_md5_update %s", j, ftell(ota_file), ret, res_msg(res == RT_EOK));
+            // log_debug("j=%d ftell=%d fread ret=%d drv_hash_md5_update %s", j, ftell(ota_file), ret, res_msg(res == RT_EOK));
             if (res != RT_EOK) break;
         }
         rt_memset(file_buff, 0, MD5_FILE_BUFFER_SIZE);
@@ -233,12 +233,14 @@ void start_verify(UpgradeNode* node)
     
         if (md5cmp(node->plan.file[i].file_md5, file_cmp_md5) == 0)
         {
+            log_debug("file %s md5 verfy success.", node->plan.file[i].file_name);
             node->plan.file[i].verified = 1;
             if (node->plan.file[i].file_size != file_size) node->plan.file[i].file_size = file_size;
             node->status = UPGRADE_STATUS_VERIFIED;
         }
         else
         {
+            log_debug("file %s md5 verfy failed.", node->plan.file[i].file_name);
             node->plan.file[i].verified = 0;
             goto _exit_;
         }
@@ -256,7 +258,7 @@ void start_upgrade(UpgradeNode* node)
     log_debug("start_upgrade");
     node->ops.prepare((void *)node);
     save_module(node);
-    if (node->status == UPGRADE_STATUS_PREPARE_OK)
+    if (node->status == UPGRADE_STATUS_PREPARED)
     {
         node->status = UPGRADE_STATUS_UPGRADING;
         save_module(node);
@@ -299,7 +301,7 @@ void upgrade_all_module(void)
             log_debug("ota_node.module=%d ota_node.status=%d", ota_node.module, ota_node.status);
             if (ota_node.status == UPGRADE_STATUS_NO_PLAN || ota_node.status == UPGRADE_STATUS_SUCCESS || \
                 ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING || \
-                ota_node.status == UPGRADE_STATUS_PREPARE_OK || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
+                ota_node.status == UPGRADE_STATUS_PREPARED || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
             {
                 continue;
             }
@@ -332,7 +334,7 @@ void upgrade_all_module(void)
         {
             log_debug("ota_node.module=%d ota_node.status=%d", ota_node.module, ota_node.status);
             if (ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING || \
-                ota_node.status == UPGRADE_STATUS_PREPARE_OK || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
+                ota_node.status == UPGRADE_STATUS_PREPARED || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
             {
                 start_upgrade(&ota_node);
                 if (i == UPGRADE_MODULE_ST && ota_node.status == UPGRADE_STATUS_UPGRADING)
@@ -397,6 +399,63 @@ static void test_set_cat1_ota_plan(void)
     save_module(&ota_node);
 }
 
+static void test_set_gnss_ota_plan(void)
+{
+    extern UpgradeModuleOps gnss_ota_ops;
+    char file0_name[] = "/fota/da_uart_115200.bin";
+    char file0_md5[] = {175, 87, 90, 84, 136, 88, 127, 203, 180, 154, 90, 188, 117, 13, 157, 245};
+    char file1_name[] = "/fota/partition_table.bin";
+    char file1_md5[] = {45, 180, 78, 183, 87, 108, 139, 217, 154, 103, 63, 74, 92, 246, 80, 249};
+    char file2_name[] = "/fota/bootloader.bin";
+    char file2_md5[] = {41, 253, 239, 179, 200, 113, 245, 0, 108, 84, 171, 70, 187, 147, 155, 46};
+    char file3_name[] = "/fota/LC76GPANR12A03S.bin";
+    char file3_md5[] = {120, 91, 149, 191, 168, 224, 78, 163, 36, 66, 59, 208, 143, 44, 212, 222};
+    char file4_name[] = "/fota/gnss_config.bin";
+    char file4_md5[] = {171, 124, 243, 255, 61, 5, 41, 20, 207, 50, 249, 218, 141, 227, 61, 129};
+
+    UpgradePlan gnss_plan = {0};
+    gnss_plan.file_cnt = 5;
+    rt_memcpy(gnss_plan.file[0].file_name, file0_name, sizeof(file0_name));
+    log_debug("gnss_plan.file[0].file_name %s", gnss_plan.file[0].file_name);
+    rt_memcpy(gnss_plan.file[0].file_md5, file0_md5, sizeof(file0_md5));
+    log_debug("gnss_plan.file[0].file_md5 %s", gnss_plan.file[0].file_md5);
+    gnss_plan.file[0].file_size = 43956;
+
+    rt_memcpy(gnss_plan.file[1].file_name, file1_name, sizeof(file1_name));
+    log_debug("gnss_plan.file[1].file_name %s", gnss_plan.file[1].file_name);
+    rt_memcpy(gnss_plan.file[1].file_md5, file1_md5, sizeof(file1_md5));
+    log_debug("gnss_plan.file[1].file_md5 %s", gnss_plan.file[1].file_md5);
+    gnss_plan.file[1].file_size = 432;
+
+    rt_memcpy(gnss_plan.file[2].file_name, file2_name, sizeof(file2_name));
+    log_debug("gnss_plan.file[2].file_name %s", gnss_plan.file[2].file_name);
+    rt_memcpy(gnss_plan.file[2].file_md5, file2_md5, sizeof(file2_md5));
+    log_debug("gnss_plan.file[2].file_md5 %s", gnss_plan.file[2].file_md5);
+    gnss_plan.file[2].file_size = 22416;
+
+    rt_memcpy(gnss_plan.file[3].file_name, file3_name, sizeof(file3_name));
+    log_debug("gnss_plan.file[3].file_name %s", gnss_plan.file[3].file_name);
+    rt_memcpy(gnss_plan.file[3].file_md5, file3_md5, sizeof(file3_md5));
+    log_debug("gnss_plan.file[3].file_md5 %s", gnss_plan.file[3].file_md5);
+    gnss_plan.file[3].file_size = 1118672;
+
+    rt_memcpy(gnss_plan.file[4].file_name, file4_name, sizeof(file4_name));
+    log_debug("gnss_plan.file[4].file_name %s", gnss_plan.file[4].file_name);
+    rt_memcpy(gnss_plan.file[4].file_md5, file4_md5, sizeof(file4_md5));
+    log_debug("gnss_plan.file[4].file_md5 %s", gnss_plan.file[4].file_md5);
+    gnss_plan.file[4].file_size = 1024;
+
+    set_module(UPGRADE_MODULE_GNSS, &gnss_plan, &gnss_ota_ops);
+
+    int res = get_module(UPGRADE_MODULE_GNSS, &ota_node);
+    log_debug("get_module UPGRADE_MODULE_GNSS %s", res_msg(res == 0));
+    if (res != 0) return;
+
+    ota_node.status = UPGRADE_STATUS_VERIFIED;
+    log_debug("ota_node.status=%d", ota_node.status);
+    save_module(&ota_node);
+}
+
 void test_upgrade_process(void)
 {
     rt_err_t res;
@@ -413,7 +472,8 @@ void test_upgrade_process(void)
 
     // TODO: 收到升级计划后，进行设置
     // test_set_esp_ota_plan();
-    test_set_cat1_ota_plan();
+    // test_set_cat1_ota_plan();
+    test_set_gnss_ota_plan();
 
     // 业务结束后 & 业务开始之前, 先检测是否有升级, 有则开启升级
     if (exit_upgrade_plan() > 0)

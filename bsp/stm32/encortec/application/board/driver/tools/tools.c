@@ -29,7 +29,7 @@ rt_err_t hwcrypto_crc8(const rt_uint8_t *input, rt_size_t length, rt_uint32_t *v
     }
     rt_hwcrypto_crc_cfg(ctx, &cfg);
     *value = rt_hwcrypto_crc_update(ctx, input, length);
-    log_debug("rt_hwcrypto_crc_update CRC8 value=0x%02X", *value);
+    // log_debug("rt_hwcrypto_crc_update CRC8 value=0x%02X", *value);
     rt_hwcrypto_crc_destroy(ctx);
     res = RT_EOK;
     return res;
@@ -66,7 +66,7 @@ rt_err_t hwcrypto_crc32(const rt_uint8_t *input, rt_size_t length, rt_uint32_t *
     }
     rt_hwcrypto_crc_cfg(ctx, &cfg);
     *value = rt_hwcrypto_crc_update(ctx, input, length);
-    log_debug("rt_hwcrypto_crc_update res=0x%02X", *value);
+    // log_debug("rt_hwcrypto_crc_update res=0x%02X", *value);
     rt_hwcrypto_crc_destroy(ctx);
 
     res = RT_EOK;

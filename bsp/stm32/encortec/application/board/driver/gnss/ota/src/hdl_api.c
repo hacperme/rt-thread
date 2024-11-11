@@ -68,15 +68,15 @@ bool hdl_connect(const hdl_da_info_t *da_info, const hdl_connect_arg_t *connect_
     success = hdl_brom_disable_wdt();
     HDL_Require_Noerr_Action(success, exit, "hdl_brom_disable_wdt");
 
-#if defined (HDL_VIA_UART)
-    // Set BTROM baudrate
-    success = hdl_brom_set_baudrate(921600);
-    HDL_Require_Noerr_Action(success, exit, "hdl_set_baudrate");
+// #if defined (HDL_VIA_UART)
+//     // Set BTROM baudrate
+//     success = hdl_brom_set_baudrate(921600);
+//     HDL_Require_Noerr_Action(success, exit, "hdl_set_baudrate");
 
-    // Set host baudrate
-    HDL_COM_SetBaudRate(921600);
-    hdl_delay(100);
-#endif
+//     // Set host baudrate
+//     HDL_COM_SetBaudRate(921600);
+//     hdl_delay(100);
+// #endif
 
     // Brom Send DA
     success = hdl_brom_send_da(connect_arg, da_info->da_file, da_info->da_run_addr, da_info->da_len);

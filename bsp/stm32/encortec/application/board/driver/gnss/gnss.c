@@ -13,6 +13,7 @@
 #include "tools.h"
 
 #define GNSS_VERSION_CMD_HEAD "$PQTMVER"
+#define GNSS_MODULE "LC76G"
 
 static rt_device_t GNSS_SERIAL = RT_NULL;
 
@@ -31,9 +32,7 @@ static const char NMEA_VALID_CHAR[4] = ",A,";
 static const char NMEA_START_CHAR[3] = "$G";
 static const char CRLF[3] = "\r\n";
 static const char NMEA_HEADRES[6][8] = {"$GNRMC", "$GNGGA", "$GNGLL", "$GNVTG", "$GNGSA", "$GPGSV"};
-static char GNSS_VERSION[32] = {0};
-static char GNSS_VERSION_BUILD_DATE[16] = {0};
-static char GNSS_VERSION_BUILD_TIME[16] = {0};
+static char GNSS_VERSION[64] = {0};
 
 void gnss_pwron_pin_init(void)
 {
@@ -78,29 +77,37 @@ static rt_uint8_t is_version_nmea(char *item)
 
     log_debug("query gnss version response %s", item);
 
-    const char comma = ',';
-    char *comma_index = &item[9];
-    char *last_index = comma_index;
-    comma_index = strchr(last_index, comma);
-    if (comma_index)
-    {
-        rt_memcpy(GNSS_VERSION, last_index, comma_index - last_index);
-        log_debug("GNSS_VERSION %s", GNSS_VERSION);
-    }
-    last_index = comma_index + 1;
-    comma_index = strchr(last_index, comma);
-    if (comma_index)
-    {
-        rt_memcpy(GNSS_VERSION_BUILD_DATE, last_index, comma_index - last_index);
-        log_debug("GNSS_VERSION_BUILD_DATE %s",GNSS_VERSION_BUILD_DATE);
-    }
-    last_index = comma_index + 1;
-    comma_index = strchr(last_index, '*');
-    if (comma_index)
-    {
-        rt_memcpy(GNSS_VERSION_BUILD_TIME, last_index, comma_index - last_index);
-        log_debug("GNSS_VERSION_BUILD_TIME %s",GNSS_VERSION_BUILD_TIME);
-    }
+    char *index;
+    index = rt_strstr(item, GNSS_MODULE);
+    res = index == RT_NULL ? 0 : 1;
+    if (res == 0) return res;
+
+    char *last_index = strchr(item, '*');
+    rt_memcpy(GNSS_VERSION, index, last_index - index);
+
+    // const char comma = ',';
+    // char *comma_index = &item[9];
+    // char *last_index = comma_index;
+    // comma_index = strchr(last_index, comma);
+    // if (comma_index)
+    // {
+    //     rt_memcpy(GNSS_VERSION, last_index, comma_index - last_index);
+    //     log_debug("GNSS_VERSION %s", GNSS_VERSION);
+    // }
+    // last_index = comma_index + 1;
+    // comma_index = strchr(last_index, comma);
+    // if (comma_index)
+    // {
+    //     rt_memcpy(GNSS_VERSION_BUILD_DATE, last_index, comma_index - last_index);
+    //     log_debug("GNSS_VERSION_BUILD_DATE %s",GNSS_VERSION_BUILD_DATE);
+    // }
+    // last_index = comma_index + 1;
+    // comma_index = strchr(last_index, '*');
+    // if (comma_index)
+    // {
+    //     rt_memcpy(GNSS_VERSION_BUILD_TIME, last_index, comma_index - last_index);
+    //     log_debug("GNSS_VERSION_BUILD_TIME %s",GNSS_VERSION_BUILD_TIME);
+    // }
 
     return res;
 }
@@ -560,7 +567,7 @@ rt_err_t gnss_read_nmea_item(nmea_item_t nmea_item, rt_uint16_t timeout)
     return res;
 }
 
-rt_err_t gnss_query_version(char **gnss_version, char **gnss_build_date, char **gnss_build_time)
+rt_err_t gnss_query_version(char **gnss_version)
 {
     rt_err_t res;
     rt_ssize_t ret;
@@ -585,8 +592,6 @@ rt_err_t gnss_query_version(char **gnss_version, char **gnss_build_date, char **
 
 _exit_:
     *gnss_version = GNSS_VERSION;
-    *gnss_build_date = GNSS_VERSION_BUILD_DATE;
-    *gnss_build_time = GNSS_VERSION_BUILD_TIME;
     return res;
 }
 
@@ -649,17 +654,8 @@ void test_gnss(int argc, char **argv)
     rt_thread_mdelay(100); //at least 300 ms
 
     char *gnss_version;
-    char *gnss_build_date;
-    char *gnss_build_time;
-    res = gnss_query_version(&gnss_version, &gnss_build_date, &gnss_build_time);
-    log_debug("gnss_query_version %s", res_msg(res == RT_EOK));
-    if (res == RT_EOK)
-    {
-        log_debug(
-            "gnss_version=%s, gnss_build_date=%s, gnss_build_time=%s",
-            gnss_version, gnss_build_date, gnss_build_time
-        );
-    }
+    res = gnss_query_version(&gnss_version);
+    log_debug("gnss_query_version %s gnss_version=%s", res_msg(res == RT_EOK), gnss_version);
 
     rt_uint8_t cnt = 3;
     lwgps_t gnss_data = {0};

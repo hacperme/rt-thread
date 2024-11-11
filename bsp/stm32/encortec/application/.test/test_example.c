@@ -46,14 +46,17 @@ int application_start(int argc, char *argv[]) {
         // TODO:
     }
 
-    extern void test_cat1_at_ota(void);
-    test_cat1_at_ota();
+    // extern void test_cat1_at_ota(void);
+    // test_cat1_at_ota();
 
     // extern void test_struct_file_option(void);
     // test_struct_file_option();
 
-    // extern void test_upgrade_process(void);
-    // test_upgrade_process();
+    extern void test_gnss(int argc, char **argv);
+    test_gnss(argc, argv);
+
+    extern void test_upgrade_process(void);
+    test_upgrade_process();
 
     // extern void test_st_at(void);
     // test_st_at();
@@ -69,9 +72,6 @@ int application_start(int argc, char *argv[]) {
 
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);
-
-    // extern void test_gnss(int argc, char **argv);
-    // test_gnss(argc, argv);
 
     // extern void test_drv_hash(void);
     // test_drv_hash();

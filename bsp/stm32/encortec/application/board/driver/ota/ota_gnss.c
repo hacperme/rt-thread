@@ -1,4 +1,23 @@
-#include "hdl_demo.h"
+/*
+ * @FilePath: ota_gnss.c
+ * @Author: Jack Sun (jack.sun@quectel.com)
+ * @brief     : <Description>
+ * @version   : v1.0.0
+ * @Date: 2024-11-11 11:46:47
+ * @copyright : Copyright (c) 2024
+ */
+#include <stdlib.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <unistd.h>
+#include "rtthread.h"
+#include "rtdevice.h"
+#include "logging.h"
+#include "upgrade_manager.h"
+#include "tools.h"
+#include "board.h"
+#include "lpm.h"
+#include "hdl_api.h"
 
 void init_cb_demo(void *usr_arg)
 {
@@ -29,15 +48,22 @@ void progress_cb_demo(void *usr_arg, uint8_t percent)
     HDL_MAIN_LOG("%s %d%%", (usr_arg != NULL ? usr_arg : "percent "), percent);
 }
 
-
-void hdl_host_dl_demo(void)
+void gnss_ota_prepare(void *node)
 {
+    UpgradeNode *_node = (UpgradeNode *)node;
+    _node->status = UPGRADE_STATUS_PREPARED;
+}
+
+void gnss_ota_apply(int* progress, void *node)
+{
+
+    UpgradeNode *_node = (UpgradeNode *)node;
     // Init Connect ARG
     hdl_da_info_t da_info;
     // da_info.da_flash_addr = HDL_DA_FLASH_POS;
-    da_info.da_file = HDL_DA_FILE;
+    da_info.da_file = _node->plan.file[0].file_name;
     da_info.da_run_addr = HDL_DA_RUN_ADDR;
-    da_info.da_len = HDL_DA_SIZE;
+    da_info.da_len = _node->plan.file[0].file_size;
     hdl_connect_arg_t connect_arg;
     connect_arg.conn_da_init_cb = init_cb_demo;
     connect_arg.conn_da_init_cb_arg = "Download DA now...";
@@ -68,30 +94,30 @@ void hdl_host_dl_demo(void)
     hdl_image_t config_image;
     
     // partition_image.image_host_flash_addr = HDL_PARTITION_IMAGE_HOST_FLASH_POS;
-    partition_image.image_host_file = HDL_PARTITION_IMAGE_HOST_FILE;
+    partition_image.image_host_file = _node->plan.file[1].file_name;
     partition_image.image_slave_flash_addr = HDL_PARTITION_IMAGE_SLAVE_FLASH_POS;
-    partition_image.image_len = HDL_PARTITION_IMAGE_SIZE;
+    partition_image.image_len = _node->plan.file[1].file_size;
     partition_image.image_name = HDL_PARTITION_IMAGE_NAME;
     partition_image.image_is_bootloader = false;
     partition_image.next = &bl_image;
     // bl_image.image_host_flash_addr = HDL_BL_IMAGE_HOST_FLASH_POS;
-    bl_image.image_host_file = HDL_BL_IMAGE_HOST_FILE;
+    bl_image.image_host_file = _node->plan.file[2].file_name;
     bl_image.image_slave_flash_addr = HDL_BL_IMAGE_SLAVE_FLASH_POS;
-    bl_image.image_len = HDL_BL_IMAGE_SIZE;
+    bl_image.image_len = _node->plan.file[2].file_size;
     bl_image.image_name = HDL_BL_IMAGE_NAME;
     bl_image.image_is_bootloader = true;
     bl_image.next = &cm4_image;
     // cm4_image.image_host_flash_addr = HDL_GNSS_DEMO_IMAGE_HOST_FLASH_POS;
-    cm4_image.image_host_file = HDL_GNSS_DEMO_IMAGE_HOST_FILE;
+    cm4_image.image_host_file = _node->plan.file[3].file_name;
     cm4_image.image_slave_flash_addr = HDL_GNSS_DEMO_IMAGE_SLAVE_FLASH_POS;
-    cm4_image.image_len = HDL_GNSS_DEMO_IMAGE_SIZE;
+    cm4_image.image_len = _node->plan.file[3].file_size;
     cm4_image.image_name = HDL_GNSS_DEMO_IMAGE_NAME;
     cm4_image.image_is_bootloader = false;
     cm4_image.next = &config_image;
     // config_image.image_host_flash_addr = HDL_GNSS_CONFIG_IMAGE_HOST_FLASH_POS;
-    config_image.image_host_file = HDL_GNSS_CONFIG_IMAGE_HOST_FILE;
+    config_image.image_host_file = _node->plan.file[4].file_name;
     config_image.image_slave_flash_addr = HDL_GNSS_CONFIG_IMAGE_SLAVE_FLASH_POS;
-    config_image.image_len = HDL_GNSS_CONFIG_IMAGE_SIZE;
+    config_image.image_len = _node->plan.file[4].file_size;
     config_image.image_name = HDL_GNSS_CONFIG_IMAGE_NAME;
     config_image.image_is_bootloader = false;
     config_image.next = NULL;
@@ -113,8 +139,14 @@ exit:
     HDL_SUCCESS_LOG(__func__);
 }
 
-void hdl_main_entry()
+void gnss_ota_finish(void *node)
 {
-    hdl_host_dl_demo();
+    bool res = hdl_uart_deinit();
+    log_debug("hdl_uart_deinit %s", res_msg(res));
 }
 
+UpgradeModuleOps gnss_ota_ops = {
+    .prepare = gnss_ota_prepare,
+    .apply = gnss_ota_apply,
+    .finish = gnss_ota_finish,
+};

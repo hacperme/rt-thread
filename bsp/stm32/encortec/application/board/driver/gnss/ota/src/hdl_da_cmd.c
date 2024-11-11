@@ -27,10 +27,15 @@ bool hdl_da_get_flash_address(uint32_t *pData)
     send.len_ = sizeof(send.id_);
     send.id_ = RACE_DA_GET_FLASH_ADDRESS;
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+    hdl_delay(300);
 
     // response
     RACE_ADDR_RES res;
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
+    HDL_LOGI(
+        "res.head_=%02X, res.type_=%02X, res.len_=%d, res.id_=%02X, res.status_=%d, res.addr_=%08X",
+        res.head_, res.type_, res.len_, res.id_, res.status_, res.addr_
+    );
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
         res.len_ == (sizeof(res.id_)+sizeof(res.status_)+sizeof(res.addr_)) &&
@@ -57,6 +62,7 @@ bool hdl_da_get_flash_size(uint32_t *pData)
     send.len_ = sizeof(send.id_);
     send.id_ = RACE_DA_GET_FLASH_SIZE;
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+    hdl_delay(20);
 
     // response
     RACE_SIZE_RES res;
@@ -87,6 +93,7 @@ bool hdl_da_get_flash_id(uint8_t *pManufacturerId, uint8_t *pDeviceId1, uint8_t 
     send.len_ = sizeof(send.id_);
     send.id_ = RACE_DA_GET_FLASH_ID;
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+    hdl_delay(20);
 
     // response
     RACE_ID_RES res;
@@ -123,10 +130,15 @@ bool hdl_format_race(uint32_t addr, uint32_t len)
         hwcrypto_crc32((const rt_uint8_t *)&send, sizeof(send)-sizeof(send.crc_), &send.crc_);
         // send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
         HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+        hdl_delay(100);
 
         // response
         RACE_FM_RES res;
         HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
+        HDL_LOGI(
+            "res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X, res.addr_=%08X",
+            res.head_, res.type_, res.len_, res.id_, res.status_, res.addr_
+        );
         if (res.head_ == 0x05 &&
             res.type_ == 0x5B &&
             res.len_ == (sizeof(res.id_)+sizeof(res.status_)+sizeof(res.addr_)) &&
@@ -193,11 +205,20 @@ bool hdl_download_race(uint32_t addr, const uint8_t *data)
         memcpy(send.buf_, data, send.size_);
         hwcrypto_crc32((const rt_uint8_t *)&send, sizeof(send)-sizeof(send.crc_), &send.crc_);
         // send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
+        HDL_LOGI(
+            "send.head_=%02X, send.type_=%02X, send.len_=%04X, send.id_=%04X, send.addr_=%08X, send.size_=%04X",
+            send.head_, send.type_, send.len_, send.id_, send.addr_, send.size_
+        );
         HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+        hdl_delay(20);
 
         // response
         RACE_DL_RES res;
         HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
+        HDL_LOGI(
+            "res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X, res.addr_=%08X",
+            res.head_, res.type_, res.len_, res.id_, res.status_, res.addr_
+        );
         if (res.head_ == 0x05 &&
             res.type_ == 0x5B &&
             res.len_ == (sizeof(res.id_)+sizeof(res.status_)+sizeof(res.addr_)) &&
@@ -279,11 +300,24 @@ bool hdl_finish_race(bool enable)
     send.len_ = 3;
     send.id_ = RACE_DA_FINISH;
     send.flag_ = enable;
+    HDL_LOGI(
+        "send.head_=%02X, send.type_=%02X, send.len_=%04X, send.id_=%04X, send.flag_=%02X",
+        send.head_, send.type_, send.len_, send.id_, send.flag_
+    );
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+    hdl_delay(100);
 
     // response
     RACE_RST_RES res;
+    HDL_LOGI(
+        "Recv RACE_DA_FINISH resp before res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X",
+        res.head_, res.type_, res.len_, res.id_, res.status_
+    );
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
+    HDL_LOGI(
+        "Recv RACE_DA_FINISH resp after res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X",
+        res.head_, res.type_, res.len_, res.id_, res.status_
+    );
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
         res.len_ == 3 &&

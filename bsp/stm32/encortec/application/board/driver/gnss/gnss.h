@@ -61,6 +61,6 @@ rt_err_t gnss_reset(void);
 rt_err_t gnss_read_nmea(char *data, rt_uint32_t size, rt_uint16_t timeout);
 rt_err_t gnss_read_data(lwgps_t *gnss_data, rt_uint16_t timeout);
 rt_err_t gnss_read_nmea_item(nmea_item_t nmea_item, rt_uint16_t timeout);
-rt_err_t gnss_query_version(char **gnss_version, char **gnss_build_date, char **gnss_build_time);
+rt_err_t gnss_query_version(char **gnss_version);
 
 #endif  // __GNSS_H__

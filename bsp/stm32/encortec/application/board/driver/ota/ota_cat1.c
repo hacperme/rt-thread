@@ -174,7 +174,7 @@ void cat1_ota_prepare(void *node)
 
     res = rt_sem_take(&cat1_sem.rdy, 30 * 1000);
 
-    _node->status = res == RT_EOK ? UPGRADE_STATUS_PREPARE_OK : UPGRADE_STATUS_PREPARE_FAILED;
+    _node->status = res == RT_EOK ? UPGRADE_STATUS_PREPARED : UPGRADE_STATUS_PREPARE_FAILED;
     return;
 
 _failed_:
@@ -380,8 +380,8 @@ void test_cat1_at_ota(void)
     cat1_node.status = UPGRADE_STATUS_ON_PLAN;
     cat1_node.ops = cat1_ota_ops;
     cat1_node.ops.prepare(&cat1_node);
-    log_debug("cat1_node prepare %s", res_msg(cat1_node.status == UPGRADE_STATUS_PREPARE_OK));
-    if (cat1_node.status != UPGRADE_STATUS_PREPARE_OK) return;
+    log_debug("cat1_node prepare %s", res_msg(cat1_node.status == UPGRADE_STATUS_PREPARED));
+    if (cat1_node.status != UPGRADE_STATUS_PREPARED) return;
 
     rt_err_t res;
     char cat1_version[64] = {0};

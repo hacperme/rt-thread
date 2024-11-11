@@ -52,11 +52,9 @@ bool hdl_uart_init()
     res = gnss_reset_init();
     ret = res == RT_EOK ? true : false;
     log_debug("gnss_reset_init %s", res_msg(res == RT_EOK));
-    if (ret != true)
-    {
-        gnss_power_off();
-        return ret;
-    }
+    if (ret != true) gnss_power_off();
+
+    return ret;
 }
 
 bool hdl_uart_deinit()

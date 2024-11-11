@@ -114,6 +114,7 @@ static void brom_write8_echo(uint8_t data)
 {
     HDL_LOGI("brom_write8_echo 0x%02X", data);
     HDL_COM_PutByte(data);
+    hdl_delay(20);
     uint8_t rx_data = HDL_COM_GetByte();
     if (rx_data != data)
     {
@@ -125,6 +126,7 @@ static void brom_write16_echo(uint16_t data)
 {
     HDL_LOGI("brom_write16_echo 0x%04X", data);
     HDL_COM_PutData16(data);
+    hdl_delay(20);
     uint16_t rx_data = HDL_COM_GetData16();
     if (rx_data != data)
     {
@@ -136,6 +138,7 @@ static void brom_write32_echo(uint32_t data)
 {
     HDL_LOGI("brom_write32_echo 0x%08X", data);
     HDL_COM_PutData32(data);
+    hdl_delay(20);
     uint32_t rx_data = HDL_COM_GetData32();
     if (rx_data != data)
     {
@@ -178,6 +181,7 @@ brom_start_retry:
 #endif
 
     HDL_COM_PutByte(HDL_START_CMD[1]);
+    hdl_delay(20);
     rx_data = HDL_COM_GetByte();
     if (rx_data == HDL_BROM_RSP_CMD[1]) {
         HDL_LOGI("hdl_brom_start 0x0A<->0xF5");
@@ -188,6 +192,7 @@ brom_start_retry:
     }
 
     HDL_COM_PutByte(HDL_START_CMD[2]);
+    hdl_delay(20);
     rx_data = HDL_COM_GetByte();
     if (rx_data == HDL_BROM_RSP_CMD[2]) {
         HDL_LOGI("hdl_brom_start 0x50<->0xAF");
@@ -198,6 +203,7 @@ brom_start_retry:
     }
 
     HDL_COM_PutByte(HDL_START_CMD[3]);
+    hdl_delay(20);
     rx_data = HDL_COM_GetByte();
     if (rx_data == HDL_BROM_RSP_CMD[3]) {
         HDL_LOGI("hdl_brom_start 0x05<->0xFA");
@@ -270,7 +276,8 @@ bool hdl_brom_send_da(const hdl_connect_arg_t *connect_arg, char *da_file, uint3
     brom_write32_echo(da_run_addr);
     brom_write32_echo(da_len);
     brom_write32_echo(0);
-    
+    hdl_delay(20);
+
     uint16_t status = HDL_COM_GetData16();
     HDL_Require_Noerr_Action(status < BROM_ERROR, exit, "hdl_brom_send_da");
 
@@ -291,15 +298,17 @@ bool hdl_brom_send_da(const hdl_connect_arg_t *connect_arg, char *da_file, uint3
                 connect_arg->conn_da_send_cb(connect_arg->conn_da_send_cb_arg, total_sent_len, da_len);
             }
 
-             local_checksum ^= hdl_compute_checksum(g_hdl_da_data_buf, sent_len);
+            local_checksum ^= hdl_compute_checksum(g_hdl_da_data_buf, sent_len);
         } else {
             HDL_LOGI("hdl_brom_send_da, flash read fail %d", ret);
         }
+        hdl_delay(20);
     }
-    
+
     uint16_t brom_checksum = HDL_COM_GetData16();
     HDL_LOGI("hdl_brom_send_da, local_checksum=%d brom_checksum=%d", local_checksum, brom_checksum);
 
+    hdl_delay(20);
     status = HDL_COM_GetData16();
     HDL_LOGI("hdl_brom_send_da, status=%d", status);
 
@@ -318,6 +327,7 @@ bool hdl_brom_jump_da(uint32_t addr)
     HDL_LOGI("hdl_brom_jump_da 0x%08X", addr);
     brom_write8_echo(BROM_CMD_JUMP_DA);
     brom_write32_echo(addr);
+    hdl_delay(20);
     uint16_t status = HDL_COM_GetData16();
     return (status < BROM_ERROR);
 }
@@ -327,6 +337,7 @@ bool hdl_brom_set_baudrate(uint32_t bd)
     HDL_LOGI("hdl_set_baudrate 0x%08X", bd);
     brom_write8_echo(BROM_CMD_SET_BAUD);
     brom_write32_echo(bd);
+    hdl_delay(20);
     uint16_t status = HDL_COM_GetData16();
     return (status < BROM_ERROR);
 }
