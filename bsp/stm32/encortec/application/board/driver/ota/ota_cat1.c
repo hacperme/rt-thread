@@ -26,21 +26,33 @@
 #define AT_RDY_HEAD "RDY"
 #define AT_SHUTDOWN_HEAD "POWERED DOWN"
 #define AT_QIND_HEAD "+QIND:"
-#define AT_QIND_FILESTART "+QIND: \"FOTA\",\"FILESTART\""
-#define AT_QIND_FILEEND "+QIND: \"FOTA\",\"FILEEND\""
+#define AT_QIND_FOTA_FILESTART "+QIND: \"FOTA\",\"FILESTART\""
+#define AT_QIND_FOTA_FILEEND "+QIND: \"FOTA\",\"FILEEND\""
+#define AT_QIND_FOTA_START "+QIND: \"FOTA\",\"START\""
+#define AT_QIND_FOTA_UPDATING "+QIND: \"FOTA\",\"UPDATING\""
 #define AT_QIND_FOTA_END "+QIND: \"FOTA\",\"END\""
+#define AT_FOTA_PERCENT "100"
+
+typedef struct {
+    struct rt_semaphore file_start;
+    struct rt_semaphore file_end;
+    struct rt_semaphore fota_start;
+    struct rt_semaphore fota_updating;
+    struct rt_semaphore fota_end;
+    struct rt_semaphore rdy;
+    struct rt_semaphore power_down;
+} cat1_sem_st;
 
 static at_client_t cat1_at_client = RT_NULL;
 static at_response_t cat1_at_resp = RT_NULL;
 
-static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size);
-static struct rt_semaphore start_trans_file_sem;
-static struct rt_semaphore end_trans_file_sem;
-static struct rt_semaphore fota_end_sem;
-static struct rt_semaphore rdy_sem;
-static struct rt_semaphore shutdown_sem;
+static cat1_sem_st cat1_sem;
 static char trans_file_res = 0;
 static char fota_res = 0;
+static char fota_updating_proc[4] = {0};
+static rt_uint16_t fota_process_size = 0;
+
+static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size);
 
 static struct at_urc cat1_ota_urc_table[] = {
     {AT_QIND_HEAD,       "\r\n", cat1_ota_urc},
@@ -53,29 +65,66 @@ static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t s
     log_info("[cat1_ota_urc] %s", data);
     if (rt_strncmp(data, AT_QIND_HEAD, rt_strlen(AT_QIND_HEAD)) == 0)
     {
-        if (rt_strncmp(data, AT_QIND_FILESTART, rt_strlen(AT_QIND_FILESTART)) == 0)
+        if (rt_strncmp(data, AT_QIND_FOTA_FILESTART, rt_strlen(AT_QIND_FOTA_FILESTART)) == 0)
         {
-            rt_sem_release(&start_trans_file_sem);
+            rt_sem_release(&cat1_sem.file_start);
         }
-        else if (rt_strncmp(data, AT_QIND_FILEEND, rt_strlen(AT_QIND_FILEEND)) == 0)
+        else if (rt_strncmp(data, AT_QIND_FOTA_FILEEND, rt_strlen(AT_QIND_FOTA_FILEEND)) == 0)
         {
-            trans_file_res = data[rt_strlen(AT_QIND_FILEEND) + 1] == '0' ? 1 : 0;
-            rt_sem_release(&end_trans_file_sem);
+            trans_file_res = data[rt_strlen(AT_QIND_FOTA_FILEEND) + 1] == '0' ? 1 : 0;
+            rt_sem_release(&cat1_sem.file_end);
+        }
+        else if (rt_strncmp(data, AT_QIND_FOTA_START, rt_strlen(AT_QIND_FOTA_START)) == 0)
+        {
+            rt_sem_release(&cat1_sem.fota_start);
+        }
+        else if (rt_strncmp(data, AT_QIND_FOTA_UPDATING, rt_strlen(AT_QIND_FOTA_UPDATING)) == 0)
+        {
+            fota_process_size = rt_strlen(AT_QIND_FOTA_UPDATING) + 1;
+            rt_memcpy(fota_updating_proc, data + fota_process_size, size - 2 - fota_process_size);
+            log_debug("size=%d, fota_process_size=%d, fota_updating_proc=%s", size, fota_process_size, fota_updating_proc);
+            rt_sem_release(&cat1_sem.fota_updating);
         }
         else if (rt_strncmp(data, AT_QIND_FOTA_END, rt_strlen(AT_QIND_FOTA_END)) == 0)
         {
             fota_res = data[rt_strlen(AT_QIND_FOTA_END) + 1] == '0' ? 1 : 0;
-            rt_sem_release(&fota_end_sem);
+            rt_sem_release(&cat1_sem.fota_end);
         }
     }
     else if (rt_strncmp(data, AT_RDY_HEAD, rt_strlen(AT_RDY_HEAD)) == 0)
     {
-        rt_sem_release(&rdy_sem);
+        rt_sem_release(&cat1_sem.rdy);
     }
     else if (rt_strncmp(data, AT_SHUTDOWN_HEAD, rt_strlen(AT_SHUTDOWN_HEAD)) == 0)
     {
-        rt_sem_release(&shutdown_sem);
+        rt_sem_release(&cat1_sem.power_down);
     }
+}
+
+rt_err_t cat1_sem_init(void)
+{
+    rt_err_t res;
+    res = rt_sem_init(&cat1_sem.file_start, "cat1files", 0, RT_IPC_FLAG_PRIO);
+    res = rt_sem_init(&cat1_sem.file_end, "cat1filee", 0, RT_IPC_FLAG_PRIO);
+    res = rt_sem_init(&cat1_sem.fota_start, "cat1fotas", 0, RT_IPC_FLAG_PRIO);
+    res = rt_sem_init(&cat1_sem.fota_updating, "cat1fotau", 0, RT_IPC_FLAG_PRIO);
+    res = rt_sem_init(&cat1_sem.fota_end, "cat1fotae", 0, RT_IPC_FLAG_PRIO);
+    res = rt_sem_init(&cat1_sem.rdy, "cat1fotae", 0, RT_IPC_FLAG_PRIO);
+    res = rt_sem_init(&cat1_sem.power_down, "cat1fotae", 0, RT_IPC_FLAG_PRIO);
+    return res;
+}
+
+rt_err_t cat1_sem_deinit(void)
+{
+    rt_err_t res;
+    res = rt_sem_detach(&cat1_sem.file_start);
+    res = rt_sem_detach(&cat1_sem.file_end);
+    res = rt_sem_detach(&cat1_sem.fota_start);
+    res = rt_sem_detach(&cat1_sem.fota_updating);
+    res = rt_sem_detach(&cat1_sem.fota_end);
+    res = rt_sem_detach(&cat1_sem.rdy);
+    res = rt_sem_detach(&cat1_sem.power_down);
+    return res;
 }
 
 void cat1_ota_prepare(void *node)
@@ -84,38 +133,8 @@ void cat1_ota_prepare(void *node)
     rt_err_t res;
     UpgradeNode *_node = (UpgradeNode *)node;
 
-    res = rt_sem_init(&start_trans_file_sem, "cat1stfs", 0, RT_IPC_FLAG_PRIO);
+    res = cat1_sem_init();
     if (res != RT_EOK) goto _failed_;
-    res = rt_sem_init(&end_trans_file_sem, "cat1etfs", 0, RT_IPC_FLAG_PRIO);
-    if (res != RT_EOK)
-    {
-        rt_sem_detach(&start_trans_file_sem);
-        goto _failed_;
-    }
-    res = rt_sem_init(&fota_end_sem, "cat1fes", 0, RT_IPC_FLAG_PRIO);
-    if (res != RT_EOK)
-    {
-        rt_sem_detach(&start_trans_file_sem);
-        rt_sem_detach(&end_trans_file_sem);
-        goto _failed_;
-    }
-    res = rt_sem_init(&rdy_sem, "cat1rdy", 0, RT_IPC_FLAG_PRIO);
-    if (res != RT_EOK)
-    {
-        rt_sem_detach(&start_trans_file_sem);
-        rt_sem_detach(&end_trans_file_sem);
-        rt_sem_detach(&fota_end_sem);
-        goto _failed_;
-    }
-    res = rt_sem_init(&shutdown_sem, "cat1shtd", 0, RT_IPC_FLAG_PRIO);
-    if (res != RT_EOK)
-    {
-        rt_sem_detach(&start_trans_file_sem);
-        rt_sem_detach(&end_trans_file_sem);
-        rt_sem_detach(&fota_end_sem);
-        rt_sem_detach(&rdy_sem);
-        goto _failed_;
-    }
 
     cat1_at_client = at_client_get(CAT1_UART);
     if (cat1_at_client == RT_NULL)
@@ -130,22 +149,14 @@ void cat1_ota_prepare(void *node)
     log_info("CAT1_UART at client get %s.", res_msg(cat1_at_client != RT_NULL));
     if (cat1_at_client == RT_NULL)
     {
-        rt_sem_detach(&start_trans_file_sem);
-        rt_sem_detach(&end_trans_file_sem);
-        rt_sem_detach(&fota_end_sem);
-        rt_sem_detach(&rdy_sem);
-        rt_sem_detach(&shutdown_sem);
+        cat1_sem_deinit();
         goto _failed_;
     }
     cat1_at_resp = at_create_resp(CAT1_AT_BUFF_SIZE, 0, 3000);
     if (!cat1_at_resp)
     {
         cat1_at_client = RT_NULL;
-        rt_sem_detach(&start_trans_file_sem);
-        rt_sem_detach(&end_trans_file_sem);
-        rt_sem_detach(&fota_end_sem);
-        rt_sem_detach(&rdy_sem);
-        rt_sem_detach(&shutdown_sem);
+        cat1_sem_deinit();
         goto _failed_;
     }
 
@@ -155,17 +166,13 @@ void cat1_ota_prepare(void *node)
     {
         at_delete_resp(cat1_at_resp);
         cat1_at_client = RT_NULL;
-        rt_sem_detach(&start_trans_file_sem);
-        rt_sem_detach(&end_trans_file_sem);
-        rt_sem_detach(&fota_end_sem);
-        rt_sem_detach(&rdy_sem);
-        rt_sem_detach(&shutdown_sem);
+        cat1_sem_deinit();
         goto _failed_;
     }
 
     res = cat1_power_on();
 
-    res = rt_sem_take(&rdy_sem, 20 * 1000);
+    res = rt_sem_take(&cat1_sem.rdy, 30 * 1000);
 
     _node->status = res == RT_EOK ? UPGRADE_STATUS_PREPARE_OK : UPGRADE_STATUS_PREPARE_FAILED;
     return;
@@ -212,7 +219,7 @@ rt_err_t start_cat1_ota_cmd(uint32_t file_size)
     at_resp_set_info(cat1_at_resp, CAT1_AT_BUFF_SIZE, 0, 3000);
     ret = at_obj_exec_cmd(cat1_at_client, cat1_at_resp, cmd);
     res = ret == 0 ? RT_EOK : RT_ERROR;
-    if (res == RT_EOK) res = rt_sem_take(&start_trans_file_sem, 5000);
+    if (res == RT_EOK) res = rt_sem_take(&cat1_sem.file_start, 10 * 1000);
     return res;
 }
 
@@ -243,7 +250,7 @@ rt_err_t transfer_cat1_ota_file(char *file_name)
         }
     } while (read_size > 0 && ret > 0);
 
-    res = rt_sem_take(&end_trans_file_sem, 20 * 1000);
+    res = rt_sem_take(&cat1_sem.file_end, 30 * 1000);
     if (res == RT_EOK) res = trans_file_res == 1 ? RT_EOK : RT_ERROR;
 
     return res;
@@ -267,13 +274,23 @@ void cat1_ota_apply(int* progress, void *node)
     log_info("transfer_cat1_ota_file %s", res_msg(res == RT_EOK));
     if (res != RT_EOK) goto _failed_;
 
-    res = rt_sem_take(&fota_end_sem, 120 * 1000);
-    log_info("rt_sem_take fota_end_sem %s", res_msg(res == RT_EOK));
+    res = rt_sem_take(&cat1_sem.fota_start, 60 * 1000);
+    log_info("rt_sem_take cat1_sem.fota_start %s", res_msg(res == RT_EOK));
+    if (res != RT_EOK) goto _failed_;
+
+    do {
+        res = rt_sem_take(&cat1_sem.fota_updating, 60 * 1000);
+        log_info("rt_sem_take cat1_sem.fota_updating %s, process %s", res_msg(res == RT_EOK), fota_updating_proc);
+    } while (res == RT_EOK && rt_strcmp(fota_updating_proc, AT_FOTA_PERCENT) != 0);
+    if (res != RT_EOK) goto _failed_;
+
+    res = rt_sem_take(&cat1_sem.fota_end, 60 * 1000);
+    log_info("rt_sem_take cat1_sem.fota_end %s", res_msg(res == RT_EOK));
     if (res == RT_EOK) res = fota_res == 1 ? RT_EOK : RT_ERROR;
     log_info("fota_res %s", res_msg(res == RT_EOK));
 
-    res = rt_sem_take(&rdy_sem, 30 * 1000);
-    log_info("rt_sem_take rdy_sem %s", res_msg(res == RT_EOK));
+    res = rt_sem_take(&cat1_sem.rdy, 60 * 1000);
+    log_info("rt_sem_take cat1_sem.rdy %s", res_msg(res == RT_EOK));
     _node->status = fota_res == 1 ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
     return;
 
@@ -285,14 +302,10 @@ _failed_:
 void cat1_ota_finish(void *node)
 {
     cat1_power_on();
-    rt_err_t res = rt_sem_take(&shutdown_sem, 10 * 1000);
+    rt_err_t res = rt_sem_take(&cat1_sem.power_down, 30 * 1000);
     cat1_power_off();
 
-    rt_sem_detach(&start_trans_file_sem);
-    rt_sem_detach(&end_trans_file_sem);
-    rt_sem_detach(&fota_end_sem);
-    rt_sem_detach(&rdy_sem);
-    rt_sem_detach(&shutdown_sem);
+    cat1_sem_deinit();
     at_delete_resp(cat1_at_resp);
     cat1_at_client = RT_NULL;
     log_debug("cat1_power_off");

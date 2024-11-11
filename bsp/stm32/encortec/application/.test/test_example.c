@@ -6,9 +6,10 @@
  * @Date: 2024-09-10 17:30:16
  * @copyright : Copyright (c) 2024
  */
-#include "logging.h"
 #include "rtthread.h"
+#include "tools.h"
 #include "drv_fatfs_dhara_nand.h"
+#include "logging.h"
 
 #if 1
 
@@ -34,23 +35,15 @@ int application_start(int argc, char *argv[]) {
     rt_err_t res;
     res = rt_sem_init(&mnt_sem, "mntsem", 0, RT_IPC_FLAG_PRIO);
     log_debug("rt_sem_init mntsem res=%d", res);
-    if (res != RT_EOK)
-    {
-        return -1;
-    }
+    if (res != RT_EOK)  return -1;
 
     fatfs_dhara_nand_init(fatfs_dhara_nand_mnt_cb, &mnt_status);
 
     res = rt_sem_take(&mnt_sem, RT_WAITING_FOREVER);
-
-    if (res == RT_EOK)
+    log_debug("fatfs mount %s", res_msg(res == RT_EOK));
+    if (res != RT_EOK)
     {
-        // extern void data_save_as_file_test();
-        // data_save_as_file_test();
-
-        // extern void test_fs_option(void);
-        // test_fs_option();
-        log_debug("fatfs mount success.");
+        // TODO:
     }
 
     extern void test_cat1_at_ota(void);

@@ -369,16 +369,16 @@ static void test_set_esp_ota_plan(void)
 static void test_set_cat1_ota_plan(void)
 {
     extern UpgradeModuleOps cat1_ota_ops;
-    char file1_name[] = "./cat1-qth-v01.bin";
-    char file1_md5[] = {6, 73, 117, 129, 62, 60, 123, 108, 38, 217, 147, 161, 43, 45, 147, 27};
-    // char file2_name[] = "./cat1-v01-qth.bin";
-    // char file2_md5[] = {109, 192, 43, 174, 109, 50, 104, 77, 215, 18, 137, 77, 12, 70, 111, 78};
+    char file_name[] = "./cat1-qth-v01.bin";
+    char file_md5[] = {110, 102, 151, 255, 226, 166, 190, 8, 249, 55, 140, 118, 227, 119, 15, 192};
+    // char file_name[] = "./cat1-v01-qth.bin";
+    // char file_md5[] = {206, 5, 194, 244, 21, 18, 238, 214, 207, 96, 187, 214, 24, 38, 115, 83};
 
     UpgradePlan cat1_plan = {0};
     cat1_plan.file_cnt = 1;
-    rt_memcpy(cat1_plan.file[0].file_name, file1_name, sizeof(file1_name));
+    rt_memcpy(cat1_plan.file[0].file_name, file_name, sizeof(file_name));
     log_debug("cat1_plan.file[0].file_name %s", cat1_plan.file[0].file_name);
-    rt_memcpy(cat1_plan.file[0].file_md5, file1_md5, sizeof(file1_md5));
+    rt_memcpy(cat1_plan.file[0].file_md5, file_md5, sizeof(file_md5));
     log_debug("cat1_plan.file[0].file_md5 %s", cat1_plan.file[0].file_md5);
 
     set_module(UPGRADE_MODULE_CAT1, &cat1_plan, &cat1_ota_ops);

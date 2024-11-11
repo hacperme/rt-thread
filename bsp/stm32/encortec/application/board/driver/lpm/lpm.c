@@ -171,6 +171,15 @@ rt_err_t cat1_pwrkey_stm_pin_enable(rt_uint8_t mode)
     return rt_pin_read(CAT1_PWRKEY_STM_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
+rt_err_t cat_press_pwkkey(void)
+{
+    rt_err_t res;
+    res = cat1_pwrkey_stm_pin_enable(1);
+    rt_thread_mdelay(1000);
+    res = cat1_pwrkey_stm_pin_enable(0);
+    return res;
+}
+
 rt_err_t cat1_power_on(void)
 {
     cat1_power_pin_init();
@@ -178,13 +187,9 @@ rt_err_t cat1_power_on(void)
     rt_err_t res;
     res = cat1_pwron_pin_enable(1);
     // TODO: Enable this check.
-    // if (res != RT_EOK)
-    // {
-    //     return res;
-    // }
-    res = cat1_pwrkey_stm_pin_enable(1);
-    rt_thread_mdelay(1000);
-    res = cat1_pwrkey_stm_pin_enable(0);
+    // if (res != RT_EOK) return res;
+    res = cat_press_pwkkey();
+
     return res;
 }
 
