@@ -731,6 +731,16 @@ void stm32_sleep()
 
     int remaining = 0;
     remaining = settings_params->nb_collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
+
+    // 获取当前时间
+    time_t now = time(NULL);
+    struct tm *timeinfo = localtime(&now);
+    log_debug("stm32_sleep got cur time: %04d-%02d-%02d %02d:%02d:%02d", timeinfo->tm_year + 1900, timeinfo->tm_mon, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    if ((timeinfo->tm_year + 1900 != 2000) && (timeinfo->tm_hour >= 0 && timeinfo->tm_hour <= 6)) {
+        // 时间戳正确 且 在0点至6点区间, 不上报
+        remaining = (6 - timeinfo->tm_hour) * 3600 - timeinfo->tm_min * 60 - timeinfo->tm_sec;
+    }
+
     log_debug("remaining: %d", remaining);
     rtc_set_wakeup(remaining > 0 ? remaining : 10);
     shut_down();
