@@ -92,10 +92,10 @@ int external_devices_init()
     nbiot_power_off();
     cat1_power_off();
     esp32_power_off();
-    gnss_open();
 
     return 0;
 }
+
 
 struct SensorData
 {
@@ -123,6 +123,69 @@ struct SensorData sensor_data = {0};
 static struct rt_i2c_bus_device *iic_dev;
 char nmea_buf[1024] = {0};
 unsigned int xyz_read_start_timestamp = 0;
+
+
+rt_err_t get_nmea_item_data(nmea_item *item)
+{
+    FILE *fd = NULL;
+    time_t cur_timestamp = 0;
+    time_t prev_timestamp = 0;
+    char nmea_time_filename[] = "/prev_nmea_time.bin";
+
+    // 判断上次读取的时间
+    time(&cur_timestamp);
+    log_debug("get_nmea_item_data cur_timestamp: %d\n", cur_timestamp);
+
+    fd = fopen(nmea_time_filename, "r");
+    if (fd) {
+        log_debug("get_nmea_item_data timstamp file exists.");
+        fread(&prev_timestamp, 1, sizeof(prev_timestamp), fd);
+        log_debug("get_nmea_item_data prev_timestamp: %d\n", prev_timestamp);
+        if (cur_timestamp - prev_timestamp < 30 * 24 * 3600) {
+            // 距上次上报位置数据未满30天
+            log_debug("get_nmea_item_data, prev_timestamp - cur_timestamp < 30 days");
+            return RT_ERROR;
+        }
+        fclose(fd);
+        fd = NULL;
+    }
+
+    gnss_open();
+
+    // 读取定位数据
+    for (int i=0; i < 30; i++) {
+        rt_memset(item, 0, sizeof(item));
+        gnss_read_nmea_item(item, 1000);
+        if (item->is_valid) {
+            rt_memcpy(nmea_buf, item->GNGGA, rt_strlen(item->GNGGA));
+            log_debug("nmea_item->GNRMC: %s", item->GNRMC);
+            log_debug("nmea_item->is_valid: %d", item->is_valid);
+            log_debug("nmea_item->GNGGA: %s", item->GNGGA);
+            log_debug("nmea_item->GNGLL: %s", item->GNGLL);
+            log_debug("nmea_item->GNVTG: %s", item->GNVTG);
+            log_debug("nmea_item->GNGSA_SIZE: %d", item->GNGSA_SIZE);
+            break;
+        }
+        rt_thread_mdelay(1000);
+    }
+
+    gnss_close();
+
+    if (item->is_valid) {
+        // 记录当前上报的时间
+        fd = fopen(nmea_time_filename, "w");
+        if (fd) {
+            fwrite(&cur_timestamp, 1, sizeof(cur_timestamp), fd);
+            log_debug("get_nmea_item_data write cur_timestamp to file: %d", cur_timestamp);
+            fclose(fd);
+        }
+        return RT_EOK;
+    }
+
+    return RT_ERROR;
+}
+
+
 int collect_sensor_data()
 {
     rt_err_t res = RT_EOK;
@@ -209,7 +272,6 @@ int collect_sensor_data()
     float humi = 0.0;
     res = hdc3021_read_temp_humi(iic_dev, &temp3, &humi);
     log_debug("hdc3021_read_temp_humi %s, temp3=%f, humi=%f", res != RT_EOK ? "failed" : "success", temp3, humi);
-
     if (res == RT_EOK) {
         sensor_data.temp3 = temp3;
         sensor_data.humi = humi;
@@ -223,27 +285,14 @@ int collect_sensor_data()
         sensor_data.water_level = value;
     }
 
-    if (wakeup_source_flag != RTC_SOURCE) {
-        // read nmea
-        nmea_item nmea_item = {0};
-        for (int i=0; i < 30; i++) {
-            rt_memset(&nmea_item, 0, sizeof(nmea_item));
-            gnss_read_nmea_item(&nmea_item, 1000);
-            if (nmea_item.is_valid) {
-                rt_memcpy(nmea_buf, nmea_item.GNGGA, rt_strlen(nmea_item.GNGGA));
-                log_debug("gnss_read_nmea_item %s", res == RT_EOK ? "success" : "failed");
-                log_debug("nmea_item->GNRMC: %s", nmea_item.GNRMC);
-                log_debug("nmea_item->is_valid: %d", nmea_item.is_valid);
-                log_debug("nmea_item->GNGGA: %s", nmea_item.GNGGA);
-                log_debug("nmea_item->GNGLL: %s", nmea_item.GNGLL);
-                log_debug("nmea_item->GNVTG: %s", nmea_item.GNVTG);
-                log_debug("nmea_item->GNGSA_SIZE: %d", nmea_item.GNGSA_SIZE);
-                break;
-            }
-            rt_thread_mdelay(1000);
-        }
+    nmea_item nmea_item = {0};
+    res = get_nmea_item_data(&nmea_item);
+    if (res == RT_EOK) {
+        log_debug("need report nmea data...");
+        rt_memcpy(nmea_buf, nmea_item.GNGGA, rt_strlen(nmea_item.GNGGA));
     }
 
+    sensor_pwron_pin_enable(PIN_LOW);
     return 0;
 }
 
@@ -913,8 +962,6 @@ void main_business_entry(void)
                 break;
             case COLLECT_SENSOR_DATA:
                 collect_sensor_data();
-                sensor_pwron_pin_enable(PIN_LOW);
-                gnss_close();
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
