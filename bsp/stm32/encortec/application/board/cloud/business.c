@@ -904,6 +904,15 @@ static void sm_init(void) {
 }
 
 extern rt_err_t esp32_wifi_transfer();
+
+
+void auto_switch_current_antenna()
+{
+    extern enum AntennaType current_antenna;
+    antenna_type_select(current_antenna == MAIN_ANT ? REMPTE_ANT : MAIN_ANT);
+}
+
+
 void main_business_entry(void)
 {
     rt_err_t result;
@@ -1017,6 +1026,7 @@ void main_business_entry(void)
                     sm_set_status(NBIOT_REPORT_SENSOR_DATA);
                 }
                 else if (rv == NBIOT_REPORT_CTRL_DATA_RETRY) {
+                    auto_switch_current_antenna();
                     sm_set_status(NBIOT_REPORT_CONTROL_DATA);
                 }
                 else if (rv == NBIOT_SERVER_CONNECT_RETRY) {
@@ -1033,6 +1043,7 @@ void main_business_entry(void)
                     sm_set_status(CAT1_INIT);
                 }
                 else if (rv == NBIOT_REPORT_SENSOR_DATA_RETRY) {
+                    auto_switch_current_antenna();
                     sm_set_status(NBIOT_REPORT_SENSOR_DATA);
                 }
                 else if (rv == NBIOT_SERVER_CONNECT_RETRY) {
@@ -1075,6 +1086,7 @@ void main_business_entry(void)
                     sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 else {
+                    auto_switch_current_antenna();
                     sm_set_status(CAT1_UPLOAD_FILE);
                 }
                 break;
