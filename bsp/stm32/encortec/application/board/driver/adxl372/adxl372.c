@@ -18,7 +18,7 @@
 #define ADXL372_ACQUISITION_TIME        20
 #define ADXL372_FIFO_XYZ_BUFF_SIZE      (ADXL372_ORD * ADXL372_ACQUISITION_TIME)
 
-struct rt_spi_device *adxl372_dev;
+struct rt_spi_device *adxl372_dev = RT_NULL;
 rt_sem_t adxl372_inact_sem = RT_NULL;
 rt_thread_t adxl372_recv_inact_thd = RT_NULL;
 rt_uint8_t adxl372_recv_inact_exit = 0;

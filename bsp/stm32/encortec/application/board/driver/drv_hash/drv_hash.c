@@ -21,6 +21,7 @@ rt_err_t drv_hash_init(void)
     rt_err_t res = drv_hash_init_over == 1 ? RT_EOK : RT_ERROR;
     if (res == RT_EOK) return res;
 
+    rt_memset(&drv_hash_mutex, 0, sizeof(drv_hash_mutex));
     res = rt_mutex_init(&drv_hash_mutex, "hashmtx", RT_IPC_FLAG_PRIO);
     drv_hash_init_over = res == RT_EOK ? 1 : 0;
 
@@ -57,6 +58,7 @@ rt_err_t drv_hash_hmac_sha256(rt_uint8_t *key, rt_uint32_t key_length, rt_uint8_
 
     rt_mutex_take(&drv_hash_mutex, RT_WAITING_FOREVER);
 
+    rt_memset(&hhash, 0, sizeof(hhash));
     hhash.Init.DataType = HASH_DATATYPE_8B;
     hhash.Init.KeySize = key_length;
     hhash.Init.pKey = (uint8_t *)key;
@@ -82,6 +84,7 @@ rt_err_t drv_hash_md5_create(void)
 
     rt_mutex_take(&drv_hash_mutex, RT_WAITING_FOREVER);
 
+    rt_memset(&hhash, 0, sizeof(hhash));
     hhash.Init.DataType = HASH_DATATYPE_8B;
     res = HAL_HASH_Init(&hhash) == HAL_OK ? RT_EOK : RT_ERROR;
     drv_hash_md5_create_tag = res == RT_EOK ? 1 : 0;
