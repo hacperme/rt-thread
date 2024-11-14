@@ -18,6 +18,7 @@
 #include "board.h"
 #include "lpm.h"
 #include "hdl_api.h"
+#include "gnss.h"
 
 void init_cb_demo(void *usr_arg)
 {
@@ -46,6 +47,31 @@ void readback_cb_demo(void *usr_arg, char *cur_image_name, uint32_t read_len, ui
 void progress_cb_demo(void *usr_arg, uint8_t percent)
 {
     HDL_MAIN_LOG("%s %d%%", (usr_arg != NULL ? usr_arg : "percent "), percent);
+}
+
+void check_gnss_version(void *node)
+{
+    UpgradeNode *_node = (UpgradeNode *)node;
+    rt_err_t res;
+    res = gnss_open();
+    log_debug("gnss_open %s", res_msg(res == RT_EOK));
+    rt_thread_mdelay(100);
+
+    char *gnss_version;
+    res = gnss_query_version(&gnss_version);
+    log_debug("gnss_query_version %s", res_msg(res == RT_EOK));
+    if (res == RT_EOK)
+    {
+        log_debug("gnss_version=%s", gnss_version);
+        _node->status = rt_strcmp(gnss_version, _node->plan.target_version) == 0 ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
+    }
+    else
+    {
+        _node->status = UPGRADE_STATUS_FAILED;
+    }
+
+    res = gnss_close();
+    log_debug("gnss_close %s", res_msg(res == RT_EOK));
 }
 
 void gnss_ota_prepare(void *node)
@@ -131,9 +157,16 @@ void gnss_ota_apply(int* progress, void *node)
     success = hdl_download(&download_arg, &da_report);
     HDL_Require_Noerr_Action(success, exit, "hdl_download");
 
-    // Disconnect Device
-    success = hdl_disconnect_auto_reboot(true);
-    HDL_Require_Noerr_Action(success, exit, "hdl_disconnect_auto_reboot");
+    // // Disconnect Device
+    // success = hdl_disconnect_auto_reboot(true);
+    // HDL_Require_Noerr_Action(success, exit, "hdl_disconnect_auto_reboot");
+
+    rt_thread_mdelay(1000);
+    bool res = hdl_uart_deinit();
+    log_debug("hdl_uart_deinit %s", res_msg(res));
+
+    rt_thread_mdelay(100);
+    check_gnss_version(node);
 
 exit:
     HDL_SUCCESS_LOG(__func__);

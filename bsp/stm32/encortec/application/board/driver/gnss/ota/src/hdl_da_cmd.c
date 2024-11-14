@@ -22,6 +22,7 @@ bool hdl_da_get_flash_address(uint32_t *pData)
 
     // send
     RACE_ADDR_SEND send;
+    rt_memset(&send, 0, sizeof(send));
     send.head_ = 0x05;
     send.type_ = 0x5A;
     send.len_ = sizeof(send.id_);
@@ -31,6 +32,7 @@ bool hdl_da_get_flash_address(uint32_t *pData)
 
     // response
     RACE_ADDR_RES res;
+    rt_memset(&res, 0, sizeof(res));
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
     HDL_LOGI(
         "res.head_=%02X, res.type_=%02X, res.len_=%d, res.id_=%02X, res.status_=%d, res.addr_=%08X",
@@ -57,6 +59,7 @@ bool hdl_da_get_flash_size(uint32_t *pData)
 
     // send
     RACE_SIZE_SEND send;
+    rt_memset(&send, 0, sizeof(send));
     send.head_ = 0x05;
     send.type_ = 0x5A;
     send.len_ = sizeof(send.id_);
@@ -66,6 +69,7 @@ bool hdl_da_get_flash_size(uint32_t *pData)
 
     // response
     RACE_SIZE_RES res;
+    rt_memset(&res, 0, sizeof(res));
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
@@ -88,6 +92,7 @@ bool hdl_da_get_flash_id(uint8_t *pManufacturerId, uint8_t *pDeviceId1, uint8_t 
 
     // send
     RACE_ID_SEND send;
+    rt_memset(&send, 0, sizeof(send));
     send.head_ = 0x05;
     send.type_ = 0x5A;
     send.len_ = sizeof(send.id_);
@@ -97,6 +102,7 @@ bool hdl_da_get_flash_id(uint8_t *pManufacturerId, uint8_t *pDeviceId1, uint8_t 
 
     // response
     RACE_ID_RES res;
+    rt_memset(&res, 0, sizeof(res));
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
@@ -117,10 +123,13 @@ bool hdl_da_get_flash_id(uint8_t *pManufacturerId, uint8_t *pDeviceId1, uint8_t 
 
 bool hdl_format_race(uint32_t addr, uint32_t len)
 {
+    RACE_FM_SEND send;
+    RACE_FM_RES res;
     for (int i=0; i<3; i++)
     {
+        rt_memset(&send, 0, sizeof(send));
+        rt_memset(&res, 0, sizeof(res));
         // send
-        RACE_FM_SEND send;
         send.head_ = 0x05;
         send.type_ = 0x5A;
         send.len_ = sizeof(send.id_)+sizeof(send.addr_)+sizeof(send.size_)+sizeof(send.crc_);
@@ -133,7 +142,6 @@ bool hdl_format_race(uint32_t addr, uint32_t len)
         hdl_delay(100);
 
         // response
-        RACE_FM_RES res;
         HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
         HDL_LOGI(
             "res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X, res.addr_=%08X",
@@ -192,10 +200,13 @@ bool hdl_da_format(const hdl_format_arg_t *format_arg)
 
 bool hdl_download_race(uint32_t addr, const uint8_t *data)
 {
+    RACE_DL_SEND send;
+    RACE_DL_RES res;
     for (int i=0; i<3; i++)
     {
+        rt_memset(&send, 0, sizeof(send));
+        rt_memset(&res, 0, sizeof(res));
         // send
-        RACE_DL_SEND send;
         send.head_ = 0x05;
         send.type_ = 0x5A;
         send.len_ = sizeof(send.id_)+sizeof(send.addr_)+sizeof(send.size_)+DA_SEND_PACKET_LEN+sizeof(send.crc_);
@@ -213,7 +224,6 @@ bool hdl_download_race(uint32_t addr, const uint8_t *data)
         hdl_delay(20);
 
         // response
-        RACE_DL_RES res;
         HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
         HDL_LOGI(
             "res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X, res.addr_=%08X",
@@ -295,6 +305,7 @@ bool hdl_finish_race(bool enable)
 {
     // send
     RACE_RST_SEND send;
+    rt_memset(&send, 0, sizeof(send));
     send.head_ = 0x05;
     send.type_ = 0x5A;
     send.len_ = 3;
@@ -304,11 +315,18 @@ bool hdl_finish_race(bool enable)
         "send.head_=%02X, send.type_=%02X, send.len_=%04X, send.id_=%04X, send.flag_=%02X",
         send.head_, send.type_, send.len_, send.id_, send.flag_
     );
+    uint8_t *send_buff = (uint8_t *)&send;
+    HDL_LOGI(
+        "Send Buff %02X %02X %02X %02X %02X %02X %02X",
+        send_buff[0], send_buff[1], send_buff[2], send_buff[3],
+        send_buff[4], send_buff[5], send_buff[6]
+    );
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
     hdl_delay(100);
 
     // response
     RACE_RST_RES res;
+    rt_memset(&res, 0, sizeof(send));
     HDL_LOGI(
         "Recv RACE_DA_FINISH resp before res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X",
         res.head_, res.type_, res.len_, res.id_, res.status_
@@ -317,6 +335,12 @@ bool hdl_finish_race(bool enable)
     HDL_LOGI(
         "Recv RACE_DA_FINISH resp after res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X",
         res.head_, res.type_, res.len_, res.id_, res.status_
+    );
+    uint8_t *res_buff = (uint8_t *)&res;
+    HDL_LOGI(
+        "Recv Buff %02X %02X %02X %02X %02X %02X %02X",
+        res_buff[0], res_buff[1], res_buff[2], res_buff[3],
+        res_buff[4], res_buff[5], res_buff[6]
     );
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&

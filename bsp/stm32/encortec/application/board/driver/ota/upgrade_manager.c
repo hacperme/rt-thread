@@ -415,6 +415,10 @@ static void test_set_gnss_ota_plan(void)
 
     UpgradePlan gnss_plan = {0};
     gnss_plan.file_cnt = 5;
+    char gnss_target_verion[] = "LC76GPANR12A03S,2024/04/14,15:42:19";
+    rt_memcpy(gnss_plan.target_version, gnss_target_verion, sizeof(gnss_target_verion));
+    log_debug("gnss_plan.target_version %s", gnss_plan.target_version);
+
     rt_memcpy(gnss_plan.file[0].file_name, file0_name, sizeof(file0_name));
     log_debug("gnss_plan.file[0].file_name %s", gnss_plan.file[0].file_name);
     rt_memcpy(gnss_plan.file[0].file_md5, file0_md5, sizeof(file0_md5));

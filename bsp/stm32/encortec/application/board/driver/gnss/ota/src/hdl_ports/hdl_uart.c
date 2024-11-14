@@ -5,10 +5,12 @@
 #ifdef HDL_VIA_UART
 
 static rt_device_t gnss_serial = RT_NULL;
+static char hdl_uart_init_tag = 0;
 
 bool hdl_uart_init()
 {
-    bool ret = false;
+    bool ret = (hdl_uart_init_tag == 1);
+    if (ret) return ret;
     rt_err_t res;
 
     gnss_pwron_pin_init();
@@ -53,18 +55,23 @@ bool hdl_uart_init()
     ret = res == RT_EOK ? true : false;
     log_debug("gnss_reset_init %s", res_msg(res == RT_EOK));
     if (ret != true) gnss_power_off();
+    hdl_uart_init_tag = ret == true ? 1 : 0;
 
     return ret;
 }
 
 bool hdl_uart_deinit()
 {
-    bool ret;
+    bool ret = (hdl_uart_init_tag == 0);
+    if (ret) return ret;
     rt_err_t res;
     res = rt_device_close(gnss_serial);
+    log_debug("rt_device_close gnss_serial %s", res_msg(res == RT_EOK));
     ret = res == RT_EOK ? true : false;
     res = gnss_power_off();
+    log_debug("gnss_power_off %s", res_msg(res == RT_EOK));
     ret = res == RT_EOK ? true : false;
+    hdl_uart_init_tag = ret == true ? 0 : 1;
     return ret;
 }
 

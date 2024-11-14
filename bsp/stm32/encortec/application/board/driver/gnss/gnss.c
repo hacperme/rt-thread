@@ -85,30 +85,6 @@ static rt_uint8_t is_version_nmea(char *item)
     char *last_index = strchr(item, '*');
     rt_memcpy(GNSS_VERSION, index, last_index - index);
 
-    // const char comma = ',';
-    // char *comma_index = &item[9];
-    // char *last_index = comma_index;
-    // comma_index = strchr(last_index, comma);
-    // if (comma_index)
-    // {
-    //     rt_memcpy(GNSS_VERSION, last_index, comma_index - last_index);
-    //     log_debug("GNSS_VERSION %s", GNSS_VERSION);
-    // }
-    // last_index = comma_index + 1;
-    // comma_index = strchr(last_index, comma);
-    // if (comma_index)
-    // {
-    //     rt_memcpy(GNSS_VERSION_BUILD_DATE, last_index, comma_index - last_index);
-    //     log_debug("GNSS_VERSION_BUILD_DATE %s",GNSS_VERSION_BUILD_DATE);
-    // }
-    // last_index = comma_index + 1;
-    // comma_index = strchr(last_index, '*');
-    // if (comma_index)
-    // {
-    //     rt_memcpy(GNSS_VERSION_BUILD_TIME, last_index, comma_index - last_index);
-    //     log_debug("GNSS_VERSION_BUILD_TIME %s",GNSS_VERSION_BUILD_TIME);
-    // }
-
     return res;
 }
 
@@ -242,7 +218,7 @@ static void gnss_parse_nmea(char *nmea)
 
 static void gnss_thread_entry(void *parameter)
 {
-    // log_debug("gnss_thread_entry start.");
+    log_debug("gnss_thread_entry start.");
     rt_err_t res;
     do {
         res = rt_sem_take(&GNSS_THD_SUSPEND_SEM, RT_WAITING_NO);
@@ -258,9 +234,9 @@ static void gnss_thread_entry(void *parameter)
             if (rt_device_read(GNSS_SERIAL, -1, &nmea, GNSS_BUFF_SIZE) > 0)
             {
                 // log_debug("===================================");
-                // log_debug("\r\n%s", nmea);
-                // log_debug("===================================");
+                // // log_debug("\r\n%s", nmea);
                 // log_debug("NMEA Size %d", rt_strlen(nmea));
+                // log_debug("===================================");
                 rt_memset(&HGPS, 0, sizeof(HGPS));
                 lwgps_process(&HGPS, nmea, rt_strlen(nmea));
                 rt_memset(&NMEA_ITEMS, 0, sizeof(NMEA_ITEMS));
@@ -287,7 +263,7 @@ static void gnss_thread_entry(void *parameter)
     log_debug("rt_sem_release GNSS_THD_SUSPEND_SEM %s", res_msg(res == RT_EOK));
     rt_sched_unlock(slvl);
     res = rt_thread_suspend(rt_thread_self());
-    log_debug("rt_thread_suspend rt_thread_self %s", res_msg(res == RT_EOK));
+    // log_debug("rt_thread_suspend rt_thread_self %s", res_msg(res == RT_EOK));
     // rt_schedule();
     // log_debug("rt_schedule");
     // rt_exit_critical();
@@ -330,6 +306,7 @@ static rt_err_t gnss_init(void)
     gnss_rst_pin_init();
     eg915_gnssen_pin_init();
 
+    rt_memset(&GNSS_THD_SUSPEND_SEM, 0, sizeof(GNSS_THD_SUSPEND_SEM));
     res = rt_sem_init(&GNSS_THD_SUSPEND_SEM, "gnsssem", 0, RT_IPC_FLAG_PRIO);
     if (res != RT_EOK)
     {
@@ -337,6 +314,7 @@ static rt_err_t gnss_init(void)
         return res;
     }
 
+    rt_memset(&GNSS_LOCK, 0, sizeof(GNSS_LOCK));
     res = rt_mutex_init(&GNSS_LOCK, "GNSSLK", RT_IPC_FLAG_FIFO);
     if (res != RT_EOK)
     {
@@ -427,6 +405,7 @@ rt_err_t gnss_open(void)
     }
 
     /* 创建 GNSS 线程 */
+    rt_memset(&GNSS_READ_THD, 0, sizeof(GNSS_READ_THD));
     res = rt_thread_init(&GNSS_READ_THD, "GNSSTHD", gnss_thread_entry, RT_NULL, GNSS_READ_THD_STACK, 0x1000, 25, 10);
     log_debug("rt_thread_init GNSS_READ_THD %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
@@ -460,10 +439,11 @@ rt_err_t gnss_close(void)
     if (GNSS_SERIAL != RT_NULL)
     {
         res = rt_device_close(GNSS_SERIAL);
+        GNSS_SERIAL = RT_NULL;
         log_debug("rt_device_close %s", res_msg(res == RT_EOK));
     }
 
-    res = rt_sem_take(&GNSS_THD_SUSPEND_SEM, 2100);
+    res = rt_sem_take(&GNSS_THD_SUSPEND_SEM, 3000);
     log_debug("rt_sem_take GNSS_THD_SUSPEND_SEM %s", res_msg(res == RT_EOK));
     if (res == RT_EOK)
     {
@@ -572,22 +552,20 @@ rt_err_t gnss_query_version(char **gnss_version)
     rt_err_t res;
     rt_ssize_t ret;
 
-    res = rt_strlen(GNSS_VERSION) > 0 ? RT_EOK : RT_ERROR;
-    if (res == RT_EOK) goto _exit_;
-
+    rt_memset(GNSS_VERSION, 0, sizeof(GNSS_VERSION));
     char query_ver_cmd[] = "$PQTMVERNO*58\r\n";
     ret = rt_device_write(GNSS_SERIAL, 0, query_ver_cmd, rt_strlen(query_ver_cmd));
     res = ret == rt_strlen(query_ver_cmd) ? RT_EOK : RT_ERROR;
-    // log_debug("send query_ver_cmd %s", res_msg(res == RT_EOK));
+    log_debug("send query_ver_cmd %s", res_msg(res == RT_EOK));
     if (res != RT_EOK) return res;
-    rt_uint8_t cnt = 15;
+    rt_uint8_t cnt = 20;
     do {
         rt_thread_mdelay(100);
         cnt--;
     } while (rt_strlen(GNSS_VERSION) == 0 && cnt > 0);
 
-    res = rt_strlen(GNSS_VERSION) > 0 ? RT_EOK : RT_ERROR;
-    // log_debug("wait query gnss version %s", res_msg(res == RT_EOK));
+    res = rt_strstr(GNSS_VERSION, GNSS_MODULE) == RT_NULL ? RT_ERROR : RT_EOK;
+    log_debug("wait query gnss version %s", res_msg(res == RT_EOK));
     if (res != RT_EOK) return res;
 
 _exit_:
