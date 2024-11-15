@@ -19,7 +19,7 @@ void esp_apply(int* progress, void *node) {
 
 void esp_finish(void *node) {}
 
-UpgradeModuleOps esp_module = {
+UpgradeModuleOps esp_ota_ops = {
     .prepare = esp_prepare,
     .apply = esp_apply,
     .finish = esp_finish,

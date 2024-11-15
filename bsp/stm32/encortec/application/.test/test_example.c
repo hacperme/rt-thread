@@ -52,8 +52,8 @@ int application_start(int argc, char *argv[]) {
     // extern void test_struct_file_option(void);
     // test_struct_file_option();
 
-    extern void test_gnss(int argc, char **argv);
-    test_gnss(argc, argv);
+    // extern void test_gnss(int argc, char **argv);
+    // test_gnss(argc, argv);
 
     extern void test_upgrade_process(void);
     test_upgrade_process();

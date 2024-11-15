@@ -215,6 +215,7 @@ void start_verify(UpgradeNode* node)
             res = drv_hash_md5_update(file_buff, MD5_FILE_BUFFER_SIZE);
             // log_debug("j=%d ftell=%d fread ret=%d drv_hash_md5_update %s", j, ftell(ota_file), ret, res_msg(res == RT_EOK));
             if (res != RT_EOK) break;
+            rt_thread_mdelay(10);
         }
         rt_memset(file_buff, 0, MD5_FILE_BUFFER_SIZE);
         last_size = (file_size % MD5_FILE_BUFFER_SIZE == 0) ? MD5_FILE_BUFFER_SIZE : (file_size % MD5_FILE_BUFFER_SIZE);
@@ -231,7 +232,7 @@ void start_verify(UpgradeNode* node)
         drv_hash_md5_destroy();
         fclose(ota_file);
     
-        if (md5cmp(node->plan.file[i].file_md5, file_cmp_md5) == 0)
+        if (rt_strncmp(node->plan.file[i].file_md5, file_cmp_md5, sizeof(file_cmp_md5)) == 0)
         {
             log_debug("file %s md5 verfy success.", node->plan.file[i].file_name);
             node->plan.file[i].verified = 1;
@@ -264,11 +265,7 @@ void start_upgrade(UpgradeNode* node)
         save_module(node);
         node->ops.apply(&node->upgrade_progress, (void *)node);
         save_module(node);
-        if (node->status == UPGRADE_STATUS_SUCCESS) {
-            log_info("Upgrade successful for module %d at %s", node->module, node->plan.file[0].file_name);
-        } else {
-            log_error("Upgrade failed for module %d", node->module);
-        }
+        log_info("Upgrade %s for module %d", res_msg(node->status == UPGRADE_STATUS_SUCCESS), node->module);
         node->ops.finish((void *)node);
         save_module(node);
     }
@@ -299,9 +296,7 @@ void upgrade_all_module(void)
         if (get_module((UpgradeModule)i, &ota_node) == 0)
         {
             log_debug("ota_node.module=%d ota_node.status=%d", ota_node.module, ota_node.status);
-            if (ota_node.status == UPGRADE_STATUS_NO_PLAN || ota_node.status == UPGRADE_STATUS_SUCCESS || \
-                ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING || \
-                ota_node.status == UPGRADE_STATUS_PREPARED || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
+            if (ota_node.status < UPGRADE_STATUS_ON_PLAN || ota_node.status >= UPGRADE_STATUS_VERIFIED)
             {
                 continue;
             }
@@ -333,10 +328,10 @@ void upgrade_all_module(void)
         if (get_module((UpgradeModule)i, &ota_node) == 0)
         {
             log_debug("ota_node.module=%d ota_node.status=%d", ota_node.module, ota_node.status);
-            if (ota_node.status == UPGRADE_STATUS_VERIFIED || ota_node.status == UPGRADE_STATUS_UPGRADING || \
-                ota_node.status == UPGRADE_STATUS_PREPARED || ota_node.status == UPGRADE_STATUS_PREPARE_FAILED)
+            if (ota_node.status >= UPGRADE_STATUS_VERIFIED && ota_node.status < UPGRADE_STATUS_SUCCESS)
             {
                 start_upgrade(&ota_node);
+                save_module(&ota_node);
                 if (i == UPGRADE_MODULE_ST && ota_node.status == UPGRADE_STATUS_UPGRADING)
                 {
                     st_upgrade = 1;
@@ -346,17 +341,15 @@ void upgrade_all_module(void)
     }
 
     report_upgrade_results();
-    if (st_upgrade == 1)
-    {
-        rt_hw_cpu_reset();
-    }
+    if (st_upgrade == 1) rt_hw_cpu_reset();
 }
 
-extern UpgradeModuleOps esp_module;
 
 static void test_set_esp_ota_plan(void)
 {
     // 收到 ESP 升级计划, 记录升级相关信息并设置升级记录
+    extern UpgradeModuleOps esp_ota_ops;
+
     UpgradePlan esp_plan = {0};
     char test_msg[] = "xxx";
     rt_memcpy(esp_plan.source_version, test_msg, sizeof(test_msg));
@@ -365,19 +358,25 @@ static void test_set_esp_ota_plan(void)
     rt_memcpy(esp_plan.file[0].file_name, test_msg, sizeof(test_msg));
     rt_memcpy(esp_plan.file[0].download_addr, test_msg, sizeof(test_msg));
     rt_memcpy(esp_plan.file[0].file_md5, test_msg, sizeof(test_msg));
-    set_module(UPGRADE_MODULE_ESP, &esp_plan, &esp_module);
+    set_module(UPGRADE_MODULE_ESP, &esp_plan, &esp_ota_ops);
 }
 
 static void test_set_cat1_ota_plan(void)
 {
     extern UpgradeModuleOps cat1_ota_ops;
+
     char file_name[] = "./cat1-qth-v01.bin";
+    char cat1_target_version[] = "EG915NEUAPR03A04M16_01.200.01.200";
     char file_md5[] = {110, 102, 151, 255, 226, 166, 190, 8, 249, 55, 140, 118, 227, 119, 15, 192};
+
     // char file_name[] = "./cat1-v01-qth.bin";
+    // char cat1_target_version[] = "EG915NEUAPR03A03M16_QTH_01.200.01.200";
     // char file_md5[] = {206, 5, 194, 244, 21, 18, 238, 214, 207, 96, 187, 214, 24, 38, 115, 83};
 
     UpgradePlan cat1_plan = {0};
     cat1_plan.file_cnt = 1;
+    rt_memcpy(cat1_plan.target_version, cat1_target_version, sizeof(cat1_target_version));
+
     rt_memcpy(cat1_plan.file[0].file_name, file_name, sizeof(file_name));
     log_debug("cat1_plan.file[0].file_name %s", cat1_plan.file[0].file_name);
     rt_memcpy(cat1_plan.file[0].file_md5, file_md5, sizeof(file_md5));
@@ -402,6 +401,7 @@ static void test_set_cat1_ota_plan(void)
 static void test_set_gnss_ota_plan(void)
 {
     extern UpgradeModuleOps gnss_ota_ops;
+
     char file0_name[] = "/fota/da_uart_115200.bin";
     char file0_md5[] = {175, 87, 90, 84, 136, 88, 127, 203, 180, 154, 90, 188, 117, 13, 157, 245};
     char file1_name[] = "/fota/partition_table.bin";
@@ -476,8 +476,8 @@ void test_upgrade_process(void)
 
     // TODO: 收到升级计划后，进行设置
     // test_set_esp_ota_plan();
-    // test_set_cat1_ota_plan();
-    test_set_gnss_ota_plan();
+    test_set_cat1_ota_plan();
+    // test_set_gnss_ota_plan();
 
     // 业务结束后 & 业务开始之前, 先检测是否有升级, 有则开启升级
     if (exit_upgrade_plan() > 0)

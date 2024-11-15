@@ -24,9 +24,10 @@
 #define CAT1_SEND_FILE_SIZE 32
 
 #define AT_RDY_HEAD "RDY"
-#define AT_SHUTDOWN_HEAD "POWERED DOWN"
+#define AT_POWERDOWN_HEAD "POWERED DOWN"
 #define AT_QIND_HEAD "+QIND:"
 #define AT_QIND_FOTA_FILESTART "+QIND: \"FOTA\",\"FILESTART\""
+#define AT_QIND_FOTA_FILEDOWNLOADING "+QIND: \"FOTA\",\"DOWNLOADING\""
 #define AT_QIND_FOTA_FILEEND "+QIND: \"FOTA\",\"FILEEND\""
 #define AT_QIND_FOTA_START "+QIND: \"FOTA\",\"START\""
 #define AT_QIND_FOTA_UPDATING "+QIND: \"FOTA\",\"UPDATING\""
@@ -43,21 +44,37 @@ typedef struct {
     struct rt_semaphore power_down;
 } cat1_sem_st;
 
+typedef enum {
+    CAT1_OTA_DEFAULT,
+    CAT1_POWER_DOWN,
+    CAT1_RDY,
+    CAT1_OTA_FILE_START,
+    CAT1_OTA_FILE_DOWNLOADING,
+    CAT1_OTA_FILE_END,
+    CAT1_OTA_START,
+    CAT1_OTA_UPDATEING,
+    CAT1_OTA_END
+} cat1_state_enum;
+
 static at_client_t cat1_at_client = RT_NULL;
 static at_response_t cat1_at_resp = RT_NULL;
 
 static cat1_sem_st cat1_sem;
 static char trans_file_res = 0;
-static char fota_res = 0;
+static char fota_res_code[4] = {0};
 static char fota_updating_proc[4] = {0};
 static rt_uint16_t fota_process_size = 0;
+static cat1_state_enum cat1_ota_state = CAT1_OTA_DEFAULT;
 
 static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size);
+rt_err_t cat1_at_set_regression(rt_uint8_t enable);
+rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size);
+rt_err_t cat1_at_query_subedition(char *cat1_sub_edition, rt_size_t size);
 
 static struct at_urc cat1_ota_urc_table[] = {
     {AT_QIND_HEAD,       "\r\n", cat1_ota_urc},
     {AT_RDY_HEAD,        "\r\n", cat1_ota_urc},
-	{AT_SHUTDOWN_HEAD,   "\r\n", cat1_ota_urc}
+	{AT_POWERDOWN_HEAD,   "\r\n", cat1_ota_urc}
 };
 
 static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size)
@@ -67,36 +84,51 @@ static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t s
     {
         if (rt_strncmp(data, AT_QIND_FOTA_FILESTART, rt_strlen(AT_QIND_FOTA_FILESTART)) == 0)
         {
+            cat1_ota_state = CAT1_OTA_FILE_START;
             rt_sem_release(&cat1_sem.file_start);
+        }
+        else if (rt_strncmp(data, AT_QIND_FOTA_FILEDOWNLOADING, rt_strlen(AT_QIND_FOTA_FILEDOWNLOADING)) == 0)
+        {
+            cat1_ota_state = CAT1_OTA_FILE_DOWNLOADING;
         }
         else if (rt_strncmp(data, AT_QIND_FOTA_FILEEND, rt_strlen(AT_QIND_FOTA_FILEEND)) == 0)
         {
             trans_file_res = data[rt_strlen(AT_QIND_FOTA_FILEEND) + 1] == '0' ? 1 : 0;
+            cat1_ota_state = CAT1_OTA_FILE_END;
             rt_sem_release(&cat1_sem.file_end);
         }
-        else if (rt_strncmp(data, AT_QIND_FOTA_START, rt_strlen(AT_QIND_FOTA_START)) == 0)
+        else if (rt_strncmp(data, AT_QIND_FOTA_START, rt_strlen(AT_QIND_FOTA_START)) == 0 || \
+                 rt_strncmp(data + 2, AT_QIND_FOTA_START, rt_strlen(AT_QIND_FOTA_START)) == 0)
         {
+            cat1_ota_state = CAT1_OTA_START;
             rt_sem_release(&cat1_sem.fota_start);
         }
         else if (rt_strncmp(data, AT_QIND_FOTA_UPDATING, rt_strlen(AT_QIND_FOTA_UPDATING)) == 0)
         {
             fota_process_size = rt_strlen(AT_QIND_FOTA_UPDATING) + 1;
+            rt_memset(fota_updating_proc, 0, sizeof(fota_updating_proc));
             rt_memcpy(fota_updating_proc, data + fota_process_size, size - 2 - fota_process_size);
             log_debug("size=%d, fota_process_size=%d, fota_updating_proc=%s", size, fota_process_size, fota_updating_proc);
+            cat1_ota_state = CAT1_OTA_UPDATEING;
             rt_sem_release(&cat1_sem.fota_updating);
         }
         else if (rt_strncmp(data, AT_QIND_FOTA_END, rt_strlen(AT_QIND_FOTA_END)) == 0)
         {
-            fota_res = data[rt_strlen(AT_QIND_FOTA_END) + 1] == '0' ? 1 : 0;
+            cat1_ota_state = CAT1_OTA_END;
+            rt_uint16_t fota_res_code_size = rt_strlen(AT_QIND_FOTA_END) + 1;
+            rt_memset(fota_res_code, 0, sizeof(fota_res_code));
+            rt_memcpy(fota_res_code, data + fota_res_code_size, size - 2 - fota_res_code_size);
             rt_sem_release(&cat1_sem.fota_end);
         }
     }
     else if (rt_strncmp(data, AT_RDY_HEAD, rt_strlen(AT_RDY_HEAD)) == 0)
     {
+        cat1_ota_state = CAT1_RDY;
         rt_sem_release(&cat1_sem.rdy);
     }
-    else if (rt_strncmp(data, AT_SHUTDOWN_HEAD, rt_strlen(AT_SHUTDOWN_HEAD)) == 0)
+    else if (rt_strncmp(data, AT_POWERDOWN_HEAD, rt_strlen(AT_POWERDOWN_HEAD)) == 0)
     {
+        cat1_ota_state = CAT1_POWER_DOWN;
         rt_sem_release(&cat1_sem.power_down);
     }
 }
@@ -131,6 +163,7 @@ void cat1_ota_prepare(void *node)
 {
     // 1. AT模块初始化
     rt_err_t res;
+    rt_uint8_t cnt;
     UpgradeNode *_node = (UpgradeNode *)node;
 
     res = cat1_sem_init();
@@ -170,11 +203,35 @@ void cat1_ota_prepare(void *node)
         goto _failed_;
     }
 
+_cat1_power_on_:
     res = cat1_power_on();
 
-    res = rt_sem_take(&cat1_sem.rdy, 30 * 1000);
-
-    _node->status = res == RT_EOK ? UPGRADE_STATUS_PREPARED : UPGRADE_STATUS_PREPARE_FAILED;
+    cnt = 20;
+    log_debug("wait cat1 rdy or fota start.");
+    do {
+        res = rt_sem_take(&cat1_sem.fota_start, 500);
+        if (res == RT_EOK) break;
+        res = rt_sem_take(&cat1_sem.fota_updating, 500);
+        if (res == RT_EOK) break;
+        res = rt_sem_take(&cat1_sem.fota_end, 500);
+        if (res == RT_EOK)
+        {
+            rt_sem_release(&cat1_sem.fota_end);
+            break;
+        }
+        res = rt_sem_take(&cat1_sem.rdy, 500);
+        if (res == RT_EOK) break;
+        res = rt_sem_take(&cat1_sem.power_down, 500);
+        if (res == RT_EOK)
+        {
+            rt_thread_mdelay(1000);
+            goto _cat1_power_on_;
+        }
+        cnt--;
+    } while (res != RT_EOK && cnt > 0);
+    log_debug("wait cat1 rdy or fota start over.");
+    
+    _node->status = (cat1_ota_state == CAT1_RDY || cat1_ota_state >= CAT1_OTA_START) ? UPGRADE_STATUS_PREPARED : UPGRADE_STATUS_PREPARE_FAILED;
     return;
 
 _failed_:
@@ -256,42 +313,64 @@ rt_err_t transfer_cat1_ota_file(char *file_name)
     return res;
 }
 
+void check_cat1_version(void *node)
+{
+    UpgradeNode *_node = (UpgradeNode *)node;
+    rt_err_t res;
+    char cat1_version[64] = {0};
+    res = cat1_at_query_version(cat1_version, 64);
+    log_debug("cat1_at_query_version %s", res_msg(res == RT_EOK));
+    if (res == RT_EOK)
+    {
+        _node->status = (rt_strcmp(cat1_version, _node->plan.target_version) == 0) ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
+    }
+}
+
 void cat1_ota_apply(int* progress, void *node)
 {
     UpgradeNode *_node = (UpgradeNode *)node;
     if (cat1_at_client == RT_NULL) goto _failed_;
 
     rt_err_t res;
-    res = open_cat1_fota_urc();
-    log_info("open_cat1_fota_urc %s", res_msg(res == RT_EOK));
-    if (res != RT_EOK) goto _failed_;
+    if (cat1_ota_state == CAT1_RDY)
+    {
+        // 打开 CAT1 AT 回显
+        res = cat1_at_set_regression(1);
+        log_info("cat1_at_set_regression %s", res_msg(res == RT_EOK));
 
-    res = start_cat1_ota_cmd(_node->plan.file[0].file_size);
-    log_info("start_cat1_ota_cmd %s", res_msg(res == RT_EOK));
-    if (res != RT_EOK) goto _failed_;
+        // 打开 CAT1 URC
+        res = open_cat1_fota_urc();
+        log_info("open_cat1_fota_urc %s", res_msg(res == RT_EOK));
+        if (res != RT_EOK) goto _failed_;
 
-    res = transfer_cat1_ota_file(_node->plan.file[0].file_name);
-    log_info("transfer_cat1_ota_file %s", res_msg(res == RT_EOK));
-    if (res != RT_EOK) goto _failed_;
+        res = start_cat1_ota_cmd(_node->plan.file[0].file_size);
+        log_info("start_cat1_ota_cmd %s", res_msg(res == RT_EOK));
+        if (res != RT_EOK) goto _failed_;
 
-    res = rt_sem_take(&cat1_sem.fota_start, 60 * 1000);
-    log_info("rt_sem_take cat1_sem.fota_start %s", res_msg(res == RT_EOK));
-    if (res != RT_EOK) goto _failed_;
+        res = transfer_cat1_ota_file(_node->plan.file[0].file_name);
+        log_info("transfer_cat1_ota_file %s", res_msg(res == RT_EOK));
+        if (res != RT_EOK) goto _failed_;
 
-    do {
-        res = rt_sem_take(&cat1_sem.fota_updating, 60 * 1000);
-        log_info("rt_sem_take cat1_sem.fota_updating %s, process %s", res_msg(res == RT_EOK), fota_updating_proc);
-    } while (res == RT_EOK && rt_strcmp(fota_updating_proc, AT_FOTA_PERCENT) != 0);
-    if (res != RT_EOK) goto _failed_;
+        res = rt_sem_take(&cat1_sem.fota_start, 60 * 1000);
+        log_info("rt_sem_take cat1_sem.fota_start %s", res_msg(res == RT_EOK));
+        if (res != RT_EOK) goto _failed_;
+    }
+    if (cat1_ota_state < CAT1_OTA_END)
+    {
+        do {
+            res = rt_sem_take(&cat1_sem.fota_updating, 120 * 1000);
+            log_info("rt_sem_take cat1_sem.fota_updating %s, process %s", res_msg(res == RT_EOK), fota_updating_proc);
+        } while (res == RT_EOK && rt_strcmp(fota_updating_proc, AT_FOTA_PERCENT) != 0);
+        if (res != RT_EOK) goto _failed_;
+    }
 
     res = rt_sem_take(&cat1_sem.fota_end, 60 * 1000);
-    log_info("rt_sem_take cat1_sem.fota_end %s", res_msg(res == RT_EOK));
-    if (res == RT_EOK) res = fota_res == 1 ? RT_EOK : RT_ERROR;
-    log_info("fota_res %s", res_msg(res == RT_EOK));
+    log_info("rt_sem_take cat1_sem.fota_end %s, fota_res_code %s", res_msg(res == RT_EOK), fota_res_code);
 
     res = rt_sem_take(&cat1_sem.rdy, 60 * 1000);
     log_info("rt_sem_take cat1_sem.rdy %s", res_msg(res == RT_EOK));
-    _node->status = fota_res == 1 ? UPGRADE_STATUS_SUCCESS : UPGRADE_STATUS_FAILED;
+
+    check_cat1_version(node);
     return;
 
 _failed_:
@@ -301,8 +380,11 @@ _failed_:
 
 void cat1_ota_finish(void *node)
 {
+    // Press power key to shutdown cat1.
     cat1_power_on();
+    // Waiting shutdown urc.
     rt_err_t res = rt_sem_take(&cat1_sem.power_down, 30 * 1000);
+    // Turn off power for cat1.
     cat1_power_off();
 
     cat1_sem_deinit();
@@ -344,10 +426,7 @@ rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size)
         rt_memset(cat1_version, 0, size);
         int ret = at_resp_parse_line_args(cat1_at_resp, 2, "%s\r\n", cat1_version);
         res = ret > 0 ? RT_EOK : RT_ERROR;
-        if (res == RT_EOK)
-        {
-            log_debug("CAT1version %s, size=%d", cat1_version, rt_strlen(cat1_version));
-        }
+        if (res == RT_EOK) log_debug("CAT1version %s, size=%d", cat1_version, rt_strlen(cat1_version));
     }
     return res;
 }
@@ -392,5 +471,5 @@ void test_cat1_at_ota(void)
     res = cat1_at_query_subedition(cat1_sub_edition, 8);
     log_debug("cat1_at_query_subedition %s", res_msg(res == RT_EOK));
 
-    cat1_node.ops.finish(&cat1_node);
+    // cat1_node.ops.finish(&cat1_node);
 }
