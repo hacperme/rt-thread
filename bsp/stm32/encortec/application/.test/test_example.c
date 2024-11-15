@@ -26,6 +26,14 @@ void fatfs_dhara_nand_mnt_cb(fdnfs_init_status_e *status)
 
 static fdnfs_init_status_e mnt_status;
 
+void test_show_app_version(void)
+{
+    extern void read_app_version_information(uint8_t **app_version, uint8_t **app_subedition, uint8_t **app_build_time);
+    uint8_t *app_version, *app_subedition, *app_build_time;
+    read_app_version_information(&app_version, &app_subedition, &app_build_time);
+    log_debug("app_version=%s, app_subedition=%s, app_build_time=%s", app_version, app_subedition, app_build_time);
+}
+
 int application_start(int argc, char *argv[]) {
     app_log_init();
 
@@ -46,6 +54,8 @@ int application_start(int argc, char *argv[]) {
         // TODO:
     }
 
+    test_show_app_version();
+
     // extern void test_cat1_at_ota(void);
     // test_cat1_at_ota();
 
@@ -55,8 +65,8 @@ int application_start(int argc, char *argv[]) {
     // extern void test_gnss(int argc, char **argv);
     // test_gnss(argc, argv);
 
-    extern void test_upgrade_process(void);
-    test_upgrade_process();
+    // extern void test_upgrade_process(void);
+    // test_upgrade_process();
 
     // extern void test_st_at(void);
     // test_st_at();
