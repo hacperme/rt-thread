@@ -11,6 +11,7 @@ static char upgrade_manager_init_tag = 0;
 
 int upgrade_manager_init(void)
 {
+    int ret;
     rt_err_t res = drv_hash_init();
     log_debug("drv_hash_init %s", res_msg(res == RT_EOK));
 
@@ -32,6 +33,23 @@ int upgrade_manager_init(void)
         }
         fclose(ota_file);
         if (wres != sizeof(ota_node)) return -2;
+    }
+    else
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            ret = get_module(i, &ota_node);
+            if (ret == 0)
+            {
+                UpgradeModuleOps *ops = RT_NULL;
+                init_module_ops(i, &ops);
+                if (ops != RT_NULL)
+                {
+                    rt_memcpy(&ota_node.ops, ops, sizeof(*ops));
+                    save_module(&ota_node);
+                }
+            }
+        }
     }
 
     upgrade_manager_init_tag = 1;
@@ -120,9 +138,50 @@ void init_module(UpgradeNode *node, UpgradePlan *plan, UpgradeModuleOps *ops)
     rt_memcpy(&node->ops, ops, sizeof(*ops));
 }
 
-void set_module(UpgradeModule module, UpgradePlan *plan, UpgradeModuleOps *ops)
+void init_module_ops(UpgradeModule module, UpgradeModuleOps **ops)
+{
+    switch (module)
+    {
+    case UPGRADE_MODULE_NB:
+    {
+        extern UpgradeModuleOps nb_ota_ops;
+        *ops = &nb_ota_ops;
+        break;
+    }
+    case UPGRADE_MODULE_CAT1:
+    {
+        extern UpgradeModuleOps cat1_ota_ops;
+        *ops = &cat1_ota_ops;
+        break;
+    }
+    case UPGRADE_MODULE_GNSS:
+    {
+        extern UpgradeModuleOps gnss_ota_ops;
+        *ops = &gnss_ota_ops;
+        break;
+    }
+    case UPGRADE_MODULE_ESP:
+    {
+        extern UpgradeModuleOps esp_ota_ops;
+        *ops = &esp_ota_ops;
+        break;
+    }
+    case UPGRADE_MODULE_ST:
+    {
+        extern UpgradeModuleOps stm32u575_ota_ops;
+        *ops = &stm32u575_ota_ops;
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void set_module(UpgradeModule module, UpgradePlan *plan)
 {
     get_module(module, &ota_node);
+    UpgradeModuleOps *ops = RT_NULL;
+    init_module_ops(module, &ops);
     init_module(&ota_node, plan, ops);
     log_debug("ota_node.status=%d", ota_node.status);
     log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
@@ -131,17 +190,6 @@ void set_module(UpgradeModule module, UpgradePlan *plan, UpgradeModuleOps *ops)
     log_debug("ota_node.ops.apply=0x%08X", ota_node.ops.apply);
     log_debug("ota_node.ops.finish=0x%08X", ota_node.ops.finish);
     save_module(&ota_node);
-}
-
-static int md5cmp(char *str1, char *str2)
-{
-    int res = 0;
-    for (int i = 0; i < 16; i++)
-    {
-        res = str1[i] == str2[i] ? 0 : -1;
-        if (res != 0) break;
-    }
-    return res;
 }
 
 // TODO: 这里应该是一个同一的接口直接下载，这里看是否还需要每个模块单独一个download方法
@@ -258,17 +306,17 @@ void start_upgrade(UpgradeNode* node)
 {
     log_debug("start_upgrade");
     node->ops.prepare((void *)node);
-    save_module(node);
+    if (node->module != UPGRADE_MODULE_ESP) save_module(node);
     if (node->status == UPGRADE_STATUS_PREPARED)
     {
         node->status = UPGRADE_STATUS_UPGRADING;
-        save_module(node);
+        if (node->module != UPGRADE_MODULE_ESP) save_module(node);
         node->ops.apply(&node->upgrade_progress, (void *)node);
-        save_module(node);
+        if (node->module != UPGRADE_MODULE_ESP) save_module(node);
         log_info("Upgrade %s for module %d", res_msg(node->status == UPGRADE_STATUS_SUCCESS), node->module);
-        node->ops.finish((void *)node);
-        save_module(node);
     }
+    node->ops.finish((void *)node);
+    save_module(node);
 }
 
 // TODO: Report OTA Result to cloud by NB.
@@ -348,23 +396,41 @@ void upgrade_all_module(void)
 static void test_set_esp_ota_plan(void)
 {
     // 收到 ESP 升级计划, 记录升级相关信息并设置升级记录
-    extern UpgradeModuleOps esp_ota_ops;
+    char file_name[] = "/fota/esp_encortec_v100.bin";
+    char esp32_target_version[] = "v1.0.0";
+    char file_md5[] = {246, 171, 194, 86, 25, 1, 25, 69, 106, 2, 248, 154, 115, 95, 18, 107};
 
-    UpgradePlan esp_plan = {0};
-    char test_msg[] = "xxx";
-    rt_memcpy(esp_plan.source_version, test_msg, sizeof(test_msg));
-    rt_memcpy(esp_plan.target_version, test_msg, sizeof(test_msg));
-    esp_plan.file_cnt = 1;
-    rt_memcpy(esp_plan.file[0].file_name, test_msg, sizeof(test_msg));
-    rt_memcpy(esp_plan.file[0].download_addr, test_msg, sizeof(test_msg));
-    rt_memcpy(esp_plan.file[0].file_md5, test_msg, sizeof(test_msg));
-    set_module(UPGRADE_MODULE_ESP, &esp_plan, &esp_ota_ops);
+    // char file_name[] = "/fota/esp_encortec_v101.bin";
+    // char esp32_target_version[] = "v1.0.1";
+    // char file_md5[] = {146, 87, 249, 198, 4, 72, 233, 26, 127, 116, 28, 52, 206, 194, 216, 75};
+
+    UpgradePlan esp32_plan = {0};
+    esp32_plan.file_cnt = 1;
+    rt_memcpy(esp32_plan.target_version, esp32_target_version, sizeof(esp32_target_version));
+
+    rt_memcpy(esp32_plan.file[0].file_name, file_name, sizeof(file_name));
+    log_debug("esp32_plan.file[0].file_name %s", esp32_plan.file[0].file_name);
+    rt_memcpy(esp32_plan.file[0].file_md5, file_md5, sizeof(file_md5));
+    log_debug("esp32_plan.file[0].file_md5 %s", esp32_plan.file[0].file_md5);
+
+    set_module(UPGRADE_MODULE_ESP, &esp32_plan);
+
+    int res = get_module(UPGRADE_MODULE_ESP, &ota_node);
+    log_debug("get_module UPGRADE_MODULE_ESP %s", res_msg(res == 0));
+    if (res != 0) return;
+    log_debug("ota_node.status=%d", ota_node.status);
+    log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
+    log_debug("ota_node.plan.file[0].file_name=%s", ota_node.plan.file[0].file_name);
+    log_debug("ota_node.ops.prepare=0x%08X", ota_node.ops.prepare);
+    log_debug("ota_node.ops.apply=0x%08X", ota_node.ops.apply);
+    log_debug("ota_node.ops.finish=0x%08X", ota_node.ops.finish);
+    ota_node.status = UPGRADE_STATUS_DOWNLOADED;
+    log_debug("ota_node.status=%d", ota_node.status);
+    save_module(&ota_node);
 }
 
 static void test_set_cat1_ota_plan(void)
 {
-    extern UpgradeModuleOps cat1_ota_ops;
-
     char file_name[] = "./cat1-qth-v01.bin";
     char cat1_target_version[] = "EG915NEUAPR03A04M16_01.200.01.200";
     char file_md5[] = {110, 102, 151, 255, 226, 166, 190, 8, 249, 55, 140, 118, 227, 119, 15, 192};
@@ -382,7 +448,7 @@ static void test_set_cat1_ota_plan(void)
     rt_memcpy(cat1_plan.file[0].file_md5, file_md5, sizeof(file_md5));
     log_debug("cat1_plan.file[0].file_md5 %s", cat1_plan.file[0].file_md5);
 
-    set_module(UPGRADE_MODULE_CAT1, &cat1_plan, &cat1_ota_ops);
+    set_module(UPGRADE_MODULE_CAT1, &cat1_plan);
 
     int res = get_module(UPGRADE_MODULE_CAT1, &ota_node);
     log_debug("get_module UPGRADE_MODULE_CAT1 %s", res_msg(res == 0));
@@ -400,8 +466,6 @@ static void test_set_cat1_ota_plan(void)
 
 static void test_set_gnss_ota_plan(void)
 {
-    extern UpgradeModuleOps gnss_ota_ops;
-
     char file0_name[] = "/fota/da_uart_115200.bin";
     char file0_md5[] = {175, 87, 90, 84, 136, 88, 127, 203, 180, 154, 90, 188, 117, 13, 157, 245};
     char file1_name[] = "/fota/partition_table.bin";
@@ -419,6 +483,7 @@ static void test_set_gnss_ota_plan(void)
     rt_memcpy(gnss_plan.target_version, gnss_target_verion, sizeof(gnss_target_verion));
     log_debug("gnss_plan.target_version %s", gnss_plan.target_version);
 
+    // GNSS 五个文件必须按顺序放入对应的文件
     rt_memcpy(gnss_plan.file[0].file_name, file0_name, sizeof(file0_name));
     log_debug("gnss_plan.file[0].file_name %s", gnss_plan.file[0].file_name);
     rt_memcpy(gnss_plan.file[0].file_md5, file0_md5, sizeof(file0_md5));
@@ -449,7 +514,7 @@ static void test_set_gnss_ota_plan(void)
     log_debug("gnss_plan.file[4].file_md5 %s", gnss_plan.file[4].file_md5);
     gnss_plan.file[4].file_size = 1024;
 
-    set_module(UPGRADE_MODULE_GNSS, &gnss_plan, &gnss_ota_ops);
+    set_module(UPGRADE_MODULE_GNSS, &gnss_plan);
 
     int res = get_module(UPGRADE_MODULE_GNSS, &ota_node);
     log_debug("get_module UPGRADE_MODULE_GNSS %s", res_msg(res == 0));
@@ -475,8 +540,8 @@ void test_upgrade_process(void)
     // TODO: 开机初始化后，检测ST是否有升级结果，并进行上报。
 
     // TODO: 收到升级计划后，进行设置
-    // test_set_esp_ota_plan();
-    test_set_cat1_ota_plan();
+    test_set_esp_ota_plan();
+    // test_set_cat1_ota_plan();
     // test_set_gnss_ota_plan();
 
     // 业务结束后 & 业务开始之前, 先检测是否有升级, 有则开启升级

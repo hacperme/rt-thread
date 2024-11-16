@@ -141,8 +141,8 @@ rt_err_t cat1_sem_init(void)
     res = rt_sem_init(&cat1_sem.fota_start, "cat1fotas", 0, RT_IPC_FLAG_PRIO);
     res = rt_sem_init(&cat1_sem.fota_updating, "cat1fotau", 0, RT_IPC_FLAG_PRIO);
     res = rt_sem_init(&cat1_sem.fota_end, "cat1fotae", 0, RT_IPC_FLAG_PRIO);
-    res = rt_sem_init(&cat1_sem.rdy, "cat1fotae", 0, RT_IPC_FLAG_PRIO);
-    res = rt_sem_init(&cat1_sem.power_down, "cat1fotae", 0, RT_IPC_FLAG_PRIO);
+    res = rt_sem_init(&cat1_sem.rdy, "cat1rdy", 0, RT_IPC_FLAG_PRIO);
+    res = rt_sem_init(&cat1_sem.power_down, "cat1pwdn", 0, RT_IPC_FLAG_PRIO);
     return res;
 }
 

@@ -9,6 +9,8 @@
 #include "rtthread.h"
 #include "tools.h"
 #include "drv_fatfs_dhara_nand.h"
+#include "drv_nand_flash.h"
+#include "lpm.h"
 #include "logging.h"
 
 #if 1
@@ -56,6 +58,15 @@ int application_start(int argc, char *argv[]) {
 
     test_show_app_version();
 
+    esp32_power_pin_init();
+
+    // esp32_power_off();
+    // rt_thread_mdelay(1000);
+    // nand_to_esp32();
+    // esp32_power_on();
+
+    // esp32_start_download();
+
     // extern void test_cat1_at_ota(void);
     // test_cat1_at_ota();
 
@@ -65,8 +76,8 @@ int application_start(int argc, char *argv[]) {
     // extern void test_gnss(int argc, char **argv);
     // test_gnss(argc, argv);
 
-    // extern void test_upgrade_process(void);
-    // test_upgrade_process();
+    extern void test_upgrade_process(void);
+    test_upgrade_process();
 
     // extern void test_st_at(void);
     // test_st_at();

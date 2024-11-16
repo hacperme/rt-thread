@@ -130,26 +130,20 @@ rt_err_t esp32_start_download(void)
     rt_err_t res;
     res = esp32_power_off();
     log_debug("esp32_power_off() %s", res_msg(res == RT_EOK));
-    if (res != RT_EOK)
-    {
-        return res;
-    }
+    if (res != RT_EOK) return res;
     rt_thread_mdelay(100);
 
     res = esp32_download_pin_enable(0);
     log_debug("esp32_download_pin_enable(0) %s", res_msg(res == RT_EOK));
-    if (res != RT_EOK)
-    {
-        return res;
-    }
+    if (res != RT_EOK) return res;
     rt_thread_mdelay(100);
 
     res = esp32_pwron_pin_enable(1);
-    if (res != RT_EOK)
-    {
-        return res;
-    }
+    log_debug("esp32_pwron_pin_enable(1) %s", res_msg(res == RT_EOK));
+    if (res != RT_EOK) return res;
+
     res = esp32_en_pin_enable(1);
+    log_debug("esp32_en_pin_enable(1) %s", res_msg(res == RT_EOK));
     return res;
 }
 
