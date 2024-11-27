@@ -95,6 +95,7 @@ driver_cpppath = [
     os.path.join(SDK_ROOT, "application/board/driver/watch_dog"),
     os.path.join(SDK_ROOT, "application/board/driver/drv_hash"),
     os.path.join(SDK_ROOT, "application/board/driver/ota"),
+    os.path.join(SDK_ROOT, "application/board/driver/led"),
 ]
 CPPPATH += driver_cpppath
 
@@ -184,6 +185,7 @@ driver_c_files = [
     "board/driver/ota/ota_esp32.c",
     "board/driver/ota/ota_stm32u575.c",
     "board/driver/ota/upgrade_manager.c",
+    "board/driver/led/led.c",
 ]
 
 cloud_c_files = [

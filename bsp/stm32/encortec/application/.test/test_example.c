@@ -38,12 +38,14 @@ void test_show_app_version(void)
 
 int application_start(int argc, char *argv[]) {
 
-    extern void test_show_reset_status(void);
-    test_show_reset_status();
+    app_log_init();
+
+    // extern void test_show_reset_status(void);
+    // test_show_reset_status();
 
     rt_err_t res;
     res = rt_sem_init(&mnt_sem, "mntsem", 0, RT_IPC_FLAG_PRIO);
-    rt_kprintf("rt_sem_init mntsem res=%d\n", res);
+    log_debug("rt_sem_init mntsem res=%d\n", res);
     if (res != RT_EOK)
     {
         return -1;
@@ -66,8 +68,6 @@ int application_start(int argc, char *argv[]) {
     // extern int delete_directory(const char *dir);
     // delete_directory("/data");
     // delete_directory("/log/");
-
-    app_log_init();
 
     // test_show_app_version();
 
@@ -141,8 +141,11 @@ int application_start(int argc, char *argv[]) {
     // extern void data_save_as_file_test();
     // data_save_as_file_test();
 
-    extern void main_business_entry(void);
-    main_business_entry();
+    extern void debug_led1_flash(void);
+    debug_led1_flash();
+
+    // extern void main_business_entry(void);
+    // main_business_entry();
 
     // extern void esp_data_stransf_example(void);
     // esp_data_stransf_example();
