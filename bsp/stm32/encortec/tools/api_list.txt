@@ -408,3 +408,6 @@ get_adc_handle
 get_dma_node
 get_dma_qlist
 get_dma_handle
+HAL_HASH_MD5_Start
+HAL_HASH_MD5_Accmlt
+HAL_HASH_MD5_Accmlt_End

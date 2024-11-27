@@ -173,6 +173,7 @@ wdg_error_code_e wdg_init(rt_uint32_t feed_cycle, wdg_feed_impl_t feed_impl)
         return WDG_NO_ERROR;
     }
 
+    rt_memset(&wdg_mutex, 0, sizeof(wdg_mutex));
     res = rt_mutex_init(&wdg_mutex, "wdgmtx", RT_IPC_FLAG_PRIO);
     if(res != RT_EOK)
     {
@@ -180,6 +181,7 @@ wdg_error_code_e wdg_init(rt_uint32_t feed_cycle, wdg_feed_impl_t feed_impl)
         return WDG_NOT_INIT;
     }
 
+    rt_memset(&wdg_thd_suspend_sem, 0, sizeof(wdg_thd_suspend_sem));
     res = rt_sem_init(&wdg_thd_suspend_sem, "wdgsem", 0, RT_IPC_FLAG_PRIO);
     if(res != RT_EOK)
     {
@@ -189,6 +191,7 @@ wdg_error_code_e wdg_init(rt_uint32_t feed_cycle, wdg_feed_impl_t feed_impl)
         return WDG_NOT_INIT;
     }
 
+    rt_memset(&wdg_thread, 0, sizeof(wdg_thread));
     res = rt_thread_init(&wdg_thread, "wdgthd", _wdg_feed_task, RT_NULL, wdg_thread_stack, wdg_thread_stack_size, 1, 50);
     if(res != RT_EOK)
     {

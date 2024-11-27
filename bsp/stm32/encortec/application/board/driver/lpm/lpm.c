@@ -101,7 +101,7 @@ rt_err_t esp32_power_on(void)
     rt_err_t res;
 
     res = esp32_download_pin_enable(1);
-    log_debug("esp32_download_pin_enable(1) %s", res == RT_EOK ? "success" : "failed");
+    log_debug("esp32_download_pin_enable(1) %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -129,27 +129,21 @@ rt_err_t esp32_start_download(void)
 {
     rt_err_t res;
     res = esp32_power_off();
-    log_debug("esp32_power_off() %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
+    log_debug("esp32_power_off() %s", res_msg(res == RT_EOK));
+    if (res != RT_EOK) return res;
     rt_thread_mdelay(100);
 
     res = esp32_download_pin_enable(0);
-    log_debug("esp32_download_pin_enable(0) %s", res == RT_EOK ? "success" : "failed");
-    if (res != RT_EOK)
-    {
-        return res;
-    }
+    log_debug("esp32_download_pin_enable(0) %s", res_msg(res == RT_EOK));
+    if (res != RT_EOK) return res;
     rt_thread_mdelay(100);
 
     res = esp32_pwron_pin_enable(1);
-    if (res != RT_EOK)
-    {
-        return res;
-    }
+    log_debug("esp32_pwron_pin_enable(1) %s", res_msg(res == RT_EOK));
+    if (res != RT_EOK) return res;
+
     res = esp32_en_pin_enable(1);
+    log_debug("esp32_en_pin_enable(1) %s", res_msg(res == RT_EOK));
     return res;
 }
 
@@ -171,6 +165,15 @@ rt_err_t cat1_pwrkey_stm_pin_enable(rt_uint8_t mode)
     return rt_pin_read(CAT1_PWRKEY_STM_PIN) == mode ? RT_EOK : RT_ERROR;
 }
 
+rt_err_t cat_press_pwkkey(void)
+{
+    rt_err_t res;
+    res = cat1_pwrkey_stm_pin_enable(1);
+    rt_thread_mdelay(1000);
+    res = cat1_pwrkey_stm_pin_enable(0);
+    return res;
+}
+
 rt_err_t cat1_power_on(void)
 {
     cat1_power_pin_init();
@@ -178,13 +181,9 @@ rt_err_t cat1_power_on(void)
     rt_err_t res;
     res = cat1_pwron_pin_enable(1);
     // TODO: Enable this check.
-    // if (res != RT_EOK)
-    // {
-    //     return res;
-    // }
-    res = cat1_pwrkey_stm_pin_enable(1);
-    rt_thread_mdelay(1000);
-    res = cat1_pwrkey_stm_pin_enable(0);
+    // if (res != RT_EOK) return res;
+    res = cat_press_pwkkey();
+
     return res;
 }
 
@@ -198,7 +197,7 @@ void shut_down(void)
     rt_err_t res;
     /* Wakup irq enable. */
     res = pwrctrl_pwr_wkup3_irq_enable();
-    log_debug("pwrctrl_pwr_wkup3_irq_enable %s.", res != RT_EOK ? "failed" : "success");
+    log_debug("pwrctrl_pwr_wkup3_irq_enable %s.", res_msg(res == RT_EOK));
     rtc_wakeup_irq_enable();
     // test_button_wakeup_irq_enable();
 
@@ -305,13 +304,13 @@ rt_err_t rtc_init(void)
 {
     rt_err_t res = RT_ERROR;
     rtc_dev = rt_device_find("rtc");
-    log_debug("find rtc device %s.", !rtc_dev ? "failed" : "success");
+    log_debug("find rtc device %s.", res_msg(rtc_dev != RT_NULL));
     if (!rtc_dev)
     {
         return res;
     }
     res = rt_device_open(rtc_dev, 0);
-    log_debug("open rtc device %s.", res != RT_EOK ? "failed" : "success");
+    log_debug("open rtc device %s.", res_msg(res == RT_EOK));
     return res;
 }
 
@@ -405,11 +404,11 @@ rt_err_t rtc_set_wakeup(time_t sleep_time)
 
     alarm = rt_alarm_create(alarm_callback, &setup);
     res = alarm != RT_NULL ? RT_EOK : RT_ERROR;
-    log_debug("rt_alarm_create %s.", res != RT_EOK ? "failed" : "success");
+    log_debug("rt_alarm_create %s.", res_msg(res == RT_EOK));
     if(res == RT_EOK)
     {
         res = rt_alarm_start(alarm);
-        log_debug("rt_alarm_start %s.", res != RT_EOK ? "failed" : "success");
+        log_debug("rt_alarm_start %s.", res_msg(res == RT_EOK));
     }
     return res;
 }
@@ -437,10 +436,10 @@ void test_rtc(void)
     rt_err_t res;
 
     res = rtc_init();
-    log_debug("rtc_init %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rtc_init %s", res_msg(res == RT_EOK));
 
     res = rtc_set_datetime(2024, 8, 10, 0, 0, 0);
-    log_debug("rtc_set_datetime %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rtc_set_datetime %s", res_msg(res == RT_EOK));
   
     res = rtc_get_datatime();
 
@@ -483,12 +482,12 @@ static void test_esp32_download(int argc, char **argv)
     }
 
     res = esp32_download_pin_enable(mode);
-    log_debug("esp32_download_pin_enable(%d) %s", mode, res == RT_EOK ? "success" : "failed");
+    log_debug("esp32_download_pin_enable(%d) %s", mode, res_msg(res == RT_EOK));
 
     rt_thread_mdelay(500);
 
     res = esp32_power_on();
-    log_debug("esp32_power_on %s", res == RT_EOK ? "success" : "failed");
+    log_debug("esp32_power_on %s", res_msg(res == RT_EOK));
 }
 
 // MSH_CMD_EXPORT(test_esp32_download, test esp32 donwload);

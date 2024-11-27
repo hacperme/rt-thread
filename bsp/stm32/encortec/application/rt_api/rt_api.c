@@ -1762,3 +1762,15 @@ void get_dma_handle(DMA_HandleTypeDef **dma_handle) {
     return ((get_dma_handle_api_ptr_t)(get_dma_handle_addr))(dma_handle);
 }
 
+HAL_StatusTypeDef HAL_HASH_MD5_Start(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout) {
+    return ((HAL_HASH_MD5_Start_api_ptr_t)(HAL_HASH_MD5_Start_addr))(hhash, pInBuffer, Size, pOutBuffer, Timeout);
+}
+
+HAL_StatusTypeDef HAL_HASH_MD5_Accmlt(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size) {
+    return ((HAL_HASH_MD5_Accmlt_api_ptr_t)(HAL_HASH_MD5_Accmlt_addr))(hhash, pInBuffer, Size);
+}
+
+HAL_StatusTypeDef HAL_HASH_MD5_Accmlt_End(HASH_HandleTypeDef *hhash, uint8_t *pInBuffer, uint32_t Size, uint8_t *pOutBuffer, uint32_t Timeout) {
+    return ((HAL_HASH_MD5_Accmlt_End_api_ptr_t)(HAL_HASH_MD5_Accmlt_End_addr))(hhash, pInBuffer, Size, pOutBuffer, Timeout);
+}
+

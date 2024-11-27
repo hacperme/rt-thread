@@ -23,7 +23,7 @@ bool hdl_brom_start();
 bool hdl_brom_disable_wdt(void);
 bool hdl_brom_read16(uint32_t addr, uint16_t* data);
 bool hdl_brom_write16(uint32_t addr, uint16_t data);
-bool hdl_brom_send_da(const hdl_connect_arg_t* connect_arg, uint32_t da_flash_pos, uint32_t da_start_addr, uint32_t da_len);
+bool hdl_brom_send_da(const hdl_connect_arg_t *connect_arg, char *da_file, uint32_t da_run_addr, uint32_t da_len);
 bool hdl_brom_jump_da(uint32_t addr);
 bool hdl_brom_set_baudrate(uint32_t bd);
 

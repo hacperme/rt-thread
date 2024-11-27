@@ -1,4 +1,5 @@
 #include "hdl_da_cmd.h"
+#include "tools.h"
 
 #define RACE_DA_GET_FLASH_ADDRESS   (0x210E)
 #define RACE_DA_GET_FLASH_SIZE      (0x210F)
@@ -21,15 +22,22 @@ bool hdl_da_get_flash_address(uint32_t *pData)
 
     // send
     RACE_ADDR_SEND send;
+    rt_memset(&send, 0, sizeof(send));
     send.head_ = 0x05;
     send.type_ = 0x5A;
     send.len_ = sizeof(send.id_);
     send.id_ = RACE_DA_GET_FLASH_ADDRESS;
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+    hdl_delay(300);
 
     // response
     RACE_ADDR_RES res;
+    rt_memset(&res, 0, sizeof(res));
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
+    HDL_LOGI(
+        "res.head_=%02X, res.type_=%02X, res.len_=%d, res.id_=%02X, res.status_=%d, res.addr_=%08X",
+        res.head_, res.type_, res.len_, res.id_, res.status_, res.addr_
+    );
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
         res.len_ == (sizeof(res.id_)+sizeof(res.status_)+sizeof(res.addr_)) &&
@@ -51,14 +59,17 @@ bool hdl_da_get_flash_size(uint32_t *pData)
 
     // send
     RACE_SIZE_SEND send;
+    rt_memset(&send, 0, sizeof(send));
     send.head_ = 0x05;
     send.type_ = 0x5A;
     send.len_ = sizeof(send.id_);
     send.id_ = RACE_DA_GET_FLASH_SIZE;
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+    hdl_delay(20);
 
     // response
     RACE_SIZE_RES res;
+    rt_memset(&res, 0, sizeof(res));
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
@@ -81,14 +92,17 @@ bool hdl_da_get_flash_id(uint8_t *pManufacturerId, uint8_t *pDeviceId1, uint8_t 
 
     // send
     RACE_ID_SEND send;
+    rt_memset(&send, 0, sizeof(send));
     send.head_ = 0x05;
     send.type_ = 0x5A;
     send.len_ = sizeof(send.id_);
     send.id_ = RACE_DA_GET_FLASH_ID;
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+    hdl_delay(20);
 
     // response
-    RACE_ID_RES res     
+    RACE_ID_RES res;
+    rt_memset(&res, 0, sizeof(res));
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
@@ -109,22 +123,30 @@ bool hdl_da_get_flash_id(uint8_t *pManufacturerId, uint8_t *pDeviceId1, uint8_t 
 
 bool hdl_format_race(uint32_t addr, uint32_t len)
 {
+    RACE_FM_SEND send;
+    RACE_FM_RES res;
     for (int i=0; i<3; i++)
     {
+        rt_memset(&send, 0, sizeof(send));
+        rt_memset(&res, 0, sizeof(res));
         // send
-        RACE_FM_SEND send;
         send.head_ = 0x05;
         send.type_ = 0x5A;
         send.len_ = sizeof(send.id_)+sizeof(send.addr_)+sizeof(send.size_)+sizeof(send.crc_);
         send.id_ = RACE_DA_ERASE_BYTES;
         send.addr_ = addr;
         send.size_ = len;
-        send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
+        hwcrypto_crc32((const rt_uint8_t *)&send, sizeof(send)-sizeof(send.crc_), &send.crc_);
+        // send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
         HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+        hdl_delay(100);
 
         // response
-        RACE_FM_RES res;
         HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
+        HDL_LOGI(
+            "res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X, res.addr_=%08X",
+            res.head_, res.type_, res.len_, res.id_, res.status_, res.addr_
+        );
         if (res.head_ == 0x05 &&
             res.type_ == 0x5B &&
             res.len_ == (sizeof(res.id_)+sizeof(res.status_)+sizeof(res.addr_)) &&
@@ -178,10 +200,13 @@ bool hdl_da_format(const hdl_format_arg_t *format_arg)
 
 bool hdl_download_race(uint32_t addr, const uint8_t *data)
 {
+    RACE_DL_SEND send;
+    RACE_DL_RES res;
     for (int i=0; i<3; i++)
     {
+        rt_memset(&send, 0, sizeof(send));
+        rt_memset(&res, 0, sizeof(res));
         // send
-        RACE_DL_SEND send;
         send.head_ = 0x05;
         send.type_ = 0x5A;
         send.len_ = sizeof(send.id_)+sizeof(send.addr_)+sizeof(send.size_)+DA_SEND_PACKET_LEN+sizeof(send.crc_);
@@ -189,12 +214,21 @@ bool hdl_download_race(uint32_t addr, const uint8_t *data)
         send.addr_ = addr;
         send.size_ = DA_SEND_PACKET_LEN;
         memcpy(send.buf_, data, send.size_);
-        send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
+        hwcrypto_crc32((const rt_uint8_t *)&send, sizeof(send)-sizeof(send.crc_), &send.crc_);
+        // send.crc_ = CRC32(&send, sizeof(send)-sizeof(send.crc_));
+        HDL_LOGI(
+            "send.head_=%02X, send.type_=%02X, send.len_=%04X, send.id_=%04X, send.addr_=%08X, send.size_=%04X",
+            send.head_, send.type_, send.len_, send.id_, send.addr_, send.size_
+        );
         HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+        hdl_delay(20);
 
         // response
-        RACE_DL_RES res;
         HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
+        HDL_LOGI(
+            "res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X, res.addr_=%08X",
+            res.head_, res.type_, res.len_, res.id_, res.status_, res.addr_
+        );
         if (res.head_ == 0x05 &&
             res.type_ == 0x5B &&
             res.len_ == (sizeof(res.id_)+sizeof(res.status_)+sizeof(res.addr_)) &&
@@ -214,9 +248,11 @@ bool hdl_download_race(uint32_t addr, const uint8_t *data)
 
 bool hdl_da_download(hdl_image_t *image, hdl_download_cb download_cb, void *download_cb_arg)
 {
+    bool res = false;
     const uint32_t start_addr = image->image_slave_flash_addr;
     const uint32_t image_len = image->image_len;
     const uint32_t packet_num = ((image_len - 1) / DA_SEND_PACKET_LEN) + 1;
+    hdl_flash_init(image->image_host_file);
     
     uint32_t packet_sent_num = 0;
     while (packet_sent_num < packet_num) 
@@ -227,7 +263,7 @@ bool hdl_da_download(hdl_image_t *image, hdl_download_cb download_cb, void *down
 
         memset(g_hdl_fw_data_buf, 0, sizeof(g_hdl_fw_data_buf));
 
-        const uint32_t host_addr = image->image_host_flash_addr+start_offset;
+        const uint32_t host_addr = start_offset;
         if (hdl_flash_read(host_addr, g_hdl_fw_data_buf, cur_packet_len))
         {
             uint8_t *packet_buf = g_hdl_fw_data_buf;
@@ -241,7 +277,7 @@ bool hdl_da_download(hdl_image_t *image, hdl_download_cb download_cb, void *down
             if (!hdl_download_race(slave_addr, packet_buf))
             {
                 HDL_LOGE("hdl_download_race addr=0x%08X fail!", slave_addr);
-                return false;
+                goto _exit_;
             }
             
             // Download Progress callback
@@ -258,24 +294,54 @@ bool hdl_da_download(hdl_image_t *image, hdl_download_cb download_cb, void *down
         
         packet_sent_num++;
     }
-    
-    return true;
+    res = true;
+
+_exit_:
+    hdl_flash_deinit();
+    return res;
 }
 
 bool hdl_finish_race(bool enable)
 {
     // send
     RACE_RST_SEND send;
+    rt_memset(&send, 0, sizeof(send));
     send.head_ = 0x05;
     send.type_ = 0x5A;
     send.len_ = 3;
     send.id_ = RACE_DA_FINISH;
     send.flag_ = enable;
+    HDL_LOGI(
+        "send.head_=%02X, send.type_=%02X, send.len_=%04X, send.id_=%04X, send.flag_=%02X",
+        send.head_, send.type_, send.len_, send.id_, send.flag_
+    );
+    uint8_t *send_buff = (uint8_t *)&send;
+    HDL_LOGI(
+        "Send Buff %02X %02X %02X %02X %02X %02X %02X",
+        send_buff[0], send_buff[1], send_buff[2], send_buff[3],
+        send_buff[4], send_buff[5], send_buff[6]
+    );
     HDL_COM_PutByte_Buffer((uint8_t *)&send, sizeof(send));
+    hdl_delay(100);
 
     // response
     RACE_RST_RES res;
+    rt_memset(&res, 0, sizeof(send));
+    HDL_LOGI(
+        "Recv RACE_DA_FINISH resp before res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X",
+        res.head_, res.type_, res.len_, res.id_, res.status_
+    );
     HDL_COM_GetByte_Buffer((uint8_t *)&res, sizeof(res));
+    HDL_LOGI(
+        "Recv RACE_DA_FINISH resp after res.head_=%02X, res.type_=%02X, res.len_=%04X, res.id_=%04X, res.status_=%02X",
+        res.head_, res.type_, res.len_, res.id_, res.status_
+    );
+    uint8_t *res_buff = (uint8_t *)&res;
+    HDL_LOGI(
+        "Recv Buff %02X %02X %02X %02X %02X %02X %02X",
+        res_buff[0], res_buff[1], res_buff[2], res_buff[3],
+        res_buff[4], res_buff[5], res_buff[6]
+    );
     if (res.head_ == 0x05 &&
         res.type_ == 0x5B &&
         res.len_ == 3 &&

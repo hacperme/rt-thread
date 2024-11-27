@@ -127,6 +127,12 @@ void MX_ICACHE_Init(void);
 
 #define DEBUG_LED1_PIN         GET_PIN(H, 0)
 
+#define CAT1_UART               "uart1"
+#define NB_UART                 "uart3"
+#define GNSS_UART               "uart4"
+#define ESP32_UART              "uart5"
+#define LOG_UART                "lpuart1"
+
 #ifdef __cplusplus
 }
 #endif

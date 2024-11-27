@@ -9,23 +9,22 @@ extern "C" {
 
 typedef void (*hdl_init_cb)(void *usr_arg);
 typedef void (*hdl_da_send_cb)(void *usr_arg, uint32_t sent_bytes, uint32_t da_total_bytes);
-typedef void (*hdl_download_cb)(void *usr_arg, char *cur_image_name,
-                                uint32_t sent_bytes, uint32_t total_bytes);
+typedef void (*hdl_download_cb)(void *usr_arg, char *cur_image_name, uint32_t sent_bytes, uint32_t total_bytes);
 typedef void (*hdl_progress_cb)(void *usr_arg, uint8_t percent);
-typedef void (*hdl_readback_cb)(void *usr_arg, char *cur_image_name,
-                                uint32_t read_len, uint32_t readback_total_len);
+typedef void (*hdl_readback_cb)(void *usr_arg, char *cur_image_name, uint32_t read_len, uint32_t readback_total_len);
 
 typedef struct {
-    uint32_t        da_flash_addr; // Or da_file if your host have file system
-    uint32_t        da_run_addr;
-    uint32_t        da_len;
+    // uint32_t        da_flash_addr; // Or da_file if your host have file system
+    char            *da_file;
+    uint32_t         da_run_addr;
+    uint32_t         da_len;
 } hdl_da_info_t;
 
 typedef struct {
-    hdl_init_cb     conn_da_init_cb;
-    void           *conn_da_init_cb_arg;
-    hdl_da_send_cb  conn_da_send_cb;
-    void           *conn_da_send_cb_arg;
+    hdl_init_cb      conn_da_init_cb;
+    void            *conn_da_init_cb_arg;
+    hdl_da_send_cb   conn_da_send_cb;
+    void            *conn_da_send_cb_arg;
 } hdl_connect_arg_t;
 
 typedef struct {
@@ -48,7 +47,8 @@ typedef struct {
 } hdl_format_arg_t;
 
 typedef struct _hdl_image_t {
-    uint32_t        image_host_flash_addr; // Or image_file if your host have file system
+    // uint32_t        image_host_flash_addr; // Or image_file if your host have file system
+    char *          image_host_file;
     uint32_t        image_slave_flash_addr;
     uint32_t        image_len;
     char           *image_name;

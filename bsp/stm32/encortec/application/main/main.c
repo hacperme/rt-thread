@@ -16,6 +16,8 @@
 int main(int argc, char *argv[]);
 static void startup(app_startup_params_t *app_startup_params);
 
+extern uint8_t __app_rom_start[];
+extern uint8_t __app_rom_end[];
 extern uint8_t __app_data_load_start[];
 extern uint8_t __app_data_load_end[];
 extern uint8_t _sdata[];
@@ -28,7 +30,10 @@ static app_startup_params_t sg_app_startup_params = {0};
 static const app_header_t app_header __attribute__((unused, section(".app_header"))) = {
     .app_magic_number = APP_HEADER_MAGIC_NUMBER,
     .app_main_entry = main,
-    .app_startup_entry = startup
+    .app_startup_entry = startup,
+    .app_version = {0},
+    .app_subedition = {0},
+    .app_build_time = {0}
 };
 
 static void copy_data(void) {
@@ -78,6 +83,13 @@ bootloader_startup_params_t *get_bootloader_startup_params(void) {
     } else {
         return NULL;
     }
+}
+
+void read_app_version_information(uint8_t **app_version, uint8_t **app_subedition, uint8_t **app_build_time)
+{
+    *app_version = (uint8_t *)app_header.app_version;
+    *app_subedition = (uint8_t *)app_header.app_subedition;
+    *app_build_time = (uint8_t *)app_header.app_build_time;
 }
 
 __attribute__((weak)) int application_start(int argc, char *argv[]) {

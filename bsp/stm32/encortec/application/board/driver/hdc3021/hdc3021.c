@@ -17,7 +17,7 @@ rt_err_t hdc3021_soft_reset(struct rt_i2c_bus_device *iic_dev)
     rt_ssize_t ret;
     ret = rt_i2c_master_send(iic_dev, HDC3021_ADDR, RT_I2C_WR, HDC3021_SOFT_RESET, 2);
     res = ret == 2 ? RT_EOK : RT_ERROR;
-    log_debug("hdc3021_soft_reset %s ret=%d", res == RT_EOK ? "success": "failed", ret);
+    log_debug("hdc3021_soft_reset %s ret=%d", res_msg(res == RT_EOK), ret);
     return res;
 }
 
@@ -27,7 +27,7 @@ rt_err_t hdc3021_trigger_on_demand(struct rt_i2c_bus_device *iic_dev)
     rt_ssize_t ret;
     ret = rt_i2c_master_send(iic_dev, HDC3021_ADDR, RT_I2C_WR, HDC3021_TRIGGER_ON_DEMAND, 2);
     res = ret == 2 ? RT_EOK : RT_ERROR;
-    log_debug("hdc3021_trigger_on_demand %s ret=%d", res == RT_EOK ? "success": "failed", ret);
+    log_debug("hdc3021_trigger_on_demand %s ret=%d", res_msg(res == RT_EOK), ret);
     return res;
 }
 
@@ -54,7 +54,7 @@ rt_err_t hdc3021_read_temp_humi_by_tod(struct rt_i2c_bus_device *iic_dev, float 
             res = crc8_check(data_buf, 2, &crc_num);
             log_debug(
                 "crc8_check 0x%02X 0x%02X CRC=0x%02X %s",
-                data_buf[0], data_buf[1], crc_num, res == RT_EOK ? "success" : "failed"
+                data_buf[0], data_buf[1], crc_num, res_msg(res == RT_EOK)
             );
             if (res != RT_EOK)
             {
@@ -70,7 +70,7 @@ rt_err_t hdc3021_read_temp_humi_by_tod(struct rt_i2c_bus_device *iic_dev, float 
             }
         }
     }
-    log_debug("hdc3021_read_temp_humi_by_tod %s ret=%d", res == RT_EOK ? "success": "failed", ret);
+    log_debug("hdc3021_read_temp_humi_by_tod %s ret=%d", res_msg(res == RT_EOK), ret);
     return res;
 }
 
@@ -78,7 +78,7 @@ rt_err_t hdc3021_read_temp_humi(struct rt_i2c_bus_device *iic_dev, float *temp, 
 {
     rt_err_t res = RT_EOK;
     res = hdc3021_trigger_on_demand(iic_dev);
-    log_debug("hdc3021_trigger_on_demand %s", res != RT_EOK ? "failed" : "success");
+    log_debug("hdc3021_trigger_on_demand %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -87,7 +87,7 @@ rt_err_t hdc3021_read_temp_humi(struct rt_i2c_bus_device *iic_dev, float *temp, 
     res = hdc3021_read_temp_humi_by_tod(iic_dev, temp, humi);
     log_debug(
         "hdc3021_read_temp_humi_by_tod %s. temp=%f, humi=%f",
-        res != RT_EOK ? "failed" : "success", *temp, *humi
+        res_msg(res == RT_EOK), *temp, *humi
     );
 
     return res;
@@ -105,7 +105,7 @@ static rt_err_t test_crc_check(void)
     res = crc8_check(data, 2, &cmp_val);
     log_debug(
         "crc8_check 0x%02X 0x%02X CRC=0x%02X %s",
-        data[0], data[1], cmp_val, res == RT_EOK ? "success" : "failed"
+        data[0], data[1], cmp_val, res_msg(res == RT_EOK)
     );
     return res;
 }
@@ -120,14 +120,14 @@ rt_err_t test_hdc3021(void)
     static struct rt_i2c_bus_device *iic_dev;
 
     // res = sensor_pwron_pin_enable(1);
-    // log_debug("sensor_pwron_pin_enable(1) %s", res != RT_EOK ? "failed" : "success");
+    // log_debug("sensor_pwron_pin_enable(1) %s", res_msg(res == RT_EOK));
 
     rt_pin_mode(SENSOR_PWRON_PIN, PIN_MODE_OUTPUT);
     rt_pin_write(SENSOR_PWRON_PIN, 1);
 
     iic_dev = rt_i2c_bus_device_find(i2c_bus_name);
     res = !iic_dev ? RT_ERROR : RT_EOK;
-    log_debug("rt_i2c_bus_device_find %s %s", i2c_bus_name, res != RT_EOK ? "failed" : "success");
+    log_debug("rt_i2c_bus_device_find %s %s", i2c_bus_name, res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -140,9 +140,9 @@ rt_err_t test_hdc3021(void)
     {
         /* Not Use soft reset, humi will not be 0.0 after soft reset. */
         // res = hdc3021_soft_reset(iic_dev);
-        // log_debug("hdc3021_soft_reset %s.", res != RT_EOK ? "failed" : "success");
+        // log_debug("hdc3021_soft_reset %s.", res_msg(res == RT_EOK));
         res = hdc3021_read_temp_humi(iic_dev, &temp, &humi);
-        sprintf(msg, "hdc3021_read_temp_humi %s. temp=%f, humi=%f", res != RT_EOK ? "failed" : "success", temp, humi);
+        sprintf(msg, "hdc3021_read_temp_humi %s. temp=%f, humi=%f", res_msg(res == RT_EOK), temp, humi);
         // log_debug(msg);
         rt_thread_mdelay(1000);
     }

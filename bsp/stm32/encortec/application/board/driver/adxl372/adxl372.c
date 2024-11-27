@@ -18,7 +18,7 @@
 #define ADXL372_ACQUISITION_TIME        20
 #define ADXL372_FIFO_XYZ_BUFF_SIZE      (ADXL372_ORD * ADXL372_ACQUISITION_TIME)
 
-struct rt_spi_device *adxl372_dev;
+struct rt_spi_device *adxl372_dev = RT_NULL;
 rt_sem_t adxl372_inact_sem = RT_NULL;
 rt_thread_t adxl372_recv_inact_thd = RT_NULL;
 rt_uint8_t adxl372_recv_inact_exit = 0;
@@ -133,21 +133,21 @@ rt_err_t adxl372_enable_inactive_irq(rt_uint16_t *milliseconds, rt_uint16_t *thr
     rt_err_t res = RT_ERROR;
 
     res = adxl372_set_standby();
-    log_debug("adxl372_set_standby %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_set_standby %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
     }
 
     res = adxl372_recv_inact_event_thd_start();
-    log_debug("adxl372_recv_inact_event_thd_start %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_recv_inact_event_thd_start %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
     }
 
     res = adxl372_int1_pin_irq_enable();
-    log_debug("adxl372_int1_pin_irq_enable %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_int1_pin_irq_enable %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -174,7 +174,7 @@ rt_err_t adxl372_enable_inactive_irq(rt_uint16_t *milliseconds, rt_uint16_t *thr
     }
 
     res = adxl372_full_bandwidth_measurement_mode();
-    log_debug("adxl372_full_bandwidth_measurement_mode %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_full_bandwidth_measurement_mode %s", res_msg(res == RT_EOK));
 
     return res;
 }
@@ -184,21 +184,21 @@ rt_err_t adxl372_disable_inactive_irq(void)
     rt_err_t res = RT_ERROR;
 
     res = adxl372_set_standby();
-    log_debug("adxl372_set_standby %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_set_standby %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
     }
 
     res = adxl372_recv_inact_event_thd_stop();
-    log_debug("adxl372_recv_inact_event_thd_stop %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_recv_inact_event_thd_stop %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
     }
 
     res = adxl372_int1_pin_irq_disable();
-    log_debug("adxl372_int1_pin_irq_disable %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_int1_pin_irq_disable %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -213,7 +213,7 @@ rt_err_t adxl372_disable_inactive_irq(void)
     }
 
     res = adxl372_full_bandwidth_measurement_mode();
-    log_debug("adxl372_full_bandwidth_measurement_mode %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_full_bandwidth_measurement_mode %s", res_msg(res == RT_EOK));
 
     return res;
 }
@@ -223,7 +223,7 @@ rt_err_t adxl372_set_measure_config(rt_uint8_t *measure_val, rt_uint8_t *odr_val
     rt_err_t res = RT_ERROR;
 
     res = adxl372_set_standby();
-    log_debug("adxl372_set_standby %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_set_standby %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -235,7 +235,7 @@ rt_err_t adxl372_set_measure_config(rt_uint8_t *measure_val, rt_uint8_t *odr_val
     // *measure_val = 0x02;  // 800 Hz
     // *measure_val = 0x00;  // 200 Hz (Default)
     res = adxl372_set_measure(measure_val);
-    log_debug("adxl372_set_measure %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_set_measure %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -247,7 +247,7 @@ rt_err_t adxl372_set_measure_config(rt_uint8_t *measure_val, rt_uint8_t *odr_val
     // *odr_val = 0x40;  // 1600 Hz
     // *odr_val = 0x00;  // 400 Hz (Default)
     res = adxl372_set_odr(odr_val);
-    log_debug("adxl372_set_odr %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_set_odr %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -255,21 +255,21 @@ rt_err_t adxl372_set_measure_config(rt_uint8_t *measure_val, rt_uint8_t *odr_val
 
     // *hpf_val = 0x03;
     res = adxl372_set_hpf(hpf_val);
-    log_debug("adxl372_set_hpf %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_set_hpf %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
     }
 
     res = adxl372_set_fifo(fifo_format, fifo_mode, fifo_samples);
-    log_debug("adxl372_set_fifo %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_set_fifo %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
     }
 
     res = adxl372_full_bandwidth_measurement_mode();
-    log_debug("adxl372_full_bandwidth_measurement_mode %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_full_bandwidth_measurement_mode %s", res_msg(res == RT_EOK));
 
     return res;
 }
@@ -289,14 +289,14 @@ rt_err_t adxl372_init(void)
 
     adxl372_dev = (struct rt_spi_device *)rt_malloc(sizeof(struct rt_spi_device));
     res = adxl372_dev != RT_NULL ? RT_EOK : RT_ERROR;
-    log_debug("rt_malloc adxl372_dev %s.", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_malloc adxl372_dev %s.", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
     }
 
     res = rt_spi_bus_attach_device_cspin(adxl372_dev, ADXL372_DEV_NAME, ADXL372_SPI_NAME, ADXL372_CS_PIN, RT_NULL);
-    log_debug("rt_spi_bus_attach_device_cspin bus name %s device name %s %s.", ADXL372_SPI_NAME, ADXL372_DEV_NAME, res == RT_EOK ? "success" : "failed");
+    log_debug("rt_spi_bus_attach_device_cspin bus name %s device name %s %s.", ADXL372_SPI_NAME, ADXL372_DEV_NAME, res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -307,7 +307,7 @@ rt_err_t adxl372_init(void)
     adxl372_spi_cfg.mode = RT_SPI_MASTER | RT_SPI_MODE_0 | RT_SPI_MSB;
     adxl372_spi_cfg.max_hz = 5 * 1000 * 1000;
     res = rt_spi_configure(adxl372_dev, &adxl372_spi_cfg);
-    log_debug("rt_spi_configure res %s", res == RT_EOK ? "success" : "failed");
+    log_debug("rt_spi_configure res %s", res_msg(res == RT_EOK));
     if (res != RT_EOK)
     {
         return res;
@@ -374,7 +374,7 @@ rt_err_t adxl372_query_dev_info(void)
         res = adxl372_read(regs[i], &recv_buf, 1);
         log_debug(
             "adxl372_query_dev_info %s, reg=0x%02X, recv_buf=0x%02X",
-            res == RT_EOK ? "success" : "failed", regs[i], recv_buf
+            res_msg(res == RT_EOK), regs[i], recv_buf
         );
     }
 
@@ -793,7 +793,7 @@ rt_err_t adxl372_set_fifo(rt_uint8_t *fifo_format, rt_uint8_t *fifo_mode, rt_uin
     res == ctrl_val == val ? RT_EOK : RT_ERROR;
     log_debug(
         "Write ADI_ADXL372_FIFO_SAMPLES %s, ctrl_val=0x%02X, reread=0x%02X",
-        res == RT_EOK ? "success" : "failed", ctrl_val, val
+        res_msg(res == RT_EOK), ctrl_val, val
     );
     if (res != RT_EOK)
     {
@@ -806,7 +806,7 @@ rt_err_t adxl372_set_fifo(rt_uint8_t *fifo_format, rt_uint8_t *fifo_mode, rt_uin
     res = adxl372_read(ADI_ADXL372_FIFO_CTL, &val, 1);
     log_debug(
         "Write ADI_ADXL372_FIFO_CTL %s, smp_val=0x%02X, reread=0x%02X",
-        res == RT_EOK ? "success" : "failed", smp_val, val
+        res_msg(res == RT_EOK), smp_val, val
     );
     res == smp_val == val ? RT_EOK : RT_ERROR;
     if (res != RT_EOK)
@@ -823,7 +823,7 @@ rt_err_t adxl372_read_fifo_num(rt_uint16_t *fifo_num)
 
     rt_uint8_t fifo_num_m = 0xFF;
     res = adxl372_read(ADI_ADXL372_FIFO_ENTRIES_2, &fifo_num_m, 1);
-    // log_debug("Read ADI_ADXL372_FIFO_ENTRIES_2 %s, fifo_num_m=0x%02x", res == RT_EOK ? "success" : "failed", fifo_num_m);
+    // log_debug("Read ADI_ADXL372_FIFO_ENTRIES_2 %s, fifo_num_m=0x%02x", res_msg(res == RT_EOK), fifo_num_m);
     if (res != RT_EOK)
     {
         return res;
@@ -831,7 +831,7 @@ rt_err_t adxl372_read_fifo_num(rt_uint16_t *fifo_num)
 
     rt_uint8_t fifo_num_l = 0xFF;
     res = adxl372_read(ADI_ADXL372_FIFO_ENTRIES_1, &fifo_num_l, 1);
-    // log_debug("Read ADI_ADXL372_FIFO_ENTRIES_1 %s, fifo_num_l=0x%02x", res == RT_EOK ? "success" : "failed", fifo_num_l);
+    // log_debug("Read ADI_ADXL372_FIFO_ENTRIES_1 %s, fifo_num_l=0x%02x", res_msg(res == RT_EOK), fifo_num_l);
     if (res != RT_EOK)
     {
         return res;
@@ -961,7 +961,7 @@ static void test_adxl372_measure(void)
     char msg[64];
     rt_uint16_t size = 100;
     res = adxl372_measure_acc(ACC_XYZ_BUFF, size);
-    log_debug("adxl372_measure_acc %s", res == RT_EOK ? "success" : "failed");
+    log_debug("adxl372_measure_acc %s", res_msg(res == RT_EOK));
     if (res == RT_EOK)
     {
         for (rt_uint16_t i = 0; i < size; i++)
@@ -996,12 +996,12 @@ void test_adxl372(void)
     rt_pin_write(SENSOR_PWRON_PIN, 1);
 
     res = adxl372_init();
-    log_debug("adxl372_init %s", res != RT_EOK ? "failed" : "success");
+    log_debug("adxl372_init %s", res_msg(res == RT_EOK));
     res = adxl372_query_dev_info();
     if (set_reset == 1)
     {
         res = adxl372_reset();
-        log_debug("adxl372_reset %s", res != RT_EOK ? "failed" : "success");
+        log_debug("adxl372_reset %s", res_msg(res == RT_EOK));
     }
 
     if (set_config == 1)
@@ -1009,7 +1009,7 @@ void test_adxl372(void)
         res = adxl372_set_measure_config(&measure_val, &odr_val, &hpf_val, &fifo_format, &fifo_mode, &fifo_samples);
         log_debug(
             "adxl372_set_measure_config(measure_val=0x%02X, odr_val=0x%02X, hpf_val=0x%02X) %s",
-            measure_val, odr_val, hpf_val, res != RT_EOK ? "failed" : "success"
+            measure_val, odr_val, hpf_val, res_msg(res == RT_EOK)
         );
     }
 
@@ -1018,7 +1018,7 @@ void test_adxl372(void)
         res = adxl372_enable_inactive_irq(&milliscond, &threshold);
         log_debug(
             "adxl372_enable_inactive_irq(milliscond=%d, threshold=%d) %s",
-            milliscond, threshold, res != RT_EOK ? "failed" : "success"
+            milliscond, threshold, res_msg(res == RT_EOK)
         );
     }
 

@@ -27,6 +27,9 @@ typedef struct {
     uint8_t app_magic_number[32];
     app_main_entry_t app_main_entry;
     app_startup_entry_t app_startup_entry;
+    uint8_t app_version[64];
+    uint8_t app_subedition[8];
+    uint8_t app_build_time[32];
 } app_header_t;
 
 extern uint32_t get_per_api_ptr(const char * func_name);
