@@ -103,25 +103,25 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
             if (is_valid_timestamp_dirname(fs, ent->d_name)) {
                 rt_memset(tmp, 0, DIR_MAX_LEN);
                 rt_strncpy(tmp, ent->d_name, rt_strlen(ent->d_name));
-                log_debug("tmp: %s\n", tmp);
+                // rt_kprintf("tmp: %s\n", tmp);
 
                 long long current_time = datestring_to_long_long(tmp);
-                log_debug("current_time: %lld\n", current_time);
-                log_debug("oldest_time: %lld\n", oldest_time);
-                log_debug("latest_time: %lld\n", latest_time);
+                // rt_kprintf("current_time: %d\n", current_time);
+                // rt_kprintf("oldest_time: %d\n", oldest_time);
+                // rt_kprintf("latest_time: %d\n", latest_time);
 
                 if (current_time < oldest_time) {
                     rt_memset(oldest_dir_name, 0, DIR_MAX_LEN);
                     rt_strncpy(oldest_dir_name, ent->d_name, rt_strlen(ent->d_name));
                     oldest_time = current_time;
-                    log_debug("set oldest_dir_name: %s\n", oldest_dir_name);
+                    // rt_kprintf("set oldest_dir_name: %s\n", oldest_dir_name);
                 }
 
                 if (current_time > latest_time) {
                     rt_memset(latest_dir_name, 0, DIR_MAX_LEN);
                     rt_strncpy(latest_dir_name, ent->d_name, rt_strlen(ent->d_name));
                     latest_time = current_time;
-                    log_debug("set latest_dir_name: %s\n", latest_dir_name);
+                    // rt_kprintf("set latest_dir_name: %s\n", latest_dir_name);
                 }
             }
         }
@@ -131,12 +131,12 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
     // 记录最旧文件夹名称
     rt_memset(fs->oldest_dir_name, 0, DIR_MAX_LEN);
     rt_strncpy(fs->oldest_dir_name, oldest_dir_name, rt_strlen(oldest_dir_name));
-    log_debug("fs->oldest_dir_name: %s\n", fs->oldest_dir_name);
-    
+    // rt_kprintf("fs->oldest_dir_name: %s\n", fs->oldest_dir_name);
+
     // 获取最新文件名称
     char temp_latest[64] = {0};
     sprintf(temp_latest, "%s/%s", fs->base, latest_dir_name);
-    log_debug("latest dir: %s\n", temp_latest);
+    // rt_kprintf("latest dir: %s\n", temp_latest);
     if (rt_strlen(latest_dir_name) != 0) {
         if ((dir = opendir(temp_latest)) != NULL) {
             oldest_time = 0x0FFFFFFFFFFFFFFF;
@@ -163,7 +163,7 @@ static void data_save_as_file_info_refresh(struct FileSystem *fs) {
     if (rt_strlen(latest_file_name) != 0 && rt_strlen(latest_dir_name) != 0) {
         sprintf(fs->latest_file_name, "%s/%s/%s", fs->base, latest_dir_name, latest_file_name);
     }
-    log_debug("fs->latest_file_name: %s\n", fs->latest_file_name);
+    // rt_kprintf("fs->latest_file_name: %s\n", fs->latest_file_name);
 }
 
 
@@ -214,6 +214,9 @@ void data_save_as_file_init(struct FileSystem *fs, int single_file_size_limit, c
     if (dir == NULL) {
         mkdir_recursive(fs->base);
     }
+    else {
+        closedir(dir);
+    }
     data_save_as_file_info_refresh(fs);
 }
 
@@ -254,10 +257,10 @@ size_t get_file_size(const char *filename) {
 int check_free_space(const char *path) {
     struct statfs stat = {0};
     statfs(path, &stat);
-    log_debug(
-        "stat.f_bsize=%d, stat.f_blocks=%d, stat.f_bfree=%d, stat.f_bavail=%d",
-        stat.f_bsize, stat.f_blocks, stat.f_bfree, stat.f_bavail
-    );
+    // rt_kprintf(
+    //     "stat.f_bsize=%d, stat.f_blocks=%d, stat.f_bfree=%d, stat.f_bavail=%d\n",
+    //     stat.f_bsize, stat.f_blocks, stat.f_bfree, stat.f_bavail
+    // );
     return stat.f_bfree;
 }
 
@@ -266,7 +269,7 @@ int delete_directory(const char *dir);
 void delete_oldest_dir(struct FileSystem *fs) {
     char *oldest_dir_name = NULL;
     if((oldest_dir_name = get_oldest_dir_name(fs))) {
-        log_debug("xx Deleting oldest dir: %s", oldest_dir_name);
+        // rt_kprintf("xx Deleting oldest dir: %s\n", oldest_dir_name);
         delete_directory(oldest_dir_name);
         data_save_as_file_info_refresh(fs);
     }
@@ -299,6 +302,9 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
         if (dir == NULL) {
             mkdir(sub_dir_path, 0755);
         }
+        else {
+            closedir(dir);
+        }
 
         char filename_with_time[20] = {0};
         strftime(filename_with_time, 20, "%Y%m%d%H%M%S", cur);
@@ -310,16 +316,16 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
         );
 
         // 创建新文件
-        log_debug("++ Creating file: %s\n", filename);
+        // rt_kprintf("++ Creating file: %s\n", filename);
         FILE *file = fopen(filename, "ab");
         if (!file) {
-            log_error("open file %s failed.");
+            // rt_kprintf("open file %s failed.\n");
             return -1; // 打开文件失败
         }
 
         int retry = 0;
         for(retry = 0; retry < 5 && fwrite(buffer, 1, length, file) != length; retry++){
-            log_error("?? Write file failed (%d)", retry);
+            // rt_kprintf("?? Write file failed (%d)\n", retry);
         }
 
         fclose(file);
@@ -332,16 +338,99 @@ int data_save_as_file(struct FileSystem *fs, const char *buffer, size_t length, 
     } else {
         // 追加到现有文件
         latest_file_name = get_latest_file_name(fs);
-        log_debug("-- Append to file %s", latest_file_name);
+        // rt_kprintf("-- Append to file %s\n", latest_file_name);
         FILE *file = fopen(latest_file_name, "ab");
         if (!file) {
-            log_error("append to file open file %s failed.", latest_file_name);
+            // rt_kprintf("append to file open file %s failed.\n", latest_file_name);
             return -1; // 打开文件失败
         }
 
         int retry = 0;
         for(retry = 0; retry < 5 && fwrite(buffer, 1, length, file) != length; retry++){
-            log_error("?? Write file failed, retry (%d)", retry);
+            // rt_kprintf("?? Write file failed, retry (%d)\n", retry);
+        }
+
+        fclose(file);
+
+        if(retry >= 5) {
+            return -1;
+        }
+    }
+
+    return 0; // 成功
+}
+
+// 追加或创建文件
+int data_save_as_file_v2(struct FileSystem *fs, const char *buffer, size_t length, bool disable_single_file_size_limit) {
+    // 获取最新文件的大小
+    char *latest_file_name = NULL;
+    size_t latest_file_size = 0;
+
+    if((latest_file_name = get_latest_file_name(fs))) {
+        latest_file_size = get_file_size(latest_file_name);
+    }
+
+    // 判断是否需要新建文件
+    if (latest_file_name == NULL || (!disable_single_file_size_limit && (latest_file_size + length > fs->single_file_size_limit))) {
+        char filename[FILE_NAME_MAX_LEN] = {0};
+        time_t now = time(NULL);
+        struct tm *cur = localtime(&now);
+
+        char dir_with_date[20] = {0};
+        strftime(dir_with_date, 20, "%Y%m%d", cur);
+        // 判断二级目录是否存在，不存在则创建
+        char sub_dir_path[30] = {0};
+        sprintf(sub_dir_path, "%s/%s", fs->base, dir_with_date);
+        DIR *dir = opendir(sub_dir_path);
+        if (dir == NULL) {
+            mkdir(sub_dir_path, 0755);
+        }
+        else {
+            closedir(dir);
+        }
+
+        char filename_with_time[20] = {0};
+        strftime(filename_with_time, 20, "%Y%m%d%H%M%S", cur);
+        // 目录结构：/data/20241009/20241009100850.dat
+        sprintf(
+            filename,
+            "%s/%s/%s%s",
+            fs->base, dir_with_date, filename_with_time, fs->suffix
+        );
+
+        // 创建新文件
+        // rt_kprintf("++ Creating file: %s\n", filename);
+        FILE *file = fopen(filename, "ab");
+        if (!file) {
+            rt_kprintf("open file %s failed.\n", filename);
+            return -1; // 打开文件失败
+        }
+
+        int retry = 0;
+        for(retry = 0; retry < 5 && fwrite(buffer, 1, length, file) != length; retry++){
+            rt_kprintf("?? Write file failed (%d)\n", retry);
+        }
+
+        fclose(file);
+
+        data_save_as_file_info_refresh(fs);
+
+        if(retry >= 5) {
+            return -1;
+        }
+    } else {
+        // 追加到现有文件
+        latest_file_name = get_latest_file_name(fs);
+        // rt_kprintf("-- Append to file %s\n", latest_file_name);
+        FILE *file = fopen(latest_file_name, "ab");
+        if (!file) {
+            rt_kprintf("append to file open file %s failed.\n", latest_file_name);
+            return -1; // 打开文件失败
+        }
+
+        int retry = 0;
+        for(retry = 0; retry < 5 && fwrite(buffer, 1, length, file) != length; retry++){
+            rt_kprintf("?? Write file failed, retry (%d)\n", retry);
         }
 
         fclose(file);
@@ -379,7 +468,7 @@ static void del_files() {
     struct dirent *ent;
     if ((dir = opendir("/")) != NULL) {
         while ((ent = readdir(dir)) != NULL) {
-            log_info("Deleting %s", ent->d_name);
+            // rt_kprintf("Deleting %s\n", ent->d_name);
             remove(ent->d_name);
         }
         closedir(dir);
@@ -442,24 +531,24 @@ void delete_old_dirs(struct FileSystem *fs)
 
     time_t cur_timestamp;
     time(&cur_timestamp);
-    log_debug("cur_timestamp: %d\n", cur_timestamp);
+    // rt_kprintf("cur_timestamp: %d\n", cur_timestamp);
 
     while (1) {
         char *oldest_dir = get_oldest_dir_name(fs);  // 20241009
         if (oldest_dir == NULL) {
-            log_debug("oldest_dir is NULL");
+            // rt_kprintf("oldest_dir is NULL\n");
             break;
         }
-        log_debug("oldest_dir: %s\n", oldest_dir);
+        // rt_kprintf("oldest_dir: %s\n", oldest_dir);
 
         timeinfo.tm_year = (oldest_dir[0] - '0') * 1000 + (oldest_dir[1] - '0') * 100 + (oldest_dir[2] - '0') * 10 + (oldest_dir[3] - '0') - 1900; 
         timeinfo.tm_mon = (oldest_dir[4] - '0') * 10 + (oldest_dir[5] - '0') - 1;
         timeinfo.tm_mday = (oldest_dir[6] - '0') * 10 + (oldest_dir[7] - '0');
         timestamp = mktime(&timeinfo);
-        log_debug("oldest_dir timestamp: %d\n", timestamp);
+        // rt_kprintf("oldest_dir timestamp: %d\n", timestamp);
 
         if (cur_timestamp - timestamp > fs->save_period * 86400) {
-            log_debug("oldest_dir \"%s\" expired, will be deleted", oldest_dir);
+            rt_kprintf("oldest_dir \"%s\" expired, will be deleted\n", oldest_dir);
             sprintf(temp_path, "%s/%s", fs->base, oldest_dir);
             delete_directory(temp_path);
             data_save_as_file_info_refresh(fs);
@@ -480,20 +569,20 @@ void data_save_as_file_test() {
 
     while (cnt > 0)
     {
-        log_info("<<<<<<<<<<<< Before written to file");
+        // rt_kprintf("<<<<<<<<<<<< Before written to file\n");
         list_files(fs.base);
         if (data_save_as_file(&fs, data_buffer, 1024, true, cnt >= 3 ? false : true) == 0) {
-            log_info("Data saved successfully.");
+            // rt_kprintf("Data saved successfully.\n");
         } else {
-            log_info("Data saved failed.");
+            // rt_kprintf("Data saved failed.\n");
         }
-        log_info("----------------------------------------------------------------------");
+        // rt_kprintf("----------------------------------------------------------------------\n");
         rt_thread_mdelay(500);
         cnt--;
     }
-    log_debug("-------delete old dirs--------");
+    // rt_kprintf("-------delete old dirs--------\n");
     delete_old_dirs(&fs);
-    log_debug("------------------------------");
+    // rt_kprintf("------------------------------\n");
 }
 
 // MSH_CMD_EXPORT(data_save_as_file_test, data save as file test);

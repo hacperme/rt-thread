@@ -8,10 +8,17 @@
 #endif
 #include <stdio.h>
 
+#include "data_save_as_file.h"
+
+
 #if defined APP_USING_LOG && defined APP_LOG_PRINT_CHANNEL
 
 static struct rt_mutex app_log_mutex = {0};
 static int app_log_initilized = 0;
+
+
+extern void read_imei_from_file(char *output, int read_length);
+struct FileSystem fs_log;
 
 rt_err_t app_log_init(void)
 {
@@ -21,6 +28,20 @@ rt_err_t app_log_init(void)
     {
         app_log_initilized = 1;
     }
+
+    char nbiot_imei_string[16] = {0};
+    read_imei_from_file(nbiot_imei_string, 15);
+    char temp_base[32] = {0};
+    if (strlen(nbiot_imei_string)) {
+        sprintf(temp_base, "/log/%s", nbiot_imei_string);
+        data_save_as_file_init(&fs_log, 0, ".log", temp_base, -1);
+    }
+    else {
+        data_save_as_file_init(&fs_log, 0, ".log", "/log", -1);
+    }
+
+    delete_old_dirs(&fs_log);
+    
     return err;
 }
 
@@ -45,6 +66,10 @@ static void app_log_print_to_file(const char *fmt, ...)
 
     va_start(args, fmt);
     // TODO
+    char buff[1024] = {0};
+    sprintf(buff, fmt, args);
+    rt_kprintf("buff: %s\n", buff);
+    data_save_as_file_v2(&fs_log, buff, strlen(buff), 0);
     va_end(args);
 }
 #endif
@@ -79,7 +104,8 @@ void app_log_print(const char *fmt, ...)
         #endif
 
         #ifdef APP_LOG_PRINT_TO_FILE
-        app_log_print_to_file("%s", app_log_buf);
+        // app_log_print_to_file("%s", app_log_buf);
+        data_save_as_file_v2(&fs_log, app_log_buf, strlen(app_log_buf), 0);
         #endif
 
         rt_mutex_release(&app_log_mutex);

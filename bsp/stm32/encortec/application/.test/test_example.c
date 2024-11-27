@@ -26,14 +26,13 @@ void fatfs_dhara_nand_mnt_cb(fdnfs_init_status_e *status)
 static fdnfs_init_status_e mnt_status;
 
 int application_start(int argc, char *argv[]) {
-    app_log_init();
 
     extern void test_show_reset_status(void);
     test_show_reset_status();
 
     rt_err_t res;
     res = rt_sem_init(&mnt_sem, "mntsem", 0, RT_IPC_FLAG_PRIO);
-    log_debug("rt_sem_init mntsem res=%d", res);
+    rt_kprintf("rt_sem_init mntsem res=%d\n", res);
     if (res != RT_EOK)
     {
         return -1;
@@ -50,8 +49,14 @@ int application_start(int argc, char *argv[]) {
 
         // extern void test_fs_option(void);
         // test_fs_option();
-        log_debug("fatfs mount success.");
+        rt_kprintf("fatfs mount success.\n");
     }
+
+    // extern int delete_directory(const char *dir);
+    // delete_directory("/data");
+    // delete_directory("/log/");
+
+    app_log_init();
 
     // extern void test_hal_hmac_sha256(void);
     // test_hal_hmac_sha256();
@@ -98,9 +103,6 @@ int application_start(int argc, char *argv[]) {
 
     // extern void data_save_as_file_test();
     // data_save_as_file_test();
-
-    extern int delete_directory(const char *dir);
-    delete_directory("/data");
 
     extern void main_business_entry(void);
     main_business_entry();

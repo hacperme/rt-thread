@@ -206,13 +206,6 @@ int collect_sensor_data()
     rt_uint16_t vcap_vol, vbat_vol;
     vcap_vol = vbat_vol = 0;
 
-    res = vcap_vol_read(&vcap_vol);
-    log_debug("vcap_vol_read %s, vcap_vol=%d", res == RT_EOK ? "success" : "failed", vcap_vol);
-    res = vbat_vol_read(&vbat_vol);
-    log_debug("vbat_vol_read %s, vbat_vol=%d", res == RT_EOK ? "success" : "failed", vbat_vol);
-    sensor_data.vcap_vol = (int)vcap_vol;
-    sensor_data.vbat_vol = (int)vbat_vol;
-
     if (wakeup_source_flag != RTC_SOURCE) {
         res = adxl372_init();
         log_debug("adxl372_init %s", res != RT_EOK ? "failed" : "success");
@@ -249,6 +242,13 @@ int collect_sensor_data()
         sensor_data.cur_buff_size = (int)cur_buff_size;
     }
     
+    res = vcap_vol_read(&vcap_vol);
+    log_debug("vcap_vol_read %s, vcap_vol=%d", res == RT_EOK ? "success" : "failed", vcap_vol);
+    res = vbat_vol_read(&vbat_vol);
+    log_debug("vbat_vol_read %s, vbat_vol=%d", res == RT_EOK ? "success" : "failed", vbat_vol);
+    sensor_data.vcap_vol = (int)vcap_vol;
+    sensor_data.vbat_vol = (int)vbat_vol;
+
     iic_dev = rt_i2c_bus_device_find("i2c1");
 
     // temp1, temp2
@@ -817,76 +817,77 @@ void save_sensor_data()
     }
 
     // for test
-    char temp[32] = {0};
-    rt_kprintf("\n=====================================\n");
-    rt_kprintf("Separator: %d\n", data.separator);
-    rt_kprintf("YYYY: %d\n", data.year);
-    rt_kprintf("MM: %d\n", data.month);
-    rt_kprintf("DD: %d\n", data.day);
-    rt_kprintf("hh: %d\n", data.hour);
-    rt_kprintf("mm: %d\n", data.minute);
+    // char temp[32] = {0};
+    // rt_kprintf("\n=====================================\n");
+    // rt_kprintf("Separator: %d\n", data.separator);
+    // rt_kprintf("YYYY: %d\n", data.year);
+    // rt_kprintf("MM: %d\n", data.month);
+    // rt_kprintf("DD: %d\n", data.day);
+    // rt_kprintf("hh: %d\n", data.hour);
+    // rt_kprintf("mm: %d\n", data.minute);
 
-    sprintf(temp, "%f", data.lat);
-    rt_kprintf("N: %s\n", temp);
+    // sprintf(temp, "%f", data.lat);
+    // rt_kprintf("N: %s\n", temp);
 
-    rt_memset(temp, 0, 32);
-    sprintf(temp, "%f", data.lng);
-    rt_kprintf("E: %s\n", temp);
+    // rt_memset(temp, 0, 32);
+    // sprintf(temp, "%f", data.lng);
+    // rt_kprintf("E: %s\n", temp);
 
-    rt_kprintf("Z: %d\n", data.zone);
+    // rt_kprintf("Z: %d\n", data.zone);
 
-    rt_memset(temp, 0, 32);
-    sprintf(temp, "%f", data.temp1);
-    rt_kprintf("TEMP1: %s\n", temp);
+    // rt_memset(temp, 0, 32);
+    // sprintf(temp, "%f", data.temp1);
+    // rt_kprintf("TEMP1: %s\n", temp);
 
-    rt_memset(temp, 0, 32);
-    sprintf(temp, "%f", data.temp2);
-    rt_kprintf("TEMP2: %s\n", temp);
+    // rt_memset(temp, 0, 32);
+    // sprintf(temp, "%f", data.temp2);
+    // rt_kprintf("TEMP2: %s\n", temp);
 
-    rt_memset(temp, 0, 32);
-    sprintf(temp, "%f", data.temp3);
-    rt_kprintf("HUM_TEMP: %s\n", temp);
+    // rt_memset(temp, 0, 32);
+    // sprintf(temp, "%f", data.temp3);
+    // rt_kprintf("HUM_TEMP: %s\n", temp);
     
-    rt_memset(temp, 0, 32);
-    sprintf(temp, "%f", data.humi);
-    rt_kprintf("HUMI: %s\n", temp);
+    // rt_memset(temp, 0, 32);
+    // sprintf(temp, "%f", data.humi);
+    // rt_kprintf("HUMI: %s\n", temp);
     
-    rt_memset(temp, 0, 32);
-    sprintf(temp, "%f", data.water_level);
-    rt_kprintf("Water: %s\n", temp);
+    // rt_memset(temp, 0, 32);
+    // sprintf(temp, "%f", data.water_level);
+    // rt_kprintf("Water: %s\n", temp);
 
-    rt_kprintf("Capacitor_V: %d\n", data.vcap_vol);
-    rt_kprintf("Bat_V: %d\n", data.vbat_vol);
-    rt_kprintf("Sample_Size: %d\n", sensor_data.xyz_size);
-    rt_kprintf("Start_Timestamp: %u\n", xyz_read_start_timestamp);
+    // rt_kprintf("Capacitor_V: %d\n", data.vcap_vol);
+    // rt_kprintf("Bat_V: %d\n", data.vbat_vol);
+    // rt_kprintf("Sample_Size: %d\n", sensor_data.xyz_size);
+    // rt_kprintf("Start_Timestamp: %u\n", xyz_read_start_timestamp);
 
-    int i = 0;
-    if (sensor_data.xyz_size > 0) {
-        rt_kprintf("X samples: ");
-        for (i = 0; i < sensor_data.xyz_size; i++) {
-            rt_kprintf("%d,", sensor_data.x_buf[i]);
-        }
-        rt_kprintf("\n");
-        rt_kprintf("Y samples: ");
-        for (i = 0; i < sensor_data.xyz_size; i++) {
-            rt_kprintf("%d,", sensor_data.y_buf[i]);
-        }
-        rt_kprintf("\n");
-        rt_kprintf("Z samples: ");
-        for (i = 0; i < sensor_data.xyz_size; i++) {
-            rt_kprintf("%d,", sensor_data.z_buf[i]);
-        }
-        rt_kprintf("\n");
-    }
-    rt_kprintf("Sample_Size2: %d\n", sensor_data.cur_buff_size);
-    if (sensor_data.cur_buff_size > 0) {
-        rt_kprintf("Track return voltages: ");
-        for (i = 0; i < sensor_data.cur_buff_size; i++) {
-                rt_kprintf("%d,", sensor_data.cur_buff[i]);
-        }
-        rt_kprintf("\n");
-    }
-    rt_kprintf("\n=====================================\n");
+    // int i = 0;
+    // if (sensor_data.xyz_size > 0) {
+    //     rt_kprintf("X samples: ");
+    //     for (i = 0; i < sensor_data.xyz_size; i++) {
+    //         rt_kprintf("%d,", sensor_data.x_buf[i]);
+    //     }
+    //     rt_kprintf("\n");
+    //     rt_kprintf("Y samples: ");
+    //     for (i = 0; i < sensor_data.xyz_size; i++) {
+    //         rt_kprintf("%d,", sensor_data.y_buf[i]);
+    //     }
+    //     rt_kprintf("\n");
+    //     rt_kprintf("Z samples: ");
+    //     for (i = 0; i < sensor_data.xyz_size; i++) {
+    //         rt_kprintf("%d,", sensor_data.z_buf[i]);
+    //     }
+    //     rt_kprintf("\n");
+    // }
+    // rt_kprintf("Sample_Size2: %d\n", sensor_data.cur_buff_size);
+    // if (sensor_data.cur_buff_size > 0) {
+    //     rt_kprintf("Track return voltages: ");
+    //     for (i = 0; i < sensor_data.cur_buff_size; i++) {
+    //             rt_kprintf("%d,", sensor_data.cur_buff[i]);
+    //     }
+    //     rt_kprintf("\n");
+    // }
+    // rt_kprintf("\n=====================================\n");
+
     // 删除超过30天的文件
     delete_old_dirs(&fs);
 }
