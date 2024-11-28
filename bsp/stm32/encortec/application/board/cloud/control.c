@@ -129,6 +129,7 @@ rt_err_t antenna_type_switch()
 {
     enum AntennaType temp = current_antenna == MAIN_ANT ? REMPTE_ANT : MAIN_ANT;
     antenna_type_select(temp);
+    current_antenna = temp;
 }
 
 enum AntennaType get_current_antenna_no()
@@ -285,4 +286,25 @@ void read_imei_from_file(char *output, int read_length)
     }
     fread(output, 1, read_length, f);
     fclose(f);
+}
+
+
+void test_antenna_auto_switch(void)
+{
+    nbiot_at_client_init();
+    antenna_init(NBIOT_MODULE, current_antenna);
+    sim_init(NBIOT_MODULE, SIM1);
+    nbiot_power_on();
+    nbiot_disable_sleep_mode();
+
+    extern int get_nbiot_csq(int *, int *);
+    int rssi = -1;
+    int ber = -1;
+
+    while (1) {
+        antenna_type_switch();
+        get_nbiot_csq(&rssi, &ber);
+        rt_kprintf("rssi: %d, ber: %d\n", rssi, ber);
+        rt_thread_mdelay(3000);
+    }
 }

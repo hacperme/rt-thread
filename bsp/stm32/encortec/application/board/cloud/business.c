@@ -919,13 +919,6 @@ static void sm_init(void) {
 extern rt_err_t esp32_wifi_transfer();
 
 
-void auto_switch_current_antenna()
-{
-    extern enum AntennaType current_antenna;
-    antenna_type_select(current_antenna == MAIN_ANT ? REMPTE_ANT : MAIN_ANT);
-}
-
-
 void main_business_entry(void)
 {
     rt_err_t result;
@@ -1006,7 +999,7 @@ void main_business_entry(void)
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_NETWORK_RETRY) {
-                    auto_switch_current_antenna();
+                    antenna_type_switch();
                     nbiot_set_cfun_mode(0);
                     log_debug("nbiot_set_cfun_mode 0");
                     rt_thread_mdelay(200);
@@ -1080,7 +1073,7 @@ void main_business_entry(void)
             case CAT1_WAIT_NETWORK_RDY:
                 rv = cat1_wait_network_ready();
                 if (rv == CAT1_NETWORK_NOT_RDY) {
-                    auto_switch_current_antenna();
+                    antenna_type_switch();
                     cat1_set_cfun_mode(0);
                     rt_thread_mdelay(200);
                     cat1_set_cfun_mode(1);

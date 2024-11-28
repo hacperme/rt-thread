@@ -947,3 +947,37 @@ ERROR:
     at_delete_resp(resp);
     return result;
 }
+
+
+// AT+CSQ
+rt_err_t get_nbiot_csq(int *rssi, int *ber)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(512, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(client, resp, "AT+CSQ");
+    if (result == RT_EOK) {
+        const char *resp_line = at_resp_get_line(resp, 2);
+        if (resp_line == RT_NULL) {
+            result = RT_ERROR;
+            goto ERROR;
+        }
+        sscanf(resp_line, "+CSQ: %d,%d", rssi, ber);
+    }
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}
