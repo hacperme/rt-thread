@@ -19,6 +19,7 @@
 #include "at_client_https.h"
 #include "voltage_adc.h"
 #include "led.h"
+#include "watch_dog.h"
 
 #include "logging.h"
 // #define DBG_TAG "business"
@@ -918,6 +919,13 @@ static void sm_init(void) {
 
 extern rt_err_t esp32_wifi_transfer();
 
+static rt_device_t wdg_device = RT_NULL;
+
+static void feed_rtwdg(void)
+{
+    rt_err_t res = rt_device_control(wdg_device, RT_DEVICE_CTRL_WDT_KEEPALIVE, RT_NULL);
+    // log_debug("RT_DEVICE_CTRL_WDT_KEEPALIVE %d", res);
+}
 
 void main_business_entry(void)
 {
@@ -964,9 +972,19 @@ void main_business_entry(void)
 
     debug_led1_pin_init();
 
+    // setup watch dog
+    wdg_device = rt_device_find("wdt");
+    wdg_init(100, feed_rtwdg);
+    rt_device_control(wdg_device, RT_DEVICE_CTRL_WDT_START, RT_NULL);
+
+    rt_uint8_t wdg_id;
+    wdg_create_soft(&wdg_id, 15*60*1000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
+    
     while (1)
     {
         status = sm_get_status();
+        wdg_feed_soft(wdg_id);
+
         switch (status)
         {
             case RECORD_WAKEUP_SROUCE:

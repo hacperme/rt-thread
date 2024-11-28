@@ -40,7 +40,7 @@ static rt_bool_t _wdg_should_feed(void)
         {
             rt_uint32_t feed_time_interval = rt_tick_diff(wdg_reg_list[i].last_feed_timestamp, rt_tick_get_millisecond());
 
-            log_debug("Feed time interval:%ld", feed_time_interval);
+            // log_debug("Feed time interval:%ld", feed_time_interval);
 
             if(feed_time_interval > wdg_reg_list[i].timeout)
             {
@@ -49,7 +49,7 @@ static rt_bool_t _wdg_should_feed(void)
         }
     }
 
-    log_debug("Should feed the hardware watch dog.\r\n");
+    // log_debug("Should feed the hardware watch dog.\r\n");
 
     return RT_TRUE;
 }
