@@ -226,12 +226,28 @@ int collect_sensor_data()
         xyz_read_start_timestamp = (unsigned int)time(NULL);
         res = adxl372_read_fifo_xyz(&(sensor_data.x_buf), &(sensor_data.y_buf), &(sensor_data.z_buf), &(sensor_data.xyz_size));
         log_debug("adxl372_read_fifo_xyz res=%d, xyz_size=%d", res, sensor_data.xyz_size);
-        // for (rt_uint16_t i = 0; i < sensor_data.xyz_size; i++)
-        // {
-        //     log_debug("X=%d, Y=%d, Z=%d", sensor_data.x_buf[i], sensor_data.y_buf[i], sensor_data.z_buf[i]);
-        // }
-
         cur_vol_read_stop();
+
+        // 计算三轴数据峰值
+        rt_int16_t abs_temp_value = 0;
+        for (rt_uint16_t i = 0; i < sensor_data.xyz_size; i++)
+        {
+            // log_debug("X=%d, Y=%d, Z=%d", sensor_data.x_buf[i], sensor_data.y_buf[i], sensor_data.z_buf[i]);
+            abs_temp_value = abs(sensor_data.x_buf[i]);  // x
+            if (abs_temp_value > sensor_data.acc_x) {
+                sensor_data.acc_x = abs_temp_value;
+            }
+
+            abs_temp_value = abs(sensor_data.y_buf[i]);  // y
+            if (abs_temp_value > sensor_data.acc_y) {
+                sensor_data.acc_y = abs_temp_value;
+            }
+
+            abs_temp_value = abs(sensor_data.z_buf[i]);  // z
+            if (abs_temp_value > sensor_data.acc_z) {
+                sensor_data.acc_z = abs_temp_value;
+            }
+        }
 
         rt_uint16_t *cur_buff;
         rt_uint16_t cur_buff_size = 0;
