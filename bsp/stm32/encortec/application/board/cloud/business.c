@@ -895,6 +895,17 @@ void save_sensor_data()
     delete_old_dirs(&fs);
 }
 
+
+int should_cat1_upload_files()
+{
+    if ((server_ctrl_data.Cat1_File_Upload_File_Type == 1 || server_ctrl_data.Cat1_File_Upload_File_Type == 2) \
+        && strlen(server_ctrl_data.Cat1_File_Upload_File_Times) > 0) {
+            return 1;
+    }
+    return 0;
+}
+
+
 static rt_mq_t sm_mq = NULL;
 
 static void sm_set_status(int status) {
@@ -1068,7 +1079,12 @@ void main_business_entry(void)
                 if (rv == NBIOT_REPORT_SENSOR_DATA_FAILED || rv == NBIOT_REPORT_SENSOR_DATA_SUCCESS) {
                     nbiot_deinit();
                     debug_led1_stop_flash();
-                    sm_set_status(CAT1_INIT);
+                    if (should_cat1_upload_files()) {
+                        sm_set_status(CAT1_INIT);
+                    }
+                    else {
+                        sm_set_status(ESP32_WIFI_TRANSFER_DATA);
+                    }
                 }
                 else if (rv == NBIOT_REPORT_SENSOR_DATA_RETRY) {
                     sm_set_status(NBIOT_REPORT_SENSOR_DATA);
