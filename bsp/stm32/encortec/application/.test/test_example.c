@@ -141,11 +141,11 @@ int application_start(int argc, char *argv[]) {
     // extern void data_save_as_file_test();
     // data_save_as_file_test();
 
-    extern void debug_led1_flash(void);
-    debug_led1_flash();
+    // extern void test_debug_led1_flash(void);
+    // test_debug_led1_flash();
 
-    // extern void main_business_entry(void);
-    // main_business_entry();
+    extern void main_business_entry(void);
+    main_business_entry();
 
     // extern void esp_data_stransf_example(void);
     // esp_data_stransf_example();

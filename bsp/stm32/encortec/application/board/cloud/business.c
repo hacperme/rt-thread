@@ -18,6 +18,7 @@
 #include <dirent.h>
 #include "at_client_https.h"
 #include "voltage_adc.h"
+#include "led.h"
 
 #include "logging.h"
 // #define DBG_TAG "business"
@@ -241,13 +242,6 @@ int collect_sensor_data()
         sensor_data.cur_buff = cur_buff;
         sensor_data.cur_buff_size = (int)cur_buff_size;
     }
-    
-    res = vcap_vol_read(&vcap_vol);
-    log_debug("vcap_vol_read %s, vcap_vol=%d", res == RT_EOK ? "success" : "failed", vcap_vol);
-    res = vbat_vol_read(&vbat_vol);
-    log_debug("vbat_vol_read %s, vbat_vol=%d", res == RT_EOK ? "success" : "failed", vbat_vol);
-    sensor_data.vcap_vol = (int)vcap_vol;
-    sensor_data.vbat_vol = (int)vbat_vol;
 
     iic_dev = rt_i2c_bus_device_find("i2c1");
 
@@ -285,6 +279,15 @@ int collect_sensor_data()
         sensor_data.water_level = value;
     }
 
+    res = vcap_vol_read(&vcap_vol);
+    log_debug("vcap_vol_read %s, vcap_vol=%d", res == RT_EOK ? "success" : "failed", vcap_vol);
+    res = vbat_vol_read(&vbat_vol);
+    log_debug("vbat_vol_read %s, vbat_vol=%d", res == RT_EOK ? "success" : "failed", vbat_vol);
+    sensor_data.vcap_vol = (int)vcap_vol;
+    sensor_data.vbat_vol = (int)vbat_vol;
+
+    sensor_pwron_pin_enable(PIN_LOW);
+
     nmea_item nmea_item = {0};
     res = get_nmea_item_data(&nmea_item);
     if (res == RT_EOK) {
@@ -292,7 +295,6 @@ int collect_sensor_data()
         rt_memcpy(nmea_buf, nmea_item.GNGGA, rt_strlen(nmea_item.GNGGA));
     }
 
-    sensor_pwron_pin_enable(PIN_LOW);
     return 0;
 }
 
@@ -967,6 +969,8 @@ void main_business_entry(void)
 
     board_pins_init();
 
+    debug_led1_pin_init();
+
     while (1)
     {
         status = sm_get_status();
@@ -982,9 +986,11 @@ void main_business_entry(void)
                 break;
             case COLLECT_SENSOR_DATA:
                 collect_sensor_data();
+                save_sensor_data();
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
+                debug_led1_start_flash(500);
                 nbiot_init();
                 sm_set_status(NBIOT_WAIT_NETWORK_RDY);
                 break;
@@ -1000,6 +1006,7 @@ void main_business_entry(void)
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_NETWORK_RETRY) {
+                    auto_switch_current_antenna();
                     nbiot_set_cfun_mode(0);
                     log_debug("nbiot_set_cfun_mode 0");
                     rt_thread_mdelay(200);
@@ -1015,7 +1022,6 @@ void main_business_entry(void)
                 rv = nbiot_wait_server_connect_ready();
                 if (rv == NBIOT_SERVER_CONNECT_NOT_RDY) {
                     nbiot_deinit();
-                    save_sensor_data();
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_SERVER_CONNECT_RDY) {
@@ -1037,7 +1043,6 @@ void main_business_entry(void)
                     sm_set_status(NBIOT_REPORT_SENSOR_DATA);
                 }
                 else if (rv == NBIOT_REPORT_CTRL_DATA_RETRY) {
-                    auto_switch_current_antenna();
                     sm_set_status(NBIOT_REPORT_CONTROL_DATA);
                 }
                 else if (rv == NBIOT_SERVER_CONNECT_RETRY) {
@@ -1051,10 +1056,10 @@ void main_business_entry(void)
                 rv = nbiot_report_sensor_data_to_server();
                 if (rv == NBIOT_REPORT_SENSOR_DATA_FAILED || rv == NBIOT_REPORT_SENSOR_DATA_SUCCESS) {
                     nbiot_deinit();
+                    debug_led1_stop_flash();
                     sm_set_status(CAT1_INIT);
                 }
                 else if (rv == NBIOT_REPORT_SENSOR_DATA_RETRY) {
-                    auto_switch_current_antenna();
                     sm_set_status(NBIOT_REPORT_SENSOR_DATA);
                 }
                 else if (rv == NBIOT_SERVER_CONNECT_RETRY) {
@@ -1065,8 +1070,6 @@ void main_business_entry(void)
                 }
                 break;
             case CAT1_INIT:
-                save_sensor_data();
-                rt_thread_mdelay(10000);
                 if (cat1_init() != RT_EOK) {
                     sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
@@ -1077,6 +1080,7 @@ void main_business_entry(void)
             case CAT1_WAIT_NETWORK_RDY:
                 rv = cat1_wait_network_ready();
                 if (rv == CAT1_NETWORK_NOT_RDY) {
+                    auto_switch_current_antenna();
                     cat1_set_cfun_mode(0);
                     rt_thread_mdelay(200);
                     cat1_set_cfun_mode(1);
@@ -1097,7 +1101,6 @@ void main_business_entry(void)
                     sm_set_status(ESP32_WIFI_TRANSFER_DATA);
                 }
                 else {
-                    auto_switch_current_antenna();
                     sm_set_status(CAT1_UPLOAD_FILE);
                 }
                 break;
@@ -1106,6 +1109,7 @@ void main_business_entry(void)
                 sm_set_status(SLEEP);
                 break;
             case SLEEP:
+                debug_led1_stop_flash();
                 stm32_sleep();
                 break;
             default:
@@ -1129,6 +1133,8 @@ rt_err_t esp32_wifi_transfer()
     rt_err_t result = RT_EOK;
     // server_ctrl_data.Esp32_AP_Switch = 1; // for test
     if (server_ctrl_data.Esp32_AP_Switch) {
+        debug_led1_start_flash(250);
+
         nand_to_esp32();
         esp_at_init();
         esp32_power_pin_init();
@@ -1152,6 +1158,7 @@ rt_err_t esp32_wifi_transfer()
         // );
         if (result != RT_EOK) {
             log_debug("esp32_transf_data error");
+            debug_led1_stop_flash();
             return result;
         }
 
@@ -1164,6 +1171,7 @@ rt_err_t esp32_wifi_transfer()
                 if (esp_wait_stop(RT_WAITING_FOREVER) == 0) {
                     log_debug("got esp_wait_stop");
                     esp32_power_off();
+                    debug_led1_stop_flash();
                     return RT_EOK;
                 }
             }
@@ -1174,6 +1182,7 @@ rt_err_t esp32_wifi_transfer()
         else {
             log_debug("can not got esp_wait_connected");
         }
+        debug_led1_stop_flash();
         esp32_power_off();
     }
 
