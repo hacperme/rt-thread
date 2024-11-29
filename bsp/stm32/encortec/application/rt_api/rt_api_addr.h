@@ -263,7 +263,10 @@
 #define HAL_SYSCFG_EnableVREFBUF_addr 0x08018AB5
 #define HAL_SYSCFG_DisableVREFBUF_addr 0x08018AFD
 #define HAL_PWR_EnableWakeUpPin_addr 0x08018DD9
+#define HAL_PWR_EnterSTANDBYMode_addr 0x08018F09
 #define HAL_PWREx_EnterSHUTDOWNMode_addr 0x080193B1
+#define HAL_PWREx_EnableUltraLowPowerMode_addr 0x0801940D
+#define HAL_PWREx_DisableUltraLowPowerMode_addr 0x0801942D
 #define HAL_HASH_Init_addr 0x0801A575
 #define HAL_HASH_DeInit_addr 0x0801A61D
 #define HAL_HASH_MD5_Start_addr 0x0801A6E9
@@ -399,20 +402,20 @@
 #define HAL_HMACEx_SHA256_Start_addr 0x0802C9A9
 #define fal_flash_device_find_addr 0x0803E03D
 #define at_vprintfln_addr 0x0803EF59
-#define rt_hw_cpu_reset_addr 0x0803F621
-#define HAL_ADC_MspInit_addr 0x0803FD7D
-#define HAL_ADC_MspDeInit_addr 0x0803FE6D
-#define mbr_init_addr 0x080410A5
-#define mbr_save_addr 0x08041169
-#define rt_sched_lock_addr 0x080454A5
-#define rt_sched_unlock_addr 0x080454CF
-#define rt_sched_unlock_n_resched_addr 0x080454E9
-#define rt_system_scheduler_init_addr 0x08045511
-#define rt_system_scheduler_start_addr 0x08045559
-#define rt_schedule_addr 0x08045595
-#define rt_exit_critical_safe_addr 0x08045935
-#define rt_enter_critical_addr 0x08045949
-#define rt_exit_critical_addr 0x08045985
-#define rt_critical_level_addr 0x080459DD
+#define rt_hw_cpu_reset_addr 0x0803F625
+#define HAL_ADC_MspInit_addr 0x0803FD81
+#define HAL_ADC_MspDeInit_addr 0x0803FE71
+#define mbr_init_addr 0x080410AD
+#define mbr_save_addr 0x08041171
+#define rt_sched_lock_addr 0x080454AD
+#define rt_sched_unlock_addr 0x080454D7
+#define rt_sched_unlock_n_resched_addr 0x080454F1
+#define rt_system_scheduler_init_addr 0x08045519
+#define rt_system_scheduler_start_addr 0x08045561
+#define rt_schedule_addr 0x0804559D
+#define rt_exit_critical_safe_addr 0x0804593D
+#define rt_enter_critical_addr 0x08045951
+#define rt_exit_critical_addr 0x0804598D
+#define rt_critical_level_addr 0x080459E5
 
 #endif /* __ENCORTEC_FUNCTION_ADDRESSES_H */

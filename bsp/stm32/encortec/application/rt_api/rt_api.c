@@ -1774,3 +1774,15 @@ HAL_StatusTypeDef HAL_HASH_MD5_Accmlt_End(HASH_HandleTypeDef *hhash, uint8_t *pI
     return ((HAL_HASH_MD5_Accmlt_End_api_ptr_t)(HAL_HASH_MD5_Accmlt_End_addr))(hhash, pInBuffer, Size, pOutBuffer, Timeout);
 }
 
+void HAL_PWR_EnterSTANDBYMode(void) {
+    return ((HAL_PWR_EnterSTANDBYMode_api_ptr_t)(HAL_PWR_EnterSTANDBYMode_addr))();
+}
+
+void HAL_PWREx_EnableUltraLowPowerMode(void) {
+    return ((HAL_PWREx_EnableUltraLowPowerMode_api_ptr_t)(HAL_PWREx_EnableUltraLowPowerMode_addr))();
+}
+
+void HAL_PWREx_DisableUltraLowPowerMode(void) {
+    return ((HAL_PWREx_DisableUltraLowPowerMode_api_ptr_t)(HAL_PWREx_DisableUltraLowPowerMode_addr))();
+}
+

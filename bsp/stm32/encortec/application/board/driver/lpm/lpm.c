@@ -207,7 +207,11 @@ void shut_down(void)
     __HAL_PWR_CLEAR_FLAG(PWR_WAKEUP_FLAG2);
 
     /* Enter the Shutdown mode */
-    HAL_PWREx_EnterSHUTDOWNMode();
+    // HAL_PWREx_EnterSHUTDOWNMode();
+
+    /* Enter the Standby mode */
+    HAL_PWREx_EnableUltraLowPowerMode();
+    HAL_PWR_EnterSTANDBYMode();
 }
 
 static rt_uint8_t reset_source = 0;

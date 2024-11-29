@@ -411,3 +411,6 @@ get_dma_handle
 HAL_HASH_MD5_Start
 HAL_HASH_MD5_Accmlt
 HAL_HASH_MD5_Accmlt_End
+HAL_PWR_EnterSTANDBYMode
+HAL_PWREx_EnableUltraLowPowerMode
+HAL_PWREx_DisableUltraLowPowerMode
