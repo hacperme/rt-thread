@@ -40,9 +40,6 @@ int application_start(int argc, char *argv[]) {
 
     app_log_init();
 
-    // extern void test_show_reset_status(void);
-    // test_show_reset_status();
-
     rt_err_t res;
     res = rt_sem_init(&mnt_sem, "mntsem", 0, RT_IPC_FLAG_PRIO);
     log_debug("rt_sem_init mntsem res=%d\n", res);
@@ -65,9 +62,19 @@ int application_start(int argc, char *argv[]) {
         rt_kprintf("fatfs mount success.\n");
     }
 
-    // extern int delete_directory(const char *dir);
-    // delete_directory("/data");
-    // delete_directory("/log/");
+    // extern void test_show_reset_status(void);
+    // test_show_reset_status();
+
+    // extern void test_show_wkup_status(void);
+    // test_show_wkup_status();
+
+    // extern void test_rtc(void);
+    // rt_thread_mdelay(5 * 1000);
+    // test_rtc();
+
+    extern int delete_directory(const char *dir);
+    delete_directory("/data");
+    delete_directory("/log/");
 
     // test_show_app_version();
 
@@ -133,10 +140,6 @@ int application_start(int argc, char *argv[]) {
 
     // extern void test_read_voltage(int argc, char *argv[]);
     // test_read_voltage(argc, argv);
-
-    // extern void test_rtc(void);
-    // rt_thread_mdelay(5 * 1000);
-    // test_rtc();
 
     // extern void data_save_as_file_test();
     // data_save_as_file_test();

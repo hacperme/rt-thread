@@ -71,6 +71,7 @@ int record_wakeup_source()
 {
     log_debug("record wakeup source");
     rt_uint8_t source = get_wakeup_source();
+    log_debug("wakeup source: %d", source);
     if (is_rtc_wakeup(&source)) {
         wakeup_source_flag = RTC_SOURCE;  // rtc
     }
@@ -749,18 +750,23 @@ void stm32_sleep()
     log_debug("settings_params->nb_collect_interval: %d", settings_params->nb_collect_interval);
 
     int remaining = 0;
-    remaining = settings_params->nb_collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
 
     // 获取当前时间
     time_t now = time(NULL);
     struct tm *timeinfo = localtime(&now);
     log_debug("stm32_sleep got cur time: %04d-%02d-%02d %02d:%02d:%02d", timeinfo->tm_year + 1900, timeinfo->tm_mon, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-    if ((timeinfo->tm_year + 1900 != 2000) && (timeinfo->tm_hour >= 0 && timeinfo->tm_hour <= 6)) {
+    // 2024-10-29 06:50:36
+    if ((timeinfo->tm_year + 1900 != 2000) && (timeinfo->tm_hour >= 0 && timeinfo->tm_hour < 6)) {
         // 时间戳正确 且 在0点至6点区间, 不上报
         remaining = (6 - timeinfo->tm_hour) * 3600 - timeinfo->tm_min * 60 - timeinfo->tm_sec;
+        rt_kprintf("cannot wakeup rtc between [0~6]\n");
     }
-
+    else {
+        remaining = settings_params->nb_collect_interval - ((end_tick_ms - start_tick_ms) / 1000);
+        rt_kprintf("calculate remaining with end and start timestamp\n");
+    }
     log_debug("remaining: %d", remaining);
+
     rtc_set_wakeup(remaining > 0 ? remaining : 10);
     shut_down();
 }
@@ -941,7 +947,6 @@ static void sm_set_initial_status(int status) {
 static void sm_init(void) {
     sm_mq = rt_mq_create("sm_mq", 16, 8, RT_IPC_FLAG_FIFO);
     sm_set_initial_status(RECORD_WAKEUP_SROUCE);
-    // sm_set_initial_status(CAT1_INIT);
 }
 
 extern rt_err_t esp32_wifi_transfer();

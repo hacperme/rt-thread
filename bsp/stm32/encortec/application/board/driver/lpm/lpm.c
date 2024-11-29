@@ -453,7 +453,7 @@ void test_rtc(void)
 
 // MSH_CMD_EXPORT(test_rtc, test rtc);
 
-static void test_show_wkup_status(void)
+void test_show_wkup_status(void)
 {
     rt_uint8_t res;
     rt_uint8_t wkup_source = get_wakeup_source();
