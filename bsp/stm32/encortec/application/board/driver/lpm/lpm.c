@@ -207,7 +207,11 @@ void shut_down(void)
     __HAL_PWR_CLEAR_FLAG(PWR_WAKEUP_FLAG2);
 
     /* Enter the Shutdown mode */
-    HAL_PWREx_EnterSHUTDOWNMode();
+    // HAL_PWREx_EnterSHUTDOWNMode();
+
+    /* Enter the Standby mode */
+    HAL_PWREx_EnableUltraLowPowerMode();
+    HAL_PWR_EnterSTANDBYMode();
 }
 
 static rt_uint8_t reset_source = 0;
@@ -453,7 +457,7 @@ void test_rtc(void)
 
 // MSH_CMD_EXPORT(test_rtc, test rtc);
 
-static void test_show_wkup_status(void)
+void test_show_wkup_status(void)
 {
     rt_uint8_t res;
     rt_uint8_t wkup_source = get_wakeup_source();

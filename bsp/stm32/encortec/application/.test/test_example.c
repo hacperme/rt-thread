@@ -39,9 +39,6 @@ void test_show_app_version(void)
 int application_start(int argc, char *argv[]) {
     app_log_init();
 
-    extern void test_show_reset_status(void);
-    test_show_reset_status();
-
     rt_err_t res;
     res = rt_sem_init(&mnt_sem, "mntsem", 0, RT_IPC_FLAG_PRIO);
     log_debug("rt_sem_init mntsem res=%d", res);
@@ -58,7 +55,20 @@ int application_start(int argc, char *argv[]) {
 
     test_show_app_version();
 
-    esp32_power_pin_init();
+    extern void test_show_reset_status(void);
+    test_show_reset_status();
+
+    extern void test_show_wkup_status(void);
+    test_show_wkup_status();
+
+    extern void test_vol_read(void);
+    test_vol_read();
+
+    extern void test_rtc(void);
+    rt_thread_mdelay(5 * 1000);
+    test_rtc();
+
+    // esp32_power_pin_init();
 
     // esp32_power_off();
     // rt_thread_mdelay(1000);
@@ -76,8 +86,8 @@ int application_start(int argc, char *argv[]) {
     // extern void test_gnss(int argc, char **argv);
     // test_gnss(argc, argv);
 
-    extern void test_upgrade_process(void);
-    test_upgrade_process();
+    // extern void test_upgrade_process(void);
+    // test_upgrade_process();
 
     // extern void test_st_at(void);
     // test_st_at();
@@ -87,9 +97,6 @@ int application_start(int argc, char *argv[]) {
 
     // extern void test_adxl372(int argc, char **argv);
     // test_adxl372(argc, argv);
-
-    // extern void test_vol_read(void);
-    // test_vol_read();
 
     // extern rt_err_t test_fdc1004(int argc, char **argv);
     // test_fdc1004(argc, argv);
@@ -120,10 +127,6 @@ int application_start(int argc, char *argv[]) {
 
     // extern void test_read_voltage(int argc, char *argv[]);
     // test_read_voltage(argc, argv);
-
-    // extern void test_rtc(void);
-    // rt_thread_mdelay(5 * 1000);
-    // test_rtc();
 
     // extern void data_save_as_file_test();
     // data_save_as_file_test();

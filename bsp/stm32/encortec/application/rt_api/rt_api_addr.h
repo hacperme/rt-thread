@@ -263,7 +263,10 @@
 #define HAL_SYSCFG_EnableVREFBUF_addr 0x08018AB5
 #define HAL_SYSCFG_DisableVREFBUF_addr 0x08018AFD
 #define HAL_PWR_EnableWakeUpPin_addr 0x08018DD9
+#define HAL_PWR_EnterSTANDBYMode_addr 0x08018F09
 #define HAL_PWREx_EnterSHUTDOWNMode_addr 0x080193B1
+#define HAL_PWREx_EnableUltraLowPowerMode_addr 0x0801940D
+#define HAL_PWREx_DisableUltraLowPowerMode_addr 0x0801942D
 #define HAL_HASH_Init_addr 0x0801A575
 #define HAL_HASH_DeInit_addr 0x0801A61D
 #define HAL_HASH_MD5_Start_addr 0x0801A6E9
