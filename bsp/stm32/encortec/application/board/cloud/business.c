@@ -139,7 +139,7 @@ rt_err_t get_nmea_item_data(nmea_item *item)
     time(&cur_timestamp);
     log_debug("get_nmea_item_data cur_timestamp: %d\n", cur_timestamp);
 
-    fd = fopen(nmea_time_filename, "r");
+    fd = fopen(nmea_time_filename, "rb");
     if (fd) {
         log_debug("get_nmea_item_data timstamp file exists.");
         fread(&prev_timestamp, 1, sizeof(prev_timestamp), fd);
@@ -147,6 +147,8 @@ rt_err_t get_nmea_item_data(nmea_item *item)
         if (cur_timestamp - prev_timestamp < 30 * 24 * 3600) {
             // 距上次上报位置数据未满30天
             log_debug("get_nmea_item_data, prev_timestamp - cur_timestamp < 30 days");
+            fclose(fd);
+            fd = NULL;
             return RT_ERROR;
         }
         fclose(fd);
@@ -176,7 +178,7 @@ rt_err_t get_nmea_item_data(nmea_item *item)
 
     if (item->is_valid) {
         // 记录当前上报的时间
-        fd = fopen(nmea_time_filename, "w");
+        fd = fopen(nmea_time_filename, "wb");
         if (fd) {
             fwrite(&cur_timestamp, 1, sizeof(cur_timestamp), fd);
             log_debug("get_nmea_item_data write cur_timestamp to file: %d", cur_timestamp);
@@ -918,8 +920,82 @@ void save_sensor_data()
 }
 
 
+int is_cat1_upload_every_30_days()
+{
+    FILE *fd = NULL;
+    time_t cur_timestamp = 0;
+    time_t prev_timestamp = 0;
+    char cat1_uploadtime_filename[] = "/prev_cat1_uploadtime.bin";
+
+    remove(cat1_uploadtime_filename);
+    list_files("/data/866207050411986");
+
+    // 判断上次读取的时间
+    time(&cur_timestamp);
+    log_debug("is_cat1_upload_every_30_days cur_timestamp: %d\n", cur_timestamp);
+
+    fd = fopen(cat1_uploadtime_filename, "rb");
+    if (fd) {
+        log_debug("is_cat1_upload_every_30_days timstamp file exists.");
+        fread(&prev_timestamp, 1, sizeof(prev_timestamp), fd);
+        log_debug("is_cat1_upload_every_30_days prev_timestamp: %d\n", prev_timestamp);
+        if (cur_timestamp - prev_timestamp < 30 * 24 * 3600) {
+            // 距上次上报数据未满30天
+            log_debug("is_cat1_upload_every_30_days prev_timestamp - cur_timestamp < 30 days");
+            fclose(fd);
+            fd = NULL;
+            return 0;
+        }
+        fclose(fd);
+        fd = NULL;
+    }
+
+    log_debug("is_cat1_upload_every_30_days file not exists or over 30 days, upload file soon.");
+
+    // 设置cat1上报当月的所有数据参数
+    DIR *dir;
+    struct dirent *ent;
+
+    // 获取文件路径
+    if ((dir = opendir(fs.base)) != NULL) {
+        if (strlen(server_ctrl_data.Cat1_File_Upload_File_Times) > 0) {
+            strcat(server_ctrl_data.Cat1_File_Upload_File_Times, ",");
+        }
+        while ((ent = readdir(dir)) != NULL) {
+            strcat(server_ctrl_data.Cat1_File_Upload_File_Times, ent->d_name);
+            strcat(server_ctrl_data.Cat1_File_Upload_File_Times, ",");
+            log_debug("is_cat1_upload_every_30_days append dir: %s", ent->d_name);
+        }
+        if (server_ctrl_data.Cat1_File_Upload_File_Times[strlen(server_ctrl_data.Cat1_File_Upload_File_Times) - 1] == ',') {
+            server_ctrl_data.Cat1_File_Upload_File_Times[strlen(server_ctrl_data.Cat1_File_Upload_File_Times) - 1] = '\0';
+        }
+    }
+    else {
+        return 0;
+    }
+
+    server_ctrl_data.Cat1_File_Upload_File_Type = 1;
+    log_debug("is_cat1_upload_every_30_days File Times: %s", server_ctrl_data.Cat1_File_Upload_File_Times);
+
+
+    // 记录当前上报的时间
+    fd = fopen(cat1_uploadtime_filename, "wb");
+    if (fd) {
+        fwrite(&cur_timestamp, 1, sizeof(cur_timestamp), fd);
+        log_debug("is_cat1_upload_every_30_days write cur_timestamp to file: %d", cur_timestamp);
+        fclose(fd);
+    }
+
+    return 1;
+}
+
+
 int should_cat1_upload_files()
 {
+    if (is_cat1_upload_every_30_days()) {
+        return 1;
+    }
+
     if ((server_ctrl_data.Cat1_File_Upload_File_Type == 1 || server_ctrl_data.Cat1_File_Upload_File_Type == 2) \
         && strlen(server_ctrl_data.Cat1_File_Upload_File_Times) > 0) {
             return 1;

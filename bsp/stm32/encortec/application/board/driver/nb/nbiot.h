@@ -40,7 +40,7 @@ struct ServerCtrlData {
     int Cat1_CollectInterval;
     int NB_CollectInterval;
     int Esp32_AP_Switch;
-    char Cat1_File_Upload_File_Times[128];
+    char Cat1_File_Upload_File_Times[512];
     int Cat1_File_Upload_File_Type;
     int Cat1_File_Upload_Switch;
 };

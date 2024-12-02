@@ -72,9 +72,9 @@ int application_start(int argc, char *argv[]) {
     // rt_thread_mdelay(5 * 1000);
     // test_rtc();
 
-    extern int delete_directory(const char *dir);
-    delete_directory("/data");
-    delete_directory("/log/");
+    // extern int delete_directory(const char *dir);
+    // delete_directory("/data");
+    // delete_directory("/log/");
 
     // test_show_app_version();
 
