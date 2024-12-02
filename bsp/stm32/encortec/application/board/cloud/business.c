@@ -927,9 +927,6 @@ int is_cat1_upload_every_30_days()
     time_t prev_timestamp = 0;
     char cat1_uploadtime_filename[] = "/prev_cat1_uploadtime.bin";
 
-    remove(cat1_uploadtime_filename);
-    list_files("/data/866207050411986");
-
     // 判断上次读取的时间
     time(&cur_timestamp);
     log_debug("is_cat1_upload_every_30_days cur_timestamp: %d\n", cur_timestamp);
