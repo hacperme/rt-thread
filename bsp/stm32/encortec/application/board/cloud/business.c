@@ -67,6 +67,7 @@ enum {
 
 enum wakeup_source_type {RTC_SOURCE, SHAKE_SOURCE, OTHER_SOURCE};
 enum wakeup_source_type wakeup_source_flag = -1;
+static int reset_source_flag = 0;
 int record_wakeup_source()
 {
     log_debug("record wakeup source");
@@ -81,7 +82,20 @@ int record_wakeup_source()
     else {
         wakeup_source_flag = OTHER_SOURCE;
     }
-    log_debug("wakeup souce flag: %d", wakeup_source_flag);
+    log_debug("wakeup source flag: %d", wakeup_source_flag);
+
+    rt_uint8_t rst_status = get_reset_source();
+    log_debug("rst_status=%d", rst_status);
+    if ((rst_status & (1 << 0)) >> 0 == 1) {
+        // 首次上电安装
+        reset_source_flag = 1;
+        debug_led1_on();
+    }
+    else {
+        reset_source_flag = 0;
+    }
+    log_debug("reset source flag: %d", reset_source_flag);
+
     return 0;
 }
 
@@ -144,8 +158,8 @@ rt_err_t get_nmea_item_data(nmea_item *item)
         log_debug("get_nmea_item_data timstamp file exists.");
         fread(&prev_timestamp, 1, sizeof(prev_timestamp), fd);
         log_debug("get_nmea_item_data prev_timestamp: %d\n", prev_timestamp);
-        if (cur_timestamp - prev_timestamp < 30 * 24 * 3600) {
-            // 距上次上报位置数据未满30天
+        if (!reset_source_flag && (cur_timestamp - prev_timestamp < 30 * 24 * 3600)) {
+            // 距上次上报位置数据未满30天 且 非首次安装 则需要上报
             log_debug("get_nmea_item_data, prev_timestamp - cur_timestamp < 30 days");
             fclose(fd);
             fd = NULL;
@@ -1103,6 +1117,9 @@ void main_business_entry(void)
             case COLLECT_SENSOR_DATA:
                 collect_sensor_data();
                 save_sensor_data();
+                if (reset_source_flag) {
+                    debug_led1_off();
+                }
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
