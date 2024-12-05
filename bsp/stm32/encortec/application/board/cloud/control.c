@@ -188,7 +188,11 @@ void sim_deinit()
 void nbiot_init()
 {
     nbiot_at_client_init();
-    antenna_init(NBIOT_MODULE, current_antenna);
+
+    antenna_active();
+    antenna_type_select(current_antenna);
+    antenna_switch_to_module(NBIOT_MODULE);
+
     sim_init(NBIOT_MODULE, SIM1);
     nbiot_power_on();
     nbiot_disable_sleep_mode();
@@ -199,7 +203,10 @@ void nbiot_deinit()
     nbiot_enable_sleep_mode();
     nbiot_power_off();
     sim_deinit();
-    antenna_deinit();
+
+    antenna_switch_to_module(NBIOT_MODULE);
+    antenna_type_select(current_antenna);
+    antenna_deactive();
 }
 
 rt_err_t cat1_power_ctrl(int state)
@@ -243,15 +250,19 @@ rt_err_t cat1_power_ctrl(int state)
 rt_err_t cat1_init()
 {
     rt_err_t result = RT_EOK;
-
     at_ssl_client_init();
-    antenna_init(CAT1_MODULE, current_antenna);
+
+    antenna_active();
+    antenna_type_select(current_antenna);
+    antenna_switch_to_module(CAT1_MODULE);
     sim_init(CAT1_MODULE, SIM2);
 
     result = cat1_power_ctrl(1);
     if (result != RT_EOK) {
         log_debug("cat1 power on failed");
-        antenna_deinit();
+        antenna_switch_to_module(NBIOT_MODULE);
+        antenna_type_select(current_antenna);
+        antenna_deactive();
         sim_deinit();
         return RT_ERROR;
     }
@@ -264,7 +275,10 @@ void cat1_deinit()
 {
     cat1_power_ctrl(0);
     sim_deinit();
-    antenna_deinit();
+
+    antenna_switch_to_module(NBIOT_MODULE);
+    antenna_type_select(current_antenna);
+    antenna_deactive();
 }
 
 
@@ -292,7 +306,11 @@ void read_imei_from_file(char *output, int read_length)
 void test_antenna_auto_switch(void)
 {
     nbiot_at_client_init();
-    antenna_init(NBIOT_MODULE, current_antenna);
+
+    antenna_active();
+    antenna_type_select(current_antenna);
+    antenna_switch_to_module(NBIOT_MODULE);
+
     sim_init(NBIOT_MODULE, SIM1);
     nbiot_power_on();
     nbiot_disable_sleep_mode();
