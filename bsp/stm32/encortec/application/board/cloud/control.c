@@ -234,7 +234,7 @@ rt_err_t cat1_power_ctrl(int state)
         log_debug("cat1 execute AT+QPOWD");
         cat1_qpowd();
         cat1_wait_powered_down();
-        rt_thread_mdelay(3000);
+        cat1_power_off();
     }
 
     return result;
