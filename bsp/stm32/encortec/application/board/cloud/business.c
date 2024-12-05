@@ -404,6 +404,7 @@ int nbiot_wait_server_connect_ready()
     rt_err_t result = RT_EOK;
 
     nbiot_lwm2m_deregister();
+    nbiot_config_mcu_version();
     struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 180, 1, 1, 1};
     if (! set_lwm2m_config_flag && nbiot_check_lwm2m_config(&config) != RT_EOK) {
         if (nbiot_set_lwm2m_config(&config) == RT_EOK) {

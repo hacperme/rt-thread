@@ -2,11 +2,18 @@
 #include <stdio.h>
 #include "cJSON.h"
 #include <string.h>
+#include <stdint.h>
 
 #include "logging.h"
+#include "gnss.h"
+
 // #define DBG_TAG "nbiot"
 // #define DBG_LVL DBG_LOG
 // #include <rtdbg.h>
+
+extern void read_app_version_information(uint8_t **app_version, uint8_t **app_subedition, uint8_t **app_build_time);
+extern rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size);
+rt_err_t esp32_at_query_version(char *esp32_version, rt_size_t size);
 
 static struct rt_mutex qiot_event_mutex;
 static int QIOT_SUBSCRIBE_EVENT_CODE = -1;
@@ -976,6 +983,79 @@ rt_err_t get_nbiot_csq(int *rssi, int *ber)
         }
         sscanf(resp_line, "+CSQ: %d,%d", rssi, ber);
     }
+
+ERROR:
+    at_delete_resp(resp);
+    return result;
+}
+
+rt_err_t nbiot_config_mcu_version(void)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+    at_response_t resp = RT_NULL;
+    uint8_t *app_version = NULL, *app_subedition, *app_build_time;
+    char mcu_ver[512] = {0};
+    int mcu_ver_len = 0;
+    char esp32_version[64];
+    char cat1_version[64];
+    char *gnss_version = NULL;
+    
+    
+    rt_memset(mcu_ver, 0, sizeof(mcu_ver));
+
+    read_app_version_information(&app_version, &app_subedition, &app_build_time);
+
+   
+
+    mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=");
+    if(app_version != RT_NULL)
+    {
+        log_debug("stm32 version:%s", app_version);
+        mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "\"STM32\",\"%s\"", app_version);
+    }
+    rt_memset(cat1_version, 0, sizeof(cat1_version));
+    cat1_at_query_version(cat1_version, sizeof(cat1_version));
+    if(rt_strlen(cat1_version) > 0)
+    {
+    
+        log_debug("eg915n version:%s", cat1_version);
+        mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, ",\"CAT1\",\"%s\"", cat1_version);
+    }
+    rt_memset(esp32_version, 0, sizeof(esp32_version));
+    esp32_at_query_version(esp32_version, sizeof(esp32_version));
+    if(rt_strlen(esp32_version) > 0)
+    {
+    
+        log_debug("ESP32 version:%s", esp32_version);
+        mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, ",\"ESP32\",\"%s\"", esp32_version);
+    }
+
+    gnss_query_version(&gnss_version);
+    if(gnss_version != NULL)
+    {
+        log_debug("GNSS version:%s", gnss_version);
+        mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, ",\"GNSS\",\"%s\"", gnss_version);
+  
+    }
+
+    log_debug("MCU VER,len%d,ver:%s", mcu_ver_len, mcu_ver);
+
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+    resp = at_create_resp(128, 0, rt_tick_from_millisecond(1000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(client, resp, mcu_ver);
+    if (result != RT_EOK) {
+        result = RT_ERROR;
+    }   
 
 ERROR:
     at_delete_resp(resp);
