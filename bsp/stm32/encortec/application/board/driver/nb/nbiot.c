@@ -1003,16 +1003,13 @@ rt_err_t nbiot_config_mcu_version(void)
     
     
     rt_memset(mcu_ver, 0, sizeof(mcu_ver));
-
     read_app_version_information(&app_version, &app_subedition, &app_build_time);
 
-   
-
-    mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=");
+    mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=");
     if(app_version != RT_NULL)
     {
         log_debug("stm32 version:%s", app_version);
-        mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "\"STM32\",\"%s\"", app_version);
+        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "\"STM32\",\"%s\"\r\n", app_version);
     }
     rt_memset(cat1_version, 0, sizeof(cat1_version));
     cat1_at_query_version(cat1_version, sizeof(cat1_version));
@@ -1020,7 +1017,7 @@ rt_err_t nbiot_config_mcu_version(void)
     {
     
         log_debug("eg915n version:%s", cat1_version);
-        mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, ",\"CAT1\",\"%s\"", cat1_version);
+        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"CAT1\",\"%s\"\r\n", cat1_version);
     }
     rt_memset(esp32_version, 0, sizeof(esp32_version));
     esp32_at_query_version(esp32_version, sizeof(esp32_version));
@@ -1028,16 +1025,18 @@ rt_err_t nbiot_config_mcu_version(void)
     {
     
         log_debug("ESP32 version:%s", esp32_version);
-        mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, ",\"ESP32\",\"%s\"", esp32_version);
+        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"ESP32\",\"%s\"\r\n", esp32_version);
     }
 
+    result = gnss_open();
+    rt_thread_mdelay(100);
     gnss_query_version(&gnss_version);
     if(gnss_version != NULL)
     {
-        log_debug("GNSS version:%s", gnss_version);
-        mcu_ver_len = rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, ",\"GNSS\",\"%s\"", gnss_version);
+        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"GNSS\",\"%s\"\r\n", gnss_version);
   
     }
+    result = gnss_close();
 
     log_debug("MCU VER,len%d,ver:%s", mcu_ver_len, mcu_ver);
 

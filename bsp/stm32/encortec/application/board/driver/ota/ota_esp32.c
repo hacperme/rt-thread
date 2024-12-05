@@ -186,8 +186,26 @@ UpgradeModuleOps esp_ota_ops = {
 
 rt_err_t esp32_at_query_version(char *esp32_version, rt_size_t size)
 {
+    UpgradeNode esp32_node = {0};
+    esp32_node.module = UPGRADE_MODULE_ESP;
+    esp32_node.status = UPGRADE_STATUS_ON_PLAN;
+    esp32_node.ops = esp_ota_ops;
+    int need_close_esp32 = 0;
+
+    if(esp32_at_client == RT_NULL)
+    {
+        esp32_node.ops.prepare(&esp32_node);
+        need_close_esp32 = 1;
+    }
     rt_err_t res = esp32_at_client == RT_NULL ? RT_ERROR : RT_EOK;
-    if (res != RT_EOK) return res;
+    if (res != RT_EOK){
+        
+        if(need_close_esp32 == 1)
+        {
+            esp32_node.ops.finish(&esp32_node);
+        }
+        return res;
+    }
 
     char cmd[] = "ATI?";
     at_resp_set_info(esp32_at_resp, ESP32_AT_BUFF_SIZE, 3, 3000);
@@ -198,6 +216,10 @@ rt_err_t esp32_at_query_version(char *esp32_version, rt_size_t size)
         int ret = at_resp_parse_line_args(esp32_at_resp, 2, "+VERSION:%s\r\n", esp32_version);
         res = ret > 0 ? RT_EOK : RT_ERROR;
         if (res == RT_EOK) log_debug("esp32version %s, size=%d", esp32_version, rt_strlen(esp32_version));
+    }
+    if(need_close_esp32 == 1)
+    {
+        esp32_node.ops.finish(&esp32_node);
     }
     return res;
 }
