@@ -82,7 +82,7 @@ static rt_uint8_t is_version_nmea(char *item)
     res = index == RT_NULL ? 0 : 1;
     if (res == 0) return res;
 
-    char *last_index = strchr(item, '*');
+    char *last_index = strchr(index, ',');
     rt_memcpy(GNSS_VERSION, index, last_index - index);
 
     return res;
@@ -554,6 +554,11 @@ rt_err_t gnss_query_version(char **gnss_version)
 
     rt_memset(GNSS_VERSION, 0, sizeof(GNSS_VERSION));
     char query_ver_cmd[] = "$PQTMVERNO*58\r\n";
+    if(GNSS_SERIAL == RT_NULL)
+    {
+        return RT_ERROR;
+    }
+    
     ret = rt_device_write(GNSS_SERIAL, 0, query_ver_cmd, rt_strlen(query_ver_cmd));
     res = ret == rt_strlen(query_ver_cmd) ? RT_EOK : RT_ERROR;
     log_debug("send query_ver_cmd %s", res_msg(res == RT_EOK));
