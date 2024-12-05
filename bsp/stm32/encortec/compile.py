@@ -45,12 +45,13 @@ def set_app_version():
                 else:
                     print("Write ENCORTEC_APP_VERSION failed")
                 f.seek(104, 0)
-                if (f.write(ENCORTEC_APP_SUBEDITION.encode()) == len(ENCORTEC_APP_SUBEDITION.encode())):
-                    print("ENCORTEC_APP_SUBEDITION", ENCORTEC_APP_SUBEDITION.encode())
+                _APP_SUBVER_ = "P%s%s" % (app_part, ENCORTEC_APP_SUBEDITION)
+                if (f.write(_APP_SUBVER_.encode()) == len(_APP_SUBVER_.encode())):
+                    print("ENCORTEC_APP_SUBEDITION", _APP_SUBVER_.encode())
                 else:
                     print("Write ENCORTEC_APP_SUBEDITION failed")
                 f.seek(112, 0)
-                ENCORTEC_APP_BUILD_TIME = datetime.utcnow().isoformat()
+                ENCORTEC_APP_BUILD_TIME = datetime.utcnow().isoformat()[:19]
                 if (f.write(ENCORTEC_APP_BUILD_TIME.encode()) == len(ENCORTEC_APP_BUILD_TIME.encode())):
                     print("ENCORTEC_APP_BUILD_TIME", ENCORTEC_APP_BUILD_TIME.encode())
                 else:
@@ -146,51 +147,56 @@ def flash_fw():
 
 def print_usage(with_error=False):
     print(("Invalid command. " if with_error else "") + "Please use one of the following commands:")
-    print("1. python ./compile.py -a|--app [-c|--clean] # Compile App code")
-    print("1. python ./compile.py -a|--app [-p|--part_of_app] # Compile App part of A or B or AB (Default A)")
-    print("2. python ./compile.py -b|--bootloader [-c|--clean] # Compile Bootloader code")
-    print("3. python ./compile.py [-A|--all] [-c|--clean] # Compile Bootloader and then App part of A or B or AB (Default A)")
-    print("3. python ./compile.py [-A|--all] [-p|--part_of_app] # Compile Bootloader and then App")
-    print("4. python ./compile.py -m|--merge [-c|--clean] # Merge Bootloader and App firmware")
-    print("4. python ./compile.py -m|--merge [-p|--part_of_app] # Merge Bootloader and App part of A or B or AB firmware (Default A)")
-    print("5. python ./compile.py -f|--flash # Flash firmware")
-    print("6. python ./compile.py -e|--export-api-addr [-c|--clean] # Export Bootloader API addresses")
-    print("7. python ./compile.py -g|--gen-api [-c|--clean] # Export Bootloader API addresses")
-    print("8. python ./compile.py -h|--help # Print this message")
+    for i in range(1, len(ALL_CMDS) + 1):
+        print("{:02d}. {}".format(i, ALL_CMDS[i - 1]))
+    # print("1. python ./compile.py -a|--app [-c|--clean] # Compile App code")
+    # print("1. python ./compile.py -a|--app [-p|--part_of_app] # Compile App part of A or B or AB (Default A)")
+    # print("2. python ./compile.py -b|--bootloader [-c|--clean] # Compile Bootloader code")
+    # print("3. python ./compile.py [-A|--all] [-c|--clean] # Compile Bootloader and then App part of A or B or AB (Default A)")
+    # print("3. python ./compile.py [-A|--all] [-p|--part_of_app] # Compile Bootloader and then App")
+    # print("4. python ./compile.py -m|--merge [-c|--clean] # Merge Bootloader and App firmware")
+    # print("4. python ./compile.py -m|--merge [-p|--part_of_app] # Merge Bootloader and App part of A or B or AB firmware (Default A)")
+    # print("5. python ./compile.py -f|--flash # Flash firmware")
+    # print("6. python ./compile.py -e|--export-api-addr [-c|--clean] # Export Bootloader API addresses")
+    # print("7. python ./compile.py -g|--gen-api [-c|--clean] # Export Bootloader API addresses")
+    # print("8. python ./compile.py -h|--help # Print this message")
 
 
-"""
-python .\compile.py
+ALL_CMDS = [
+    "python .\\compile.py",
 
-python .\compile.py -c|--clean
-python .\compile.py -A|--all
-python .\compile.py -a|--app
-python .\compile.py -b|--bootloader
-python .\compile.py -e|--export-api-addr
-python .\compile.py -g|--gen-api
-python .\compile.py -m|--merge
-python .\compile.py -f|--flash
-python .\compile.py -h|--help
-python .\compile.py -v|--version
+    "python .\\compile.py -c|--clean  # Clear old building file.",
+    "python .\\compile.py -A|--all  # Compile Bootloader and App code and merge Bootloader and App firmware",
+    "python .\\compile.py -a|--app  # Compile App part of A",
+    "python .\\compile.py -b|--bootloader  # Compile Bootloader code",
+    "python .\\compile.py -e|--export-api-addr  # Export Bootloader API addresses",
+    "python .\\compile.py -g|--gen-api  # Export Bootloader API addresses",
+    "python .\\compile.py -m|--merge  # Merge Bootloader and App firmware",
+    "python .\\compile.py -f|--flash  # Flash firmware",
+    "python .\\compile.py -h|--help  # Print this message",
 
-python .\compile.py -A|--all -c|--clean
-python .\compile.py -a|--app -c|--clean
-python .\compile.py -b|--bootloader -c|--clean
-python .\compile.py -e|--export-api-addr -c|--clean
-python .\compile.py -g|--gen-api -c|--clean
-python .\compile.py -m|--merge -c|--clean
+    "python .\\compile.py -A|--all -c|--clean  # Compile App code",
+    "python .\\compile.py -a|--app -c|--clean  # Compile App part of A or B or AB (Default A)",
+    "python .\\compile.py -b|--bootloader -c|--clean  # Compile Bootloader code",
+    "python .\\compile.py -e|--export-api-addr -c|--clean  # Export Bootloader API addresses",
+    "python .\\compile.py -g|--gen-api -c|--clean  # Export Bootloader API addresses",
+    "python .\\compile.py -m|--merge -c|--clean  # Merge Bootloader and App firmware",
 
-python .\compile.py -A|--all -p|--part_of_app
-python .\compile.py -a|--app -p|--part_of_app
-python .\compile.py -m|--merge -p|--part_of_app
-python .\compile.py -A|--all -v|--version
-python .\compile.py -a|--app -v|--version
+    "python .\\compile.py -A|--all -p|--part_of_app",
+    "python .\\compile.py -a|--app -p|--part_of_app",
+    "python .\\compile.py -m|--merge -p|--part_of_app",
+    "python .\\compile.py -A|--all -v|--version",
+    "python .\\compile.py -a|--app -v|--version",
+    "python .\\compile.py -m|--merge -v|--version",
 
-python .\compile.py -A|--all -p|--part_of_app -v|--version
-python .\compile.py -a|--app -p|--part_of_app -v|--version
-"""
+    "python .\\compile.py -A|--all -p|--part_of_app -v|--version",
+    "python .\\compile.py -a|--app -p|--part_of_app -v|--version",
+    "python .\\compile.py -m|--merge -p|--part_of_app -v|--version",
+]
 
 if __name__ == "__main__":
+    # print("len(sys.argv)", len(sys.argv))
+    # print("sys.argv", sys.argv)
     if len(sys.argv) == 1:
         build_all()
     elif len(sys.argv) == 2:
@@ -241,29 +247,48 @@ if __name__ == "__main__":
                 print_usage(True)
     elif len(sys.argv) == 4:
         if sys.argv[2] in ['-p', '--part_of_app']:
-            if sys.argv[3].upper() not in ("A", "B", "AB"):
+            if sys.argv[3].upper() in ("A", "B", "AB"):
                 ENCORTEC_APP_PART = sys.argv[3].strip().upper()
-                if sys.argv[1] in ['-a', '--app']:
-                    build_app()
-                elif sys.argv[1] in ['-m', '--merge']:
-                    merge_fw()
-                elif sys.argv[1] in ['-A', '--all']:
-                    build_all()
-                else:
-                    print_usage(True)
             else:
                 print_usage(True)
-        if sys.argv[2] in ['-v', '--version']:
+        elif sys.argv[2] in ['-v', '--version']:
             versions = sys.argv[3].strip().upper().split("-")
             ENCORTEC_APP_VERSION = versions[0]
             if len(versions) > 1:
                 ENCORTEC_APP_SUBEDITION = versions[1]
-            if sys.argv[1] in ['-a', '--app']:
-                build_app()
-            elif sys.argv[1] in ['-A', '--all']:
-                build_all()
+        else:
+            print_usage(True)
+        if sys.argv[1] in ['-a', '--app']:
+            build_app()
+        elif sys.argv[1] in ['-m', '--merge']:
+            merge_fw()
+        elif sys.argv[1] in ['-A', '--all']:
+            build_all()
+        else:
+            print_usage(True)
+    elif len(sys.argv) == 6:
+        if sys.argv[2] in ['-p', '--part_of_app']:
+            if sys.argv[3].upper() in ("A", "B", "AB"):
+                ENCORTEC_APP_PART = sys.argv[3].strip().upper()
             else:
                 print_usage(True)
+        else:
+            print_usage(True)
+        if sys.argv[4] in ['-v', '--version']:
+            versions = sys.argv[5].strip().upper().split("-")
+            ENCORTEC_APP_VERSION = versions[0]
+            if len(versions) > 1:
+                ENCORTEC_APP_SUBEDITION = versions[1]
+            else:
+                print_usage(True)
+        else:
+            print_usage(True)
+        if sys.argv[1] in ['-a', '--app']:
+            build_app()
+        elif sys.argv[1] in ['-m', '--merge']:
+            merge_fw()
+        elif sys.argv[1] in ['-A', '--all']:
+            build_all()
         else:
             print_usage(True)
     else:
