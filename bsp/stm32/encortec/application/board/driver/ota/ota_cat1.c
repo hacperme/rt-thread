@@ -415,10 +415,29 @@ rt_err_t cat1_at_set_regression(rt_uint8_t enable)
 
 rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size)
 {
-    rt_err_t res = cat1_at_client == RT_NULL ? RT_ERROR : RT_EOK;
-    if (res != RT_EOK) return res;
-
+    UpgradeNode cat1_node = {0};
+    cat1_node.module = UPGRADE_MODULE_CAT1;
+    cat1_node.status = UPGRADE_STATUS_ON_PLAN;
+    cat1_node.ops = cat1_ota_ops;
     char cmd[] = "AT+QGMR";
+    int need_close_cat1 = 0;
+
+    if(cat1_at_client == RT_NULL)
+    {
+        cat1_node.ops.prepare(&cat1_node);
+        need_close_cat1 = 1;
+    }
+    
+
+    rt_err_t res = cat1_at_client == RT_NULL ? RT_ERROR : RT_EOK;
+    if (res != RT_EOK) 
+    {
+        if(need_close_cat1)
+    {
+        cat1_node.ops.finish(&cat1_node);
+    }
+        return res;
+    }
     at_resp_set_info(cat1_at_resp, CAT1_AT_BUFF_SIZE, 4, 3000);
     res = at_obj_exec_cmd(cat1_at_client, cat1_at_resp, cmd);
     if (res >= 0)
@@ -427,6 +446,10 @@ rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size)
         int ret = at_resp_parse_line_args(cat1_at_resp, 2, "%s\r\n", cat1_version);
         res = ret > 0 ? RT_EOK : RT_ERROR;
         if (res == RT_EOK) log_debug("CAT1version %s, size=%d", cat1_version, rt_strlen(cat1_version));
+    }
+    if(need_close_cat1)
+    {
+        cat1_node.ops.finish(&cat1_node);
     }
     return res;
 }

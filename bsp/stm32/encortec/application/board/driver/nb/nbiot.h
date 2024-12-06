@@ -85,4 +85,7 @@ rt_err_t nbiot_set_qiotlocext(char *nmea_string);
 
 rt_err_t get_nbiot_imei(char *output);
 
+/* report mcu version to cloud */
+rt_err_t nbiot_config_mcu_version(void);
+
 #endif
