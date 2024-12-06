@@ -206,7 +206,7 @@ void nbiot_deinit()
 
     antenna_switch_to_module(NBIOT_MODULE);
     antenna_type_select(current_antenna);
-    antenna_deactive();
+    // antenna_deactive();
 }
 
 rt_err_t cat1_power_ctrl(int state)
@@ -263,7 +263,7 @@ rt_err_t cat1_init()
         sim_init(NBIOT_MODULE, SIM1);
         antenna_switch_to_module(NBIOT_MODULE);
         antenna_type_select(current_antenna);
-        antenna_deactive();
+        // antenna_deactive();
         sim_deinit();
         return RT_ERROR;
     }
@@ -280,7 +280,7 @@ void cat1_deinit()
     sim_init(NBIOT_MODULE, SIM1);
     antenna_switch_to_module(NBIOT_MODULE);
     antenna_type_select(current_antenna);
-    antenna_deactive();
+    // antenna_deactive();
 }
 
 
