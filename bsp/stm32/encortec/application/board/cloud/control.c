@@ -260,6 +260,7 @@ rt_err_t cat1_init()
     result = cat1_power_ctrl(1);
     if (result != RT_EOK) {
         log_debug("cat1 power on failed");
+        sim_init(NBIOT_MODULE, SIM1);
         antenna_switch_to_module(NBIOT_MODULE);
         antenna_type_select(current_antenna);
         antenna_deactive();
@@ -276,6 +277,7 @@ void cat1_deinit()
     cat1_power_ctrl(0);
     sim_deinit();
 
+    sim_init(NBIOT_MODULE, SIM1);
     antenna_switch_to_module(NBIOT_MODULE);
     antenna_type_select(current_antenna);
     antenna_deactive();
