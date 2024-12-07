@@ -302,6 +302,24 @@ rt_err_t nbiot_check_lwm2m_config(lwm2m_config_t config)
         goto ERROR;
     }
 
+    // check lifetime
+    int lifetime = -1;
+    result = at_obj_exec_cmd(client, resp, "AT+QIOTCFG=\"lifetime\"");
+    if (result != RT_EOK) {
+        log_error("check lifetime failed: %d", result);
+        goto ERROR;
+    }
+    if (at_resp_parse_line_args(resp, 2, "+QIOTCFG: \"lifetime\",%d", &lifetime) <= 0) {
+        result = RT_ERROR;
+        goto ERROR;
+    }
+    log_debug("lifetime: %d", lifetime);
+    if (lifetime != config->lifetime) {
+        log_warn("productinfo liftime not equal to configure.");
+        result = RT_ERROR;
+        goto ERROR;
+    }
+
 ERROR:
     at_delete_resp(resp);
     return result;
