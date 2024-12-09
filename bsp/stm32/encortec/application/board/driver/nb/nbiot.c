@@ -3,9 +3,12 @@
 #include "cJSON.h"
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "logging.h"
 #include "gnss.h"
+#include "upgrade_manager.h"
+#include <dfs_fs.h> 
 
 // #define DBG_TAG "nbiot"
 // #define DBG_LVL DBG_LOG
@@ -27,6 +30,258 @@ static int QIOT_PLATFORM_EVENT_CODE = -1;
 static int QIOT_WAKEUP_EVENT_CODE = -1;
 
 static rt_mq_t cclk_data_urc_queue = RT_NULL;
+
+typedef enum
+{
+    FIRM_TYPE_MODULE = 0, /*模组升级*/
+    FIRM_TYPE_MCU /*MCU SOTA升级*/
+}firm_type_t;
+
+typedef struct
+{
+    char componentNo[50];
+    int batteryLimit;
+    int minSignalIntensity;
+    int useSpace;
+    int download_file_index;
+    firm_type_t type;
+    UpgradeModule module;
+    UpgradePlan plan;
+}ota_ctl_t;
+
+static ota_ctl_t g_ota_ctl = {0};
+
+
+static void parse_ota_task_data(const char* urcString, ota_ctl_t *ctl)
+{
+    char cleanedString[256] = {0};
+    strncpy(cleanedString, urcString, sizeof(cleanedString) - 1);
+    cleanedString[strcspn(cleanedString, "\r\n")] = 0;
+
+    const char* start = cleanedString;
+
+    char* end = strchr(start, '\"'); 
+    if (end) {
+        start = end + 1; 
+        end = strchr(start, '\"'); 
+        if (end) {
+            strncpy(ctl->componentNo, start, end - start);
+            ctl->componentNo[end - start] = '\0'; 
+            start = end + 2; 
+        }
+    }
+
+    end = strchr(start, '\"');
+    if (end) {
+        start = end + 1;
+        end = strchr(start, '\"');
+        if (end) {
+            strncpy(ctl->plan.source_version, start, end - start);
+            ctl->plan.source_version[end - start] = '\0';
+            start = end + 2;
+        }
+    }
+
+    end = strchr(start, '\"');
+    if (end) {
+        start = end + 1;
+        end = strchr(start, '\"');
+        if (end) {
+            strncpy(ctl->plan.target_version, start, end - start);
+            ctl->plan.target_version[end - start] = '\0';
+            start = end + 2; 
+        }
+    }
+
+    ctl->batteryLimit = atoi(start);
+    while (*start && *start != ',') start++; 
+    start++; 
+
+    ctl->minSignalIntensity = atoi(start);
+    while (*start && *start != ',') start++; 
+    start++; 
+
+    ctl->useSpace = atoi(start);
+
+    if((strlen(ctl->componentNo) == 0) || (strcasecmp(ctl->componentNo, "NB") == 0))
+    {
+        ctl->type = FIRM_TYPE_MODULE;
+    }
+    else
+    {
+        ctl->type = FIRM_TYPE_MCU;
+    }
+
+    log_debug("Component No: %s\n", strlen(ctl->componentNo) > 0 ? ctl->componentNo : "Empty");
+    log_debug("Source Version: %s\n", strlen(ctl->plan.source_version) > 0 ? ctl->plan.source_version : "Empty");
+    log_debug("Target Version: %s\n", strlen(ctl->plan.target_version) > 0 ? ctl->plan.target_version : "Empty");
+    log_debug("Battery Limit: %d\n", ctl->batteryLimit);
+    log_debug("Min Signal Intensity: %d\n", ctl->minSignalIntensity);
+    log_debug("Use Space: %d\n", ctl->useSpace);
+    log_debug("firm type: %d\n", ctl->type);
+}
+
+static int convertMD5ToBytes(const char* md5String, unsigned char* md5Bytes, size_t byteArraySize) {
+    size_t length = strlen(md5String);
+    if (length != 32 || byteArraySize < 16) {
+        return -1;
+    }
+
+    for (size_t i = 0; i < 16; ++i) {
+        char hexByte[3] = { md5String[i * 2], md5String[i * 2 + 1], '\0' };
+        if (!isxdigit(hexByte[0]) || !isxdigit(hexByte[1])) {
+            return -1;
+        }
+        md5Bytes[i] = (unsigned char)strtol(hexByte, NULL, 16);
+    }
+    return 0;
+}
+
+static int parse_ota_firm_data(const char* urcString, ota_ctl_t *ctl)
+{
+    char componentNo[50] = {0};
+    int length = 0;
+    char md5[50] = {0};
+    unsigned char md5Bytes[16] = {0};
+
+    char cleanedString[256] = {0};
+    strncpy(cleanedString, urcString, sizeof(cleanedString) - 1);
+
+    cleanedString[strcspn(cleanedString, "\r\n")] = 0;
+
+    const char* start = cleanedString;
+    char* end;
+
+    end = strchr(start, '\"'); 
+    if (end) {
+        start = end + 1; 
+        end = strchr(start, '\"');
+        if (end) {
+            strncpy(componentNo, start, end - start);
+            componentNo[end - start] = '\0'; 
+            start = end + 2; 
+        }
+    }
+
+    log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
+    if(rt_strlen(componentNo) > 0 && strcasecmp(componentNo, ctl->componentNo) != 0)
+    {
+        log_error("Component not match: %s,%s", componentNo, ctl->componentNo);
+        return -1;
+    }
+
+    if (*start != '\0') {
+        length = atoi(start);
+        while (*start && *start != ',') start++; 
+        start++; 
+    }
+
+    log_debug("Length: %d\n", length);
+
+    if(length > 0)
+    {
+        ctl->plan.file[ctl->download_file_index].file_size = length;
+    }
+
+    end = strchr(start, '\"');
+    if (end) {
+        start = end + 1; 
+        end = strchr(start, '\"'); 
+        if (end) {
+            strncpy(md5, start, end - start);
+            md5[end - start] = '\0';
+        }
+    }
+
+    if (convertMD5ToBytes(md5, md5Bytes, sizeof(md5Bytes)) == 0) 
+    {
+#if 0
+        log_debug("MD5 Bytes: ");
+        for (size_t i = 0; i < sizeof(md5Bytes); ++i) {
+            log_debug("%02x", md5Bytes[i]);
+            if (i < sizeof(md5Bytes) - 1) log_debug(" ");
+        }
+        log_debug("\n");
+#endif
+        rt_memcpy(ctl->plan.file[ctl->download_file_index].file_md5, md5Bytes, sizeof(md5Bytes));
+    } else {
+        log_error("Invalid MD5 format.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+static int parse_ota_downloaded_data(const char* urcString,  ota_ctl_t *ctl) 
+{
+    char componentNo[50] = {0};
+    int length = 0;
+    int startaddr = 0;
+    int piece_length = 0;
+
+    char cleanedString[256] = {0};
+    strncpy(cleanedString, urcString, sizeof(cleanedString) - 1);
+
+    cleanedString[strcspn(cleanedString, "\r\n")] = 0;
+
+    const char* start = cleanedString;
+    char* end;
+
+
+    end = strchr(start, '\"'); 
+    if (end) {
+        start = end + 1; 
+        end = strchr(start, '\"'); 
+        if (end) {
+            strncpy(componentNo, start, end - start);
+            componentNo[end - start] = '\0'; 
+            start = end + 2; 
+        }
+    }
+
+    log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
+    if(rt_strlen(componentNo) > 0 && strcasecmp(componentNo, ctl->componentNo) != 0)
+    {
+        log_error("Component not match: %s,%s", componentNo, ctl->componentNo);
+        return -1;
+    }
+
+    if (*start != '\0') {
+        length = atoi(start);
+        while (*start && *start != ',') start++; 
+        start++;
+    }
+
+    log_debug("Length: %d\n", length);
+    if(length != ctl->plan.file[ctl->download_file_index].file_size)
+    {
+        log_error("firm length mismatch: %d,%d", length, ctl->plan.file[ctl->download_file_index].file_size);
+        return -1;
+    }
+
+    if (*start != '\0') {
+        startaddr = atoi(start);
+        while (*start && *start != ',') start++; 
+        start++; 
+    }
+
+    ctl->plan.file[ctl->download_file_index].start_addr = startaddr;
+
+    if (*start != '\0') {
+        piece_length = atoi(start);
+    }
+
+    ctl->plan.file[ctl->download_file_index].piece_length = piece_length;
+
+    ctl->plan.file[ctl->download_file_index].fd = fopen(ctl->plan.file[ctl->download_file_index].file_name, "wb+");
+    if(ctl->plan.file[ctl->download_file_index].fd == NULL)
+    {
+        log_debug("open ota file falid");
+        return -1;
+    }
+
+    return 0;
+}
 
 void nbiot_qiotevt_urc_handler(struct at_client *client, const char *data, rt_size_t size)
 {
@@ -80,6 +335,33 @@ void nbiot_qiotevt_urc_handler(struct at_client *client, const char *data, rt_si
             rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
             QIOT_OTA_EVENT_CODE = event_code;
             log_debug("QIOT_OTA_EVENT_CODE: %d", QIOT_OTA_EVENT_CODE);
+            switch (QIOT_OTA_EVENT_CODE)
+            {
+            case QIOT_OTA_TASK_NOTIFY:
+                parse_ota_task_data((const char *)event_data, &g_ota_ctl);
+                break;
+            case QIOT_OTA_START:
+                if(parse_ota_firm_data((const char *)event_data, &g_ota_ctl) != 0)
+                {
+                    // todo
+                }
+                break;
+            case QIOT_OTA_DOWNLOADING:
+                break;
+            case QIOT_OTA_DOWNLOADED:
+                parse_ota_downloaded_data((const char *)event_data, &g_ota_ctl);
+                break;
+            case QIOT_OTA_UPDATING:
+                break;
+            case QIOT_OTA_UPDATE_OK:
+                break;
+            case QIOT_OTA_UPDATE_FAIL:
+                break;
+            case QIOT_OTA_UPDATE_FLAG:
+                break;
+            default:
+                break;
+            }
             rt_mutex_release(&qiot_event_mutex);
             break;
         case 8:
@@ -1027,14 +1309,15 @@ rt_err_t nbiot_config_mcu_version(void)
     if(app_version != RT_NULL)
     {
         log_debug("stm32 version:%s", app_version);
-        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "\"STM32\",\"%s\"\r\n", app_version);
+        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "\"STM32-A\",\"%s\"\r\n", app_version);
+        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"STM32-B\",\"%s\"\r\n", app_version);
     }
     rt_memset(cat1_version, 0, sizeof(cat1_version));
     cat1_at_query_version(cat1_version, sizeof(cat1_version));
     if(rt_strlen(cat1_version) > 0)
     {
     
-        log_debug("eg915n version:%s", cat1_version);
+        log_debug("CAT1 version:%s", cat1_version);
         mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"CAT1\",\"%s\"\r\n", cat1_version);
     }
     rt_memset(esp32_version, 0, sizeof(esp32_version));
@@ -1051,7 +1334,7 @@ rt_err_t nbiot_config_mcu_version(void)
     gnss_query_version(&gnss_version);
     if(gnss_version != NULL)
     {
-        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"GNSS\",\"%s\"\r\n", gnss_version);
+        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"GNSS\",\"%s\"", gnss_version);
   
     }
     result = gnss_close();
@@ -1074,7 +1357,380 @@ rt_err_t nbiot_config_mcu_version(void)
         result = RT_ERROR;
     }   
 
-ERROR:
     at_delete_resp(resp);
     return result;
+}
+
+rt_err_t nbiot_ota_req(void)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+    at_response_t resp = RT_NULL;
+
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+    resp = at_create_resp(512, 0, rt_tick_from_millisecond(1000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(client, resp, "AT+QIOTOTAREQ=0");
+    if (result != RT_EOK) {
+        result = RT_ERROR;
+    }
+
+    at_delete_resp(resp);
+    return result;
+}
+
+/**
+ * @brief 
+ * 
+ * @param [in] action 
+ * 0: Reject upgrade
+ * 1: Confirm upgrade
+ * 2: MCU requests to download the next firmware block,
+ * 3: MCU reports updating status
+ * @return rt_err_t 
+ */
+rt_err_t nbiot_ota_update_action(int action)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+    at_response_t resp = RT_NULL;
+    char at_cmd[128] = {0};
+
+    if(action < 0 || action > 3)
+    {
+        return RT_ERROR;
+    }
+    rt_memset(at_cmd, 0, sizeof(at_cmd));
+    rt_snprintf(at_cmd, sizeof(at_cmd)-1, "AT+QIOTUPDATE=%d", action);
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+    resp = at_create_resp(128, 0, rt_tick_from_millisecond(1000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        return RT_ERROR;
+    }
+
+    result = at_obj_exec_cmd(client, resp, at_cmd);
+    if (result != RT_EOK) {
+        result = RT_ERROR;
+    }
+
+    at_delete_resp(resp);
+    return result;
+}
+/**
+ * @brief 
+ * 
+ * @param [in] offset The starting position to read data. Unit: byte
+ * @param [out] data  Storage for firmware data
+ * @param [in] length The maximum length of data to read at one time.
+ * @return int 
+ * < 0, Error in calling the interface
+ * >=0, The actual length of data returned
+ */
+int nbiot_ota_read(int offset,  unsigned char *data, int length)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+    at_response_t resp = RT_NULL;
+    char at_cmd[128] = {0};
+    const char *resp_line = RT_NULL;
+    int data_offset = 0;
+    int data_size = 0;
+
+    if(offset < 0 || data == RT_NULL || length < 0)
+    {
+        log_error("invalid param");
+        result =  RT_ERROR;
+        goto ERROR;
+    }
+
+    rt_memset(at_cmd, 0, sizeof(at_cmd));
+    rt_snprintf(at_cmd, sizeof(at_cmd)-1, "AT+QIOTOTARD=%d,%d", offset, length-50);
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        result =  RT_ERROR;
+        goto ERROR;
+    }
+    resp = at_create_resp(512, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        result =  RT_ERROR;
+        goto ERROR;
+    }
+
+    result = at_obj_exec_cmd(client, resp, at_cmd);
+    if (result != RT_EOK) {
+        result = RT_ERROR;
+    }
+    else
+    {
+        resp_line = at_resp_get_line(resp, 1);
+        if (resp_line == RT_NULL) 
+        {
+            log_error("resp_line 2 is null");
+            result = RT_ERROR;
+            goto ERROR;
+        }
+        sscanf(resp_line, "+QIOTOTARD: %d,%d", &data_offset, &data_size);
+        if(data_offset == offset && data_size > 0)
+        {
+            resp_line = RT_NULL;
+            resp_line = at_resp_get_line(resp, 2);
+            if(resp_line == RT_NULL)
+            {
+                log_error("resp_line 3 is null");
+                result = RT_ERROR;
+                goto ERROR;
+            }
+            rt_memcpy(data, resp_line, data_size);
+        }
+    }
+
+ERROR:
+    if(resp)
+    {
+        at_delete_resp(resp);
+    }
+    
+    return (result == RT_EOK) ? data_size : -1;
+}
+
+int nbiot_get_ota_event(void)
+{
+    int event = -1;
+    rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
+    event = QIOT_OTA_EVENT_CODE;
+    rt_mutex_release(&qiot_event_mutex);
+    return event;
+}
+
+int nbiot_check_ota_task(void)
+{
+
+    struct statfs fs_stat = {0};
+    int free_dik_size = 0;
+
+    if(g_ota_ctl.type == FIRM_TYPE_MODULE)
+    {
+        g_ota_ctl.module = UPGRADE_MODULE_NB;
+        g_ota_ctl.plan.file_cnt = 0;
+        return 0;
+    }
+    else // sota firmware file
+    {
+        if((strcasecmp(g_ota_ctl.componentNo, "STM32-A") == 0) || (strcasecmp(g_ota_ctl.componentNo, "STM32-B") == 0))
+        {
+            if (g_ota_ctl.module != UPGRADE_MODULE_ST)
+            {
+               g_ota_ctl.module =UPGRADE_MODULE_ST;
+               
+            }
+            g_ota_ctl.plan.file_cnt = 2;
+            if((strcasecmp(g_ota_ctl.componentNo, "STM32-A") == 0))
+            {
+                g_ota_ctl.download_file_index = 0;
+                rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
+                rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
+                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/STM32-A.bin");
+            }
+            else
+            {
+                g_ota_ctl.download_file_index = 1;
+                rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
+                rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
+                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/STM32-B.bin");
+            }
+            
+        }
+        else if((strcasecmp(g_ota_ctl.componentNo, "ESP32") == 0))
+        {
+            if (g_ota_ctl.module != UPGRADE_MODULE_ESP)
+            {
+               g_ota_ctl.module =UPGRADE_MODULE_ESP;
+               
+            }
+            g_ota_ctl.plan.file_cnt = 1;
+            g_ota_ctl.download_file_index = 0;
+            rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
+            
+        }
+        else if((strcasecmp(g_ota_ctl.componentNo, "CAT1") == 0))
+        {
+            if (g_ota_ctl.module != UPGRADE_MODULE_CAT1)
+            {
+               g_ota_ctl.module =UPGRADE_MODULE_CAT1;
+               
+            }
+            g_ota_ctl.plan.file_cnt = 1;
+            g_ota_ctl.download_file_index = 0;
+            rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
+            
+        }
+        else if((strcasecmp(g_ota_ctl.componentNo, "GNSS") == 0)) // todo gnss 5 个文件下载
+        {
+            if (g_ota_ctl.module != UPGRADE_MODULE_GNSS)
+            {
+               g_ota_ctl.module =UPGRADE_MODULE_GNSS;
+               
+            }
+            g_ota_ctl.plan.file_cnt = 5;
+            g_ota_ctl.download_file_index = 0; // todo
+            rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
+        }
+        else
+        {
+            log_debug("unknow componentNo:%s", g_ota_ctl.componentNo);
+            return -1;
+        }
+
+        
+#if 0
+fix me: can not get filesysyem free size
+        if (statfs("/", &fs_stat) == 0)
+        {
+            free_disk_size =fs_stat.f_bsize * fs_stat.f_bavail;
+            log_debug("free_disk_size:%d", free_disk_size);
+            if(free_disk_size < g_ota_ctl.useSpace)
+            {
+                log_error("free_disk_size:%d is less than firm size:%d", free_disk_size, g_ota_ctl.useSpace);
+                return -1;
+            }
+        }
+#endif
+
+    }
+    return 0;
+}
+
+/**
+ * @brief 
+ * 
+ * @return int 
+ *  -- 0  ALL firmware download completed
+ *  -- 1  Currrent firmware download completed, neet to dowload the next firmware component
+ *  -- 2  Firmware fragment download completed, need to request the next firmware fragment 
+ *  -- 3  Need to continue reading data
+ *  -- -1 save data error 
+ */
+int nbiot_save_ota_data(void)
+{
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+    at_response_t resp = RT_NULL;
+    char at_cmd[128] = {0};
+    const char *resp_line = RT_NULL;
+    int data_offset = 0;
+    int data_size = 0;
+    ota_ctl_t *ctl = &g_ota_ctl;
+
+    unsigned char tmp_data[256] = {0};
+    uint32_t offset = 0;
+    uint32_t length = sizeof(tmp_data);
+    offset = ctl->plan.file[ctl->download_file_index].start_addr;
+
+    rt_memset(at_cmd, 0, sizeof(at_cmd));
+    rt_snprintf(at_cmd, sizeof(at_cmd)-1, "AT+QIOTOTARD=%d,%d", offset, length-50);
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        result =  -1;
+        goto EXIT;
+    }
+    resp = at_create_resp(512, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        result =  -1;
+        goto EXIT;
+    }
+
+    result = at_obj_exec_cmd(client, resp, at_cmd);
+    if (result != RT_EOK) {
+        result =  -1;
+        goto EXIT;
+    }
+    else
+    {
+        resp_line = at_resp_get_line(resp, 1);
+        if (resp_line == RT_NULL) 
+        {
+            log_error("resp_line 2 is null");
+            result =  -1;
+            goto EXIT;
+        }
+        sscanf(resp_line, "+QIOTOTARD: %d,%d", &data_offset, &data_size);
+        if(data_offset == offset && data_size > 0)
+        {
+            resp_line = RT_NULL;
+            resp_line = at_resp_get_line(resp, 2);
+            if(resp_line == RT_NULL)
+            {
+                log_error("resp_line 3 is null");
+                result =  -1;
+                goto EXIT;
+            }
+            rt_memcpy(tmp_data, resp_line, data_size);
+            fseek(ctl->plan.file[ctl->download_file_index].fd, offset, SEEK_SET);
+            size_t written = fwrite(tmp_data, 1, data_size, ctl->plan.file[ctl->download_file_index].fd);
+            if(written == data_size)
+            {
+                ctl->plan.file[ctl->download_file_index].start_addr += data_size;
+                if(ctl->plan.file[ctl->download_file_index].start_addr == ctl->plan.file[ctl->download_file_index].piece_length)
+                {
+                    // 文件分片下载完成
+                    if(ctl->plan.file[ctl->download_file_index].piece_length == ctl->plan.file[ctl->download_file_index].file_size)
+                    {
+                        if(ctl->download_file_index == (ctl->plan.file_cnt - 1))
+                        {
+                            // 整个文件下载完成
+                            result = 0;
+                            fclose(ctl->plan.file[ctl->download_file_index].fd);
+                            ctl->plan.file[ctl->download_file_index].fd = RT_NULL;
+                            goto EXIT;
+                        }
+                        else
+                        {
+                            // 下载下一个文件
+                            ctl->download_file_index++;
+                            fclose(ctl->plan.file[ctl->download_file_index].fd);
+                            ctl->plan.file[ctl->download_file_index].fd = RT_NULL;
+                            result = 1;
+                            goto EXIT;
+                        }
+                        
+                    }
+                    
+                    // 需要下载下一个片段
+                    ctl->plan.file[ctl->download_file_index].piece_length = 0;
+                    result = 2;
+                    goto EXIT;
+                }
+
+                // 持续读取固件数据
+                result = 3;
+                goto EXIT;
+            }
+        }
+    }
+
+EXIT:
+    if(resp)
+    {
+        at_delete_resp(resp);
+    }
+    
+    return (int)result;
+
 }

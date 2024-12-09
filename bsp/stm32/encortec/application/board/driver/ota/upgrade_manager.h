@@ -4,9 +4,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <dirent.h>
 #include <unistd.h>
 #include "rtthread.h"
+#include "dfs_fs.h"
 
 #define MODULE_MAX_OTA_FILE_COUNT   5
 #define MODULE_FILE_NAME_LENGTH     256
@@ -47,9 +49,15 @@ typedef struct {
 
 typedef struct {
     char file_name[MODULE_FILE_NAME_LENGTH];
+#if 0
     char download_addr[MODULE_DOWNLOAD_ADDR_LENGTH];
+#endif
     char file_md5[16];
     uint32_t file_size;
+    uint32_t downloaded_size;
+    uint32_t piece_length;
+    uint32_t start_addr;
+    FILE *fd;
     char verified;
 } UpgradeFile;
 
