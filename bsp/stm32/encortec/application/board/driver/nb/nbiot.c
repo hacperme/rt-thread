@@ -405,7 +405,7 @@ rt_err_t nbiot_at_client_init(void)
         return RT_ERROR;
     }
 
-    result = at_client_init(NBIOT_AT_UART_NAME, 256, 256);
+    result = at_client_init(NBIOT_AT_UART_NAME, 1024, 512);
     if (result != RT_EOK) {
         log_error("nbiot at client init failed: %d\n", result);
         return result;
@@ -1543,16 +1543,14 @@ int nbiot_check_ota_task(void)
             {
                 g_ota_ctl.download_file_index = 0;
                 rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
-                rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
-                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/STM32-A.bin");
             }
             else
             {
                 g_ota_ctl.download_file_index = 1;
                 rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
-                rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
-                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/STM32-B.bin");
             }
+            rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
+                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/%s.bin",g_ota_ctl.componentNo);
             
         }
         else if((strcasecmp(g_ota_ctl.componentNo, "ESP32") == 0))
@@ -1565,6 +1563,8 @@ int nbiot_check_ota_task(void)
             g_ota_ctl.plan.file_cnt = 1;
             g_ota_ctl.download_file_index = 0;
             rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
+            rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
+                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/%s.bin",g_ota_ctl.componentNo);
             
         }
         else if((strcasecmp(g_ota_ctl.componentNo, "CAT1") == 0))
@@ -1577,6 +1577,8 @@ int nbiot_check_ota_task(void)
             g_ota_ctl.plan.file_cnt = 1;
             g_ota_ctl.download_file_index = 0;
             rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
+            rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
+                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/%s.bin",g_ota_ctl.componentNo);
             
         }
         else if((strcasecmp(g_ota_ctl.componentNo, "GNSS") == 0)) // todo gnss 5 个文件下载
@@ -1589,6 +1591,8 @@ int nbiot_check_ota_task(void)
             g_ota_ctl.plan.file_cnt = 5;
             g_ota_ctl.download_file_index = 0; // todo
             rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
+            rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
+                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/%s.bin",g_ota_ctl.componentNo);
         }
         else
         {
@@ -1635,8 +1639,9 @@ int nbiot_save_ota_data(void)
     int data_offset = 0;
     int data_size = 0;
     ota_ctl_t *ctl = &g_ota_ctl;
+    UpgradeNode ota_node = {0};
 
-    unsigned char tmp_data[256] = {0};
+    static unsigned char tmp_data[1024] = {0};
     uint32_t offset = 0;
     uint32_t length = sizeof(tmp_data);
     offset = ctl->plan.file[ctl->download_file_index].start_addr;
@@ -1649,7 +1654,7 @@ int nbiot_save_ota_data(void)
         result =  -1;
         goto EXIT;
     }
-    resp = at_create_resp(512, 0, rt_tick_from_millisecond(3000));
+    resp = at_create_resp(1024, 0, rt_tick_from_millisecond(3000));
     if (resp == RT_NULL) {
         log_error("create resp failed.");
         result =  -1;
@@ -1698,6 +1703,16 @@ int nbiot_save_ota_data(void)
                             result = 0;
                             fclose(ctl->plan.file[ctl->download_file_index].fd);
                             ctl->plan.file[ctl->download_file_index].fd = RT_NULL;
+                            set_module(ctl->module, &ctl->plan);
+                            log_debug("ota_node.status=%d", ota_node.status);
+                            log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
+                            log_debug("ota_node.plan.file[0].file_name=%s", ota_node.plan.file[0].file_name);
+                            log_debug("ota_node.ops.prepare=0x%08X", ota_node.ops.prepare);
+                            log_debug("ota_node.ops.apply=0x%08X", ota_node.ops.apply);
+                            log_debug("ota_node.ops.finish=0x%08X", ota_node.ops.finish);
+                            ota_node.status = UPGRADE_STATUS_DOWNLOADED;
+                            log_debug("ota_node.status=%d", ota_node.status);
+                            save_module(&ota_node);
                             goto EXIT;
                         }
                         else

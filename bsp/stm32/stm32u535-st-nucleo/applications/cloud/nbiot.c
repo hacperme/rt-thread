@@ -114,7 +114,7 @@ rt_err_t nbiot_at_client_init(void)
         return RT_ERROR;
     }
 
-    result = at_client_init(NBIOT_AT_UART_NAME, 256, 256);
+    result = at_client_init(NBIOT_AT_UART_NAME, 1024, 512);
     if (result != RT_EOK) {
         LOG_E("nbiot at client init failed: %d\n", result);
         return result;
