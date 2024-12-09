@@ -1302,7 +1302,10 @@ void main_business_entry(void)
                     if(ret == 0)
                     {
                         nbiot_ota_update_action(3);
-                        // todo: 执行升级
+                        if (exit_upgrade_plan() > 0)
+                        {
+                            upgrade_all_module();
+                        }
                     }
                     else if(ret == 1)
                     {
