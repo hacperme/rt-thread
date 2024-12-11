@@ -379,6 +379,11 @@ enum nbiot_network_status nbiot_wait_network_ready()
                 log_debug("nbiot_set_network_config failed");
             }
         }
+        nbiot_set_cfun_mode(0);
+        log_debug("nbiot_set_cfun_mode 0");
+        rt_thread_mdelay(200);
+        nbiot_set_cfun_mode(1);
+        log_debug("nbiot_set_cfun_mode 1");
         return NBIOT_NETWORK_RETRY;
     }
 }
@@ -1129,11 +1134,6 @@ void main_business_entry(void)
                 sm_set_status(NBIOT_WAIT_NETWORK_RDY);
                 break;
             case NBIOT_WAIT_NETWORK_RDY:
-                nbiot_set_cfun_mode(0);
-                log_debug("nbiot_set_cfun_mode 0");
-                rt_thread_mdelay(200);
-                nbiot_set_cfun_mode(1);
-                log_debug("nbiot_set_cfun_mode 1");
                 rv = nbiot_wait_network_ready();
                 if (rv == NBIOT_NETWORK_NOT_RDY) {
                     nbiot_deinit();
