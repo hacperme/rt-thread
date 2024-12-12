@@ -107,7 +107,7 @@ int get_module(UpgradeModule module, UpgradeNode *node)
 void save_module(UpgradeNode *node)
 {
     int ret;
-    FILE *ota_file = fopen(OTA_CFG_FILE, "wb");
+    FILE *ota_file = fopen(OTA_CFG_FILE, "rb+");
     ret = fseek(ota_file, sizeof(*node) * node->module, SEEK_SET);
     log_debug("fseek offset=%d, ret=%d", sizeof(*node) * node->module, ret);
     size_t wret = fwrite(node, 1, sizeof(*node), ota_file);
