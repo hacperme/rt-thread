@@ -26,6 +26,7 @@
 // #define DBG_LVL DBG_LOG
 // #include <rtdbg.h>
 
+static rt_uint8_t wdg_id;
 static settings_t settings = {0};
 static settings_params_t *settings_params = NULL;
 
@@ -623,7 +624,7 @@ enum cat1_network_status cat1_wait_network_ready()
     cat1_set_band();
     cat1_enable_echo(0);
     // wait network ready for cat1
-    if (cat1_check_network(20) != RT_EOK) {
+    if (cat1_check_network(10) != RT_EOK) {
         log_debug("cat1 network not ready");
 
         if (! set_cat1_network_config_flag) {
@@ -726,6 +727,7 @@ int cat1_upload_file()
                 sprintf(upload_file_path, "%s/%s", target_dir, ent->d_name);
                 log_debug("uploading file \"%s\", %d Bytes", upload_file_path, get_file_size(upload_file_path));
 
+                wdg_feed_soft(wdg_id);
                 if (at_https_upload_file(upload_file_path) == -1) {
                     break;
                     log_debug("at https upload file failed");
@@ -1104,8 +1106,7 @@ void main_business_entry(void)
     wdg_init(100, feed_rtwdg);
     rt_device_control(wdg_device, RT_DEVICE_CTRL_WDT_START, RT_NULL);
 
-    rt_uint8_t wdg_id;
-    wdg_create_soft(&wdg_id, 15*60*1000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
+    wdg_create_soft(&wdg_id, 90*1000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
     
     while (1)
     {
@@ -1303,26 +1304,40 @@ rt_err_t esp32_wifi_transfer()
             return result;
         }
 
-        if (esp_wait_connected(rt_tick_from_millisecond(300000)) == 0) {
-            log_debug("got esp_wait_connected");
-            // 如果 300s 内 app 连接wifi
-            if (esp_wait_start(rt_tick_from_millisecond(300000)) == 0) {
-                log_debug("got esp_wait_start");
-                // 如果 300s 内 开始传输
-                if (esp_wait_stop(RT_WAITING_FOREVER) == 0) {
-                    log_debug("got esp_wait_stop");
-                    esp32_power_off();
-                    debug_led1_stop_flash();
-                    return RT_EOK;
+        int is_connected = 0;
+        for (int i=0; i < 30; i++) {
+            if (esp_wait_connected(rt_tick_from_millisecond(10000)) == 0) {
+                is_connected = 1;
+                break;
+            }
+            wdg_feed_soft(wdg_id);
+        }
+        log_debug("esp_wait_connected: %d", is_connected);
+
+        int is_started = 0;
+        if (is_connected) {
+            for (int j=0; j < 30; j++) {
+                if (esp_wait_start(rt_tick_from_millisecond(10000)) == 0) {
+                    is_started = 1;
+                    break;
                 }
+                wdg_feed_soft(wdg_id);
             }
-            else {
-                log_debug("can not got esp_wait_start");
+            log_debug("esp_wait_start: %d", is_started);
+        }
+
+        int is_stopped = 0;
+        if (is_started) {
+            for (int k=0; k < 90; k++) {
+                if (esp_wait_stop(rt_tick_from_millisecond(10000)) == 0) {
+                    is_stopped = 1;
+                    break;
+                }
+                wdg_feed_soft(wdg_id);
             }
+            log_debug("esp_wait_stop: %d", is_stopped);
         }
-        else {
-            log_debug("can not got esp_wait_connected");
-        }
+
         debug_led1_stop_flash();
         esp32_power_off();
     }
