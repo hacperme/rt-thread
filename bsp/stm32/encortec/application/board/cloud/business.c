@@ -708,6 +708,10 @@ int cat1_upload_file()
     char upload_file_name[64] = {0};
     cJSON *temp_obj;
 
+    if (at_https_open() != 0) {
+        return CAT1_UPLOAD_FILE;  // try again
+    }
+
     for (int i=1; i <= nums; i++) {
         log_debug("got sub_dir %d: %s", i, sub_dir);
         if (!strlen(sub_dir)) {
@@ -728,6 +732,7 @@ int cat1_upload_file()
                 log_debug("uploading file \"%s\", %d Bytes", upload_file_path, get_file_size(upload_file_path));
 
                 if (at_https_upload_file(upload_file_path) == -1) {
+                    break;
                     log_debug("at https upload file failed");
                 }
                 else {
@@ -749,6 +754,8 @@ int cat1_upload_file()
 
         sub_dir += (strlen(sub_dir) + 1);
     }
+
+    at_https_close();
 
     if (cJSON_GetArraySize(array) > 0) {
         cJSON_AddItemToObject(root, "23", array);

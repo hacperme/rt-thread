@@ -136,7 +136,7 @@ bool at_ssl_client_deinit(void)
 	return true;
 }
 
-bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*serveraddr, int server_port, size_t total_size)
+bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*serveraddr, int server_port)
 {
 	char* check_cacert_file_cmd = NULL;
 	char send_cmd[1024] = {0};
@@ -146,7 +146,7 @@ bool at_ssl_connect(at_client_t client, const char *cacert_filename, const char*
 	bool ret = false;
 	#define AT_SSL_SEND_CMD AT_SEND_CMD(client, resp, send_cmd, goto ssl_end)
 
-	if(!(client && cacert_filename && serveraddr && server_port && total_size && resp))
+	if(!(client && cacert_filename && serveraddr && server_port && resp))
 	{
 		return false;
 	}
@@ -505,7 +505,7 @@ int example_at_ssl(void)
 
 	CHECK_FUNC_RUN(at_ssl_cacert_save(client1, "cacert_st.pem", QST_SSL_CA, strlen(QST_SSL_CA)));
 
-	CHECK_FUNC_RUN(at_ssl_connect(client1, "cacert_st.pem", "112.31.84.164", 8381, 10));
+	CHECK_FUNC_RUN(at_ssl_connect(client1, "cacert_st.pem", "112.31.84.164", 8381));
 
 	CHECK_FUNC_RUN(at_ssl_send(client1, "0123456789", 10));
 
@@ -533,7 +533,7 @@ int example_at_ssl1(void)
 
 	CHECK_FUNC_RUN(at_ssl_cacert_save(client1, "cacert1.pem", QTH_AWS_X509_CA, strlen(QTH_AWS_X509_CA)));
 
-	CHECK_FUNC_RUN(at_ssl_connect(client1, "cacert1.pem", "quecs3demo.s3.eu-central-1.amazonaws.com", 443, 10));
+	CHECK_FUNC_RUN(at_ssl_connect(client1, "cacert1.pem", "quecs3demo.s3.eu-central-1.amazonaws.com", 443));
 
 	CHECK_FUNC_RUN(at_ssl_send(client1, "0123456789", 10));
 

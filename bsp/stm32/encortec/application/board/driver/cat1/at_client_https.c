@@ -279,6 +279,7 @@ int at_https_upload_file(const char *filename)
         "Date: %s\r\n" \
         "Content-Length: %d\r\n" \
         "Authorization: %s\r\n" \
+        "Connection: keep-alive\r\n" \
         "X-Amz-Date: %s\r\n" \
         "X-Amz-Content-Sha256: %s\r\n\r\n",
         // "X-Amz-Acl: public-read-write\r\n\r\n",
@@ -287,33 +288,43 @@ int at_https_upload_file(const char *filename)
 
     at_client_t client1 = at_client_get("uart1");
 
-	if(at_ssl_cacert_save(client1, "cacert_st.pem", QST_SSL_CA, strlen(QST_SSL_CA)) != true) {
-        fclose(file);
-        return -1;
-    }
-
-    if(at_ssl_connect(client1, "cacert_st.pem", AWS_HOST, 443, strlen(request) + content_length) != true) {
-        fclose(file);
-        return -1;
-    }
-
 	if(at_ssl_send(client1, request, strlen(request)) != true) {
         fclose(file);
-        at_ssl_close(client1);
         return -1;
     }
 
     while ((bytes_read = fread(buffer, 1, 1024, file)) > 0) {
         if(at_ssl_send(client1, buffer, bytes_read) != true) {
             fclose(file);
-            at_ssl_close(client1);
             return -1;
         }
     }
 
     fclose(file);
     bool result = at_ssl_check(client1);
-    at_ssl_close(client1);
 
     return result ? 0 : -1;
+}
+
+
+int at_https_open()
+{
+    at_client_t client1 = at_client_get("uart1");
+
+       if(at_ssl_cacert_save(client1, "cacert_st.pem", QST_SSL_CA, strlen(QST_SSL_CA)) != true) {
+        return -1;
+    }
+
+    if(at_ssl_connect(client1, "cacert_st.pem", AWS_HOST, 443) != true) {
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int at_https_close()
+{
+    at_client_t client1 = at_client_get("uart1");
+    at_ssl_close(client1);
 }
