@@ -22,6 +22,7 @@
 #include "watch_dog.h"
 
 #include "logging.h"
+#include "upgrade_manager.h"
 // #define DBG_TAG "business"
 // #define DBG_LVL DBG_LOG
 // #include <rtdbg.h>
@@ -1053,7 +1054,6 @@ void main_business_entry(void)
     rt_err_t result;
     int status;
     int rv = 0;
-    int ota_process_step = 0;
 
     read_imei_from_file(nbiot_imei_string, 15);
     log_debug("read_imei_from_file: %s", nbiot_imei_string);
@@ -1102,6 +1102,10 @@ void main_business_entry(void)
 
     rt_uint8_t wdg_id;
     wdg_create_soft(&wdg_id, 15*60*1000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
+
+    extern rt_err_t delete_ota_cfg_file(void);
+    delete_ota_cfg_file();
+    upgrade_manager_init();
     
     while (1)
     {
@@ -1194,10 +1198,9 @@ void main_business_entry(void)
             case NBIOT_REPORT_SENSOR_DATA:
                 rv = nbiot_report_sensor_data_to_server();
                 if (rv == NBIOT_REPORT_SENSOR_DATA_FAILED || rv == NBIOT_REPORT_SENSOR_DATA_SUCCESS) {
-                    int event = nbiot_get_ota_event();
-                    log_debug("ota event:%d", event);
-                    if(event >= QIOT_OTA_TASK_NOTIFY && event <= QIOT_OTA_UPDATE_FLAG)
+                    if(nbiot_get_ota_task_state() > 0)
                     {
+                        // 有升级计划则进入升级处理状态
                         sm_set_status(NBIOT_OTA_PROCESS);
                     }
                     else
@@ -1268,81 +1271,33 @@ void main_business_entry(void)
                 break;
             case NBIOT_OTA_PROCESS:
             {
-                int ota_event = nbiot_get_ota_event();
-                switch (ota_event)
-                {
-                case QIOT_OTA_TASK_NOTIFY:
-                    
-                    if(ota_process_step == 0)
-                    {
-                        // 检查升级组件版本信息，确认或者拒绝升级
-                        if(nbiot_check_ota_task() == 0)
-                        {
-                            nbiot_ota_update_action(1);
-                        }
-                        else
-                        {
-                            nbiot_ota_update_action(0);
-                        }
-                        ota_process_step++;
-                    }
-                    sm_set_status(NBIOT_OTA_PROCESS);
-                    break;
-                case QIOT_OTA_START:
-                    // 存储固件大小、校验信息，也可以在事件回调中做。
-                    sm_set_status(NBIOT_OTA_PROCESS);
-                    break;
-                case QIOT_OTA_DOWNLOADING:
-                    sm_set_status(NBIOT_OTA_PROCESS);
-                    break;
-                case QIOT_OTA_DOWNLOADED:
+                int ret;
+                ota_task_state_t state = nbiot_get_ota_task_state();
+                if(state == OTA_TASK_STATE_DOWNLOADED)
                 {
                     int ret = nbiot_save_ota_data();
                     log_debug("ret %d", ret);
-                    if(ret == 0)
+                }
+                else if(state == OTA_TASK_STATE_UPGRADEING)
+                {
+                    if (exit_upgrade_plan() > 0)
                     {
-                        nbiot_ota_update_action(3);
-                        if (exit_upgrade_plan() > 0)
-                        {
-                            upgrade_all_module();
-                        }
-                    }
-                    else if(ret == 1)
-                    {
-                        nbiot_ota_req();
-                    }
-                    else if(ret == 2)
-                    {
-                        nbiot_ota_update_action(2);
-                    }
-                    else if(ret == -1)
-                    {
-                        log_error("ret %d", ret);
-                        // todo
-                    }
-                    else
-                    {
-                        // 持续读取数据
-                        sm_set_status(NBIOT_OTA_PROCESS);
+                        upgrade_all_module();
+                        // 更新模组版本号
+                        nbiot_config_mcu_version();
                     }
 
+                    nbiot_deinit();
+                    debug_led1_stop_flash();
+                    if (should_cat1_upload_files()) {
+                        sm_set_status(CAT1_INIT);
+                    }
+                    else {
+                        sm_set_status(ESP32_WIFI_TRANSFER_DATA);
+                    }
                     break;
                 }
-                case QIOT_OTA_UPDATE_OK:
-                case QIOT_OTA_UPDATE_FAIL: 
-                default:
-                        ota_process_step = 0;
-                        nbiot_deinit();
-                        debug_led1_stop_flash();
-                        if (should_cat1_upload_files()) {
-                            sm_set_status(CAT1_INIT);
-                        }
-                        else {
-                            sm_set_status(ESP32_WIFI_TRANSFER_DATA);
-                        }
-                    break;
-                }
-
+                sm_set_status(NBIOT_OTA_PROCESS);
                 break;
             }
             default:

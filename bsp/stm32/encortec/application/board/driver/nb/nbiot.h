@@ -57,6 +57,17 @@ enum
     QIOT_OTA_UPDATE_FLAG = 10707, /* Advertisement of the first device operation result */
 };
 
+typedef enum
+{
+    OTA_TASK_STATE_NONE = 0,
+    OTA_TASK_STATE_RECV,
+    OTA_TASK_STATE_DOWNLOADING,
+    OTA_TASK_STATE_DOWNLOADED,
+    OTA_TASK_STATE_UPGRADEING,
+    OTA_TASK_STATE_FINISH
+}ota_task_state_t;
+
+
 /* init AT client */
 rt_err_t nbiot_at_client_init(void);
 
@@ -112,21 +123,9 @@ rt_err_t nbiot_ota_req(void);
  * @return rt_err_t 
  */
 rt_err_t nbiot_ota_update_action(int action);
-/**
- * @brief 
- * 
- * @param [in] offset The starting position to read data. Unit: byte
- * @param [out] data  Storage for firmware data
- * @param [in] length The maximum length of data to read at one time.
- * @return int 
- * < 0, Error in calling the interface
- * >=0, The actual length of data returned
- */
-int nbiot_ota_read(int offset,  unsigned char *data, int length);
 
-int nbiot_get_ota_event(void);
 
-int nbiot_check_ota_task(void);
+ota_task_state_t nbiot_get_ota_task_state(void);
 
 /**
  * @brief 

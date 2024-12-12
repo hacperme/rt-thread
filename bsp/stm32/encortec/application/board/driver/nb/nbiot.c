@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <strings.h> // For strcasecmp
+#include <ctype.h>   // For isxdigit
 
 #include "logging.h"
 #include "gnss.h"
@@ -13,6 +15,8 @@
 // #define DBG_TAG "nbiot"
 // #define DBG_LVL DBG_LOG
 // #include <rtdbg.h>
+
+#define NBIOT_OTA_TASK_CONFIG_FILE "/fota/ota_task.conf"
 
 extern void read_app_version_information(uint8_t **app_version, uint8_t **app_subedition, uint8_t **app_build_time);
 extern rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size);
@@ -31,30 +35,201 @@ static int QIOT_WAKEUP_EVENT_CODE = -1;
 
 static rt_mq_t cclk_data_urc_queue = RT_NULL;
 
+
+typedef struct
+{
+	char name[50];
+    char source_version[128];
+    char target_version[128];
+    char fileName[256];
+    int batteryLimit;
+    int minSignalIntensity;
+    int compomentSize;
+    unsigned char md5Bytes[16];
+    int startaddr;
+    int piece_length;
+    int state;
+    FILE *fd;
+}ota_compoment_t;
+
+
 typedef enum
 {
     FIRM_TYPE_MODULE = 0, /*模组升级*/
     FIRM_TYPE_MCU /*MCU SOTA升级*/
 }firm_type_t;
 
-typedef struct
+
+
+
+typedef struct 
 {
-    char componentNo[50];
+    ota_task_state_t state;
+    firm_type_t type;
+    UpgradeModule module;
+    int current_copmment;
+    int compoment_cnt;
+    int compoment_downlaoded_cnt;
+    ota_compoment_t compoment[5];
+}ota_task_t;
+
+static ota_task_t g_ota_task = {0};
+
+
+static int save_ota_task_to_file(ota_task_t *task)
+{
+    FILE *file = fopen(NBIOT_OTA_TASK_CONFIG_FILE, "wb");
+    if (file == NULL)
+    {
+        log_error("open ota task flie err");
+        return -1;
+    }
+
+    if(fwrite(task, 1, sizeof(ota_task_t), file) != sizeof(ota_task_t))
+    {
+        log_error("save ota task flie err");
+        fclose(file);
+        return -1;
+    }
+    fclose(file);
+
+    return 0;
+
+}
+
+static int read_ota_task_from_file(ota_task_t *task)
+{
+    FILE *file = fopen(NBIOT_OTA_TASK_CONFIG_FILE, "rb");
+    if (file == NULL)
+    {
+        log_error("open ota task flie err");
+        return -1;
+    }
+
+    if(fread(task, 1, sizeof(ota_task_t), file) != sizeof(ota_task_t))
+    {
+        log_error("read ota task flie err");
+        fclose(file);
+        return -1;
+    }
+    fclose(file);
+
+    return 0;
+
+}
+
+static int clean_ota_task(ota_task_t *task)
+{
+    if(task)
+    {
+        for (size_t i = 0; i < task->compoment_cnt; i++)
+        {
+            if(access(task->compoment[i].fileName, F_OK) == 0)
+            {
+                remove(task->compoment[i].fileName);
+            }
+        }
+
+        rt_memset(task, 0, sizeof(ota_task_t));
+    }
+    remove(NBIOT_OTA_TASK_CONFIG_FILE);
+    return 0;
+
+}
+
+
+static int get_file_index_by_componentNo(char *componentNo)
+{
+    int ret = 0;
+    if(componentNo == NULL)
+    {
+        return ret;
+    }
+    if(strcasecmp(componentNo, "STM32-A") == 0)
+    {
+        ret = 0;
+    }
+    else if(strcasecmp(componentNo, "STM32-B") == 0)
+    {
+        ret = 1;
+    }
+    else if(strcasecmp(componentNo, "ESP32") == 0)
+    {
+        ret = 0;
+    }
+    else if(strcasecmp(componentNo, "CAT1") == 0)
+    {
+        ret = 0;
+    }
+    else if(strcasecmp(componentNo, "GNSS-P0") == 0)
+    {
+        // da_uart_115200.bin
+        ret = 0;
+    }
+    else if(strcasecmp(componentNo, "GNSS-P1") == 0)
+    {
+        // partition_table.bin
+        ret = 1;
+    }
+    else if(strcasecmp(componentNo, "GNSS-P2") == 0)
+    {
+        // bootloader.bin
+        ret = 2;
+    }
+    else if(strcasecmp(componentNo, "GNSS-P3") == 0)
+    {
+        // LC76GPANR12A03S.bin
+        ret = 3;
+    }
+    else if(strcasecmp(componentNo, "GNSS-P4") == 0)
+    {
+        // gnss_config.bin
+        ret = 4;
+    }
+
+    return ret;
+}
+
+static UpgradeModule get_module_by_componentNo(char *componentNo)
+{
+    UpgradeModule ret = UPGRADE_MODULE_NB;
+    if(componentNo == NULL)
+    {
+        return ret;
+    }
+    if(strcasecmp(componentNo, "STM32-A") == 0)
+    {
+        ret = UPGRADE_MODULE_ST;
+    }
+    else if(strcasecmp(componentNo, "STM32-B") == 0)
+    {
+        ret = UPGRADE_MODULE_ST;
+    }
+    else if(strcasecmp(componentNo, "ESP32") == 0)
+    {
+        ret = UPGRADE_MODULE_ESP;
+    }
+    else if(strcasecmp(componentNo, "CAT1") == 0)
+    {
+        ret = UPGRADE_MODULE_CAT1;
+    }
+    else
+    {
+        ret = UPGRADE_MODULE_GNSS;
+    }
+
+    return ret;
+}
+
+static void parse_ota_task_data(const char* urcString, ota_task_t *ctl)
+{
+    char cleanedString[256] = {0};
+    char componentNo[50] = {0};
+    char source_version[128];
+    char target_version[128];
     int batteryLimit;
     int minSignalIntensity;
     int useSpace;
-    int download_file_index;
-    firm_type_t type;
-    UpgradeModule module;
-    UpgradePlan plan;
-}ota_ctl_t;
-
-static ota_ctl_t g_ota_ctl = {0};
-
-
-static void parse_ota_task_data(const char* urcString, ota_ctl_t *ctl)
-{
-    char cleanedString[256] = {0};
     strncpy(cleanedString, urcString, sizeof(cleanedString) - 1);
     cleanedString[strcspn(cleanedString, "\r\n")] = 0;
 
@@ -65,8 +240,8 @@ static void parse_ota_task_data(const char* urcString, ota_ctl_t *ctl)
         start = end + 1; 
         end = strchr(start, '\"'); 
         if (end) {
-            strncpy(ctl->componentNo, start, end - start);
-            ctl->componentNo[end - start] = '\0'; 
+            strncpy(componentNo, start, end - start);
+            componentNo[end - start] = '\0'; 
             start = end + 2; 
         }
     }
@@ -76,8 +251,8 @@ static void parse_ota_task_data(const char* urcString, ota_ctl_t *ctl)
         start = end + 1;
         end = strchr(start, '\"');
         if (end) {
-            strncpy(ctl->plan.source_version, start, end - start);
-            ctl->plan.source_version[end - start] = '\0';
+            strncpy(source_version, start, end - start);
+            source_version[end - start] = '\0';
             start = end + 2;
         }
     }
@@ -87,23 +262,24 @@ static void parse_ota_task_data(const char* urcString, ota_ctl_t *ctl)
         start = end + 1;
         end = strchr(start, '\"');
         if (end) {
-            strncpy(ctl->plan.target_version, start, end - start);
-            ctl->plan.target_version[end - start] = '\0';
+            strncpy(target_version, start, end - start);
+            target_version[end - start] = '\0';
             start = end + 2; 
         }
     }
 
-    ctl->batteryLimit = atoi(start);
+    batteryLimit = atoi(start);
     while (*start && *start != ',') start++; 
     start++; 
 
-    ctl->minSignalIntensity = atoi(start);
+    minSignalIntensity = atoi(start);
     while (*start && *start != ',') start++; 
     start++; 
 
-    ctl->useSpace = atoi(start);
+    useSpace = atoi(start);
 
-    if((strlen(ctl->componentNo) == 0) || (strcasecmp(ctl->componentNo, "NB") == 0))
+
+    if((strlen(componentNo) == 0) || (strcasecmp(componentNo, "NB") == 0))
     {
         ctl->type = FIRM_TYPE_MODULE;
     }
@@ -112,12 +288,46 @@ static void parse_ota_task_data(const char* urcString, ota_ctl_t *ctl)
         ctl->type = FIRM_TYPE_MCU;
     }
 
-    log_debug("Component No: %s\n", strlen(ctl->componentNo) > 0 ? ctl->componentNo : "Empty");
-    log_debug("Source Version: %s\n", strlen(ctl->plan.source_version) > 0 ? ctl->plan.source_version : "Empty");
-    log_debug("Target Version: %s\n", strlen(ctl->plan.target_version) > 0 ? ctl->plan.target_version : "Empty");
-    log_debug("Battery Limit: %d\n", ctl->batteryLimit);
-    log_debug("Min Signal Intensity: %d\n", ctl->minSignalIntensity);
-    log_debug("Use Space: %d\n", ctl->useSpace);
+    if(ctl->type == FIRM_TYPE_MCU)
+    {
+        ctl->current_copmment = get_file_index_by_componentNo(componentNo);
+        ctl->module = get_module_by_componentNo(componentNo);
+        if(ctl->module == UPGRADE_MODULE_ST)
+        {
+            ctl->compoment_cnt = 2;
+        }
+        else if(ctl->module == UPGRADE_MODULE_GNSS)
+        {
+            ctl->compoment_cnt = 5;
+        }
+        else if(ctl->module == UPGRADE_MODULE_NB)
+        {
+            ctl->compoment_cnt = 0;
+        }
+        else
+        {
+            ctl->compoment_cnt = 1;
+        }
+
+        ctl->state = OTA_TASK_STATE_RECV; // 有下发升级计划了
+        
+        rt_memset(&ctl->compoment[ctl->current_copmment], 0, sizeof(ota_compoment_t));
+        rt_strcpy(ctl->compoment[ctl->current_copmment].name, componentNo);
+        rt_strcpy(ctl->compoment[ctl->current_copmment].source_version, source_version);
+        rt_strcpy(ctl->compoment[ctl->current_copmment].target_version, target_version);
+        ctl->compoment[ctl->current_copmment].batteryLimit = batteryLimit;
+        ctl->compoment[ctl->current_copmment].minSignalIntensity = minSignalIntensity;
+        ctl->compoment[ctl->current_copmment].compomentSize = useSpace;
+        save_ota_task_to_file(ctl);
+        
+    }
+
+    log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
+    log_debug("Source Version: %s\n", strlen(source_version) > 0 ? source_version : "Empty");
+    log_debug("Target Version: %s\n", strlen(target_version) > 0 ? target_version : "Empty");
+    log_debug("Battery Limit: %d\n", batteryLimit);
+    log_debug("Min Signal Intensity: %d\n", minSignalIntensity);
+    log_debug("Use Space: %d\n", useSpace);
     log_debug("firm type: %d\n", ctl->type);
 }
 
@@ -137,7 +347,7 @@ static int convertMD5ToBytes(const char* md5String, unsigned char* md5Bytes, siz
     return 0;
 }
 
-static int parse_ota_firm_data(const char* urcString, ota_ctl_t *ctl)
+static int parse_ota_firm_data(const char* urcString, ota_task_t *ctl)
 {
     char componentNo[50] = {0};
     int length = 0;
@@ -164,11 +374,10 @@ static int parse_ota_firm_data(const char* urcString, ota_ctl_t *ctl)
     }
 
     log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
-    if(rt_strlen(componentNo) > 0 && strcasecmp(componentNo, ctl->componentNo) != 0)
-    {
-        log_error("Component not match: %s,%s", componentNo, ctl->componentNo);
-        return -1;
-    }
+    ctl->current_copmment = get_file_index_by_componentNo(componentNo);
+    
+    ctl->module = get_module_by_componentNo(componentNo);
+    log_debug("ctl->module: %d\n", ctl->module);
 
     if (*start != '\0') {
         length = atoi(start);
@@ -180,7 +389,7 @@ static int parse_ota_firm_data(const char* urcString, ota_ctl_t *ctl)
 
     if(length > 0)
     {
-        ctl->plan.file[ctl->download_file_index].file_size = length;
+        ctl->compoment[ctl->current_copmment].compomentSize = length;
     }
 
     end = strchr(start, '\"');
@@ -203,16 +412,18 @@ static int parse_ota_firm_data(const char* urcString, ota_ctl_t *ctl)
         }
         log_debug("\n");
 #endif
-        rt_memcpy(ctl->plan.file[ctl->download_file_index].file_md5, md5Bytes, sizeof(md5Bytes));
+        rt_memcpy(ctl->compoment[ctl->current_copmment].md5Bytes, md5Bytes, sizeof(md5Bytes));
     } else {
         log_error("Invalid MD5 format.\n");
         return -1;
     }
+    ctl->state = OTA_TASK_STATE_DOWNLOADING;
+    save_ota_task_to_file(ctl);
 
     return 0;
 }
 
-static int parse_ota_downloaded_data(const char* urcString,  ota_ctl_t *ctl) 
+static int parse_ota_downloaded_data(const char* urcString,  ota_task_t *ctl) 
 {
     char componentNo[50] = {0};
     int length = 0;
@@ -240,11 +451,14 @@ static int parse_ota_downloaded_data(const char* urcString,  ota_ctl_t *ctl)
     }
 
     log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
-    if(rt_strlen(componentNo) > 0 && strcasecmp(componentNo, ctl->componentNo) != 0)
+    ctl->current_copmment = get_file_index_by_componentNo(componentNo);
+    if(strcasecmp(ctl->compoment[ctl->current_copmment].name, componentNo) != 0)
     {
-        log_error("Component not match: %s,%s", componentNo, ctl->componentNo);
-        return -1;
+        rt_memset(ctl->compoment[ctl->current_copmment].name, 0, sizeof(ctl->compoment[ctl->current_copmment].name));
+        rt_strcpy(ctl->compoment[ctl->current_copmment].name, componentNo);
     }
+    ctl->module = get_module_by_componentNo(componentNo);
+    log_debug("ctl->module: %d\n", ctl->module);
 
     if (*start != '\0') {
         length = atoi(start);
@@ -253,10 +467,10 @@ static int parse_ota_downloaded_data(const char* urcString,  ota_ctl_t *ctl)
     }
 
     log_debug("Length: %d\n", length);
-    if(length != ctl->plan.file[ctl->download_file_index].file_size)
+    if(length != ctl->compoment[ctl->current_copmment].compomentSize)
     {
-        log_error("firm length mismatch: %d,%d", length, ctl->plan.file[ctl->download_file_index].file_size);
-        return -1;
+        log_error("firm length mismatch: %d,%d", length, ctl->compoment[ctl->current_copmment].compomentSize);
+        ctl->compoment[ctl->current_copmment].compomentSize = length;
     }
 
     if (*start != '\0') {
@@ -265,20 +479,25 @@ static int parse_ota_downloaded_data(const char* urcString,  ota_ctl_t *ctl)
         start++; 
     }
 
-    ctl->plan.file[ctl->download_file_index].start_addr = startaddr;
+    ctl->compoment[ctl->current_copmment].startaddr = startaddr;
 
     if (*start != '\0') {
         piece_length = atoi(start);
     }
 
-    ctl->plan.file[ctl->download_file_index].piece_length = piece_length;
+    ctl->compoment[ctl->current_copmment].piece_length = piece_length;
+    rt_snprintf(ctl->compoment[ctl->current_copmment].fileName, 
+                    sizeof(ctl->compoment[ctl->current_copmment].fileName), "/fota/%s.bin", componentNo);
 
-    ctl->plan.file[ctl->download_file_index].fd = fopen(ctl->plan.file[ctl->download_file_index].file_name, "wb+");
-    if(ctl->plan.file[ctl->download_file_index].fd == NULL)
+    ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "wb+");
+    if(ctl->compoment[ctl->current_copmment].fd == NULL)
     {
         log_debug("open ota file falid");
         return -1;
     }
+
+    ctl->state = OTA_TASK_STATE_DOWNLOADED;
+    save_ota_task_to_file(ctl);
 
     return 0;
 }
@@ -338,18 +557,21 @@ void nbiot_qiotevt_urc_handler(struct at_client *client, const char *data, rt_si
             switch (QIOT_OTA_EVENT_CODE)
             {
             case QIOT_OTA_TASK_NOTIFY:
-                parse_ota_task_data((const char *)event_data, &g_ota_ctl);
+                parse_ota_task_data((const char *)event_data, &g_ota_task);
+                nbiot_ota_update_action(1);
                 break;
             case QIOT_OTA_START:
-                if(parse_ota_firm_data((const char *)event_data, &g_ota_ctl) != 0)
+                read_ota_task_from_file(&g_ota_task);
+                if(parse_ota_firm_data((const char *)event_data, &g_ota_task) != 0)
                 {
-                    // todo
+
                 }
                 break;
             case QIOT_OTA_DOWNLOADING:
                 break;
             case QIOT_OTA_DOWNLOADED:
-                parse_ota_downloaded_data((const char *)event_data, &g_ota_ctl);
+                read_ota_task_from_file(&g_ota_task);
+                parse_ota_downloaded_data((const char *)event_data, &g_ota_task);
                 break;
             case QIOT_OTA_UPDATING:
                 break;
@@ -1288,57 +1510,18 @@ ERROR:
     at_delete_resp(resp);
     return result;
 }
-
-rt_err_t nbiot_config_mcu_version(void)
+rt_err_t nbiot_report_component_version(char *component, char *version)
 {
     rt_err_t result = RT_EOK;
     at_client_t client = RT_NULL;
     at_response_t resp = RT_NULL;
-    uint8_t *app_version = NULL, *app_subedition, *app_build_time;
     char mcu_ver[512] = {0};
     int mcu_ver_len = 0;
-    char esp32_version[64];
-    char cat1_version[64];
-    char *gnss_version = NULL;
-    
     
     rt_memset(mcu_ver, 0, sizeof(mcu_ver));
-    read_app_version_information(&app_version, &app_subedition, &app_build_time);
 
-    mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=");
-    if(app_version != RT_NULL)
-    {
-        log_debug("stm32 version:%s", app_version);
-        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "\"STM32-A\",\"%s\"\r\n", app_version);
-        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"STM32-B\",\"%s\"\r\n", app_version);
-    }
-    rt_memset(cat1_version, 0, sizeof(cat1_version));
-    cat1_at_query_version(cat1_version, sizeof(cat1_version));
-    if(rt_strlen(cat1_version) > 0)
-    {
+    mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"%s\",\"%s\"", component, version);
     
-        log_debug("CAT1 version:%s", cat1_version);
-        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"CAT1\",\"%s\"\r\n", cat1_version);
-    }
-    rt_memset(esp32_version, 0, sizeof(esp32_version));
-    esp32_at_query_version(esp32_version, sizeof(esp32_version));
-    if(rt_strlen(esp32_version) > 0)
-    {
-    
-        log_debug("ESP32 version:%s", esp32_version);
-        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"ESP32\",\"%s\"\r\n", esp32_version);
-    }
-
-    result = gnss_open();
-    rt_thread_mdelay(100);
-    gnss_query_version(&gnss_version);
-    if(gnss_version != NULL)
-    {
-        mcu_ver_len += rt_snprintf(mcu_ver+mcu_ver_len,sizeof(mcu_ver)-mcu_ver_len, "AT+QIOTMCUVER=\"GNSS\",\"%s\"", gnss_version);
-  
-    }
-    result = gnss_close();
-
     log_debug("MCU VER,len%d,ver:%s", mcu_ver_len, mcu_ver);
 
     client = at_client_get(NBIOT_AT_UART_NAME);
@@ -1356,10 +1539,58 @@ rt_err_t nbiot_config_mcu_version(void)
     if (result != RT_EOK) {
         result = RT_ERROR;
     }   
-
     at_delete_resp(resp);
     return result;
 }
+
+rt_err_t nbiot_config_mcu_version(void)
+{
+    rt_err_t result = RT_EOK;
+
+    uint8_t *app_version = NULL, *app_subedition, *app_build_time;
+    char esp32_version[64];
+    char cat1_version[64];
+    char *gnss_version = NULL;
+    
+	read_app_version_information(&app_version, &app_subedition, &app_build_time);
+    if(app_version != RT_NULL)
+    {
+        log_debug("stm32 version:%s", app_version);
+        nbiot_report_component_version("STM32-A", app_version);
+        nbiot_report_component_version("STM32-B", app_version);
+    }
+    rt_memset(cat1_version, 0, sizeof(cat1_version));
+    cat1_at_query_version(cat1_version, sizeof(cat1_version));
+    if(rt_strlen(cat1_version) > 0)
+    {
+        log_debug("CAT1 version:%s", cat1_version);
+        nbiot_report_component_version("CAT1", cat1_version);
+    }
+    rt_memset(esp32_version, 0, sizeof(esp32_version));
+    esp32_at_query_version(esp32_version, sizeof(esp32_version));
+    if(rt_strlen(esp32_version) > 0)
+    {
+        log_debug("ESP32 version:%s", esp32_version);
+        nbiot_report_component_version("ESP32", esp32_version);
+    }
+
+    result = gnss_open();
+    rt_thread_mdelay(100);
+    gnss_query_version(&gnss_version);
+    if(gnss_version != NULL)
+    {
+        nbiot_report_component_version("GNSS-P0", gnss_version);
+        nbiot_report_component_version("GNSS-P1", gnss_version);
+        nbiot_report_component_version("GNSS-P2", gnss_version);
+        nbiot_report_component_version("GNSS-P3", gnss_version);
+        nbiot_report_component_version("GNSS-P4", gnss_version);
+    }
+    result = gnss_close();
+
+    return result;
+}
+
+
 
 rt_err_t nbiot_ota_req(void)
 {
@@ -1429,195 +1660,21 @@ rt_err_t nbiot_ota_update_action(int action)
     at_delete_resp(resp);
     return result;
 }
-/**
- * @brief 
- * 
- * @param [in] offset The starting position to read data. Unit: byte
- * @param [out] data  Storage for firmware data
- * @param [in] length The maximum length of data to read at one time.
- * @return int 
- * < 0, Error in calling the interface
- * >=0, The actual length of data returned
- */
-int nbiot_ota_read(int offset,  unsigned char *data, int length)
+
+ota_task_state_t nbiot_get_ota_task_state(void)
 {
-    rt_err_t result = RT_EOK;
-    at_client_t client = RT_NULL;
-    at_response_t resp = RT_NULL;
-    char at_cmd[128] = {0};
-    const char *resp_line = RT_NULL;
-    int data_offset = 0;
-    int data_size = 0;
-
-    if(offset < 0 || data == RT_NULL || length < 0)
+    int state = OTA_TASK_STATE_NONE;
+    ota_task_t *ctl = &g_ota_task;
+    if(access(NBIOT_OTA_TASK_CONFIG_FILE, F_OK) != 0)
     {
-        log_error("invalid param");
-        result =  RT_ERROR;
-        goto ERROR;
+        return state;
     }
 
-    rt_memset(at_cmd, 0, sizeof(at_cmd));
-    rt_snprintf(at_cmd, sizeof(at_cmd)-1, "AT+QIOTOTARD=%d,%d", offset, length-50);
-    client = at_client_get(NBIOT_AT_UART_NAME);
-    if (client == RT_NULL) {
-        log_error("nbiot at client not inited!");
-        result =  RT_ERROR;
-        goto ERROR;
-    }
-    resp = at_create_resp(512, 0, rt_tick_from_millisecond(3000));
-    if (resp == RT_NULL) {
-        log_error("create resp failed.");
-        result =  RT_ERROR;
-        goto ERROR;
-    }
-
-    result = at_obj_exec_cmd(client, resp, at_cmd);
-    if (result != RT_EOK) {
-        result = RT_ERROR;
-    }
-    else
-    {
-        resp_line = at_resp_get_line(resp, 1);
-        if (resp_line == RT_NULL) 
-        {
-            log_error("resp_line 2 is null");
-            result = RT_ERROR;
-            goto ERROR;
-        }
-        sscanf(resp_line, "+QIOTOTARD: %d,%d", &data_offset, &data_size);
-        if(data_offset == offset && data_size > 0)
-        {
-            resp_line = RT_NULL;
-            resp_line = at_resp_get_line(resp, 2);
-            if(resp_line == RT_NULL)
-            {
-                log_error("resp_line 3 is null");
-                result = RT_ERROR;
-                goto ERROR;
-            }
-            rt_memcpy(data, resp_line, data_size);
-        }
-    }
-
-ERROR:
-    if(resp)
-    {
-        at_delete_resp(resp);
-    }
-    
-    return (result == RT_EOK) ? data_size : -1;
+    state = ctl->state;
+    return state;
 }
 
-int nbiot_get_ota_event(void)
-{
-    int event = -1;
-    rt_mutex_take(&qiot_event_mutex, RT_WAITING_FOREVER);
-    event = QIOT_OTA_EVENT_CODE;
-    rt_mutex_release(&qiot_event_mutex);
-    return event;
-}
 
-int nbiot_check_ota_task(void)
-{
-
-    struct statfs fs_stat = {0};
-    int free_dik_size = 0;
-
-    if(g_ota_ctl.type == FIRM_TYPE_MODULE)
-    {
-        g_ota_ctl.module = UPGRADE_MODULE_NB;
-        g_ota_ctl.plan.file_cnt = 0;
-        return 0;
-    }
-    else // sota firmware file
-    {
-        if((strcasecmp(g_ota_ctl.componentNo, "STM32-A") == 0) || (strcasecmp(g_ota_ctl.componentNo, "STM32-B") == 0))
-        {
-            if (g_ota_ctl.module != UPGRADE_MODULE_ST)
-            {
-               g_ota_ctl.module =UPGRADE_MODULE_ST;
-               
-            }
-            g_ota_ctl.plan.file_cnt = 2;
-            if((strcasecmp(g_ota_ctl.componentNo, "STM32-A") == 0))
-            {
-                g_ota_ctl.download_file_index = 0;
-                rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
-            }
-            else
-            {
-                g_ota_ctl.download_file_index = 1;
-                rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
-            }
-            rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
-                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/%s.bin",g_ota_ctl.componentNo);
-            
-        }
-        else if((strcasecmp(g_ota_ctl.componentNo, "ESP32") == 0))
-        {
-            if (g_ota_ctl.module != UPGRADE_MODULE_ESP)
-            {
-               g_ota_ctl.module =UPGRADE_MODULE_ESP;
-               
-            }
-            g_ota_ctl.plan.file_cnt = 1;
-            g_ota_ctl.download_file_index = 0;
-            rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
-            rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
-                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/%s.bin",g_ota_ctl.componentNo);
-            
-        }
-        else if((strcasecmp(g_ota_ctl.componentNo, "CAT1") == 0))
-        {
-            if (g_ota_ctl.module != UPGRADE_MODULE_CAT1)
-            {
-               g_ota_ctl.module =UPGRADE_MODULE_CAT1;
-               
-            }
-            g_ota_ctl.plan.file_cnt = 1;
-            g_ota_ctl.download_file_index = 0;
-            rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
-            rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
-                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/%s.bin",g_ota_ctl.componentNo);
-            
-        }
-        else if((strcasecmp(g_ota_ctl.componentNo, "GNSS") == 0)) // todo gnss 5 个文件下载
-        {
-            if (g_ota_ctl.module != UPGRADE_MODULE_GNSS)
-            {
-               g_ota_ctl.module =UPGRADE_MODULE_GNSS;
-               
-            }
-            g_ota_ctl.plan.file_cnt = 5;
-            g_ota_ctl.download_file_index = 0; // todo
-            rt_memset(&g_ota_ctl.plan.file[g_ota_ctl.download_file_index], 0, sizeof(UpgradeFile));
-            rt_snprintf(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name, 
-                    sizeof(g_ota_ctl.plan.file[g_ota_ctl.download_file_index].file_name), "/fota/%s.bin",g_ota_ctl.componentNo);
-        }
-        else
-        {
-            log_debug("unknow componentNo:%s", g_ota_ctl.componentNo);
-            return -1;
-        }
-
-        
-#if 0
-fix me: can not get filesysyem free size
-        if (statfs("/", &fs_stat) == 0)
-        {
-            free_disk_size =fs_stat.f_bsize * fs_stat.f_bavail;
-            log_debug("free_disk_size:%d", free_disk_size);
-            if(free_disk_size < g_ota_ctl.useSpace)
-            {
-                log_error("free_disk_size:%d is less than firm size:%d", free_disk_size, g_ota_ctl.useSpace);
-                return -1;
-            }
-        }
-#endif
-
-    }
-    return 0;
-}
 
 /**
  * @brief 
@@ -1638,13 +1695,28 @@ int nbiot_save_ota_data(void)
     const char *resp_line = RT_NULL;
     int data_offset = 0;
     int data_size = 0;
-    ota_ctl_t *ctl = &g_ota_ctl;
+    int line_offset = 0;
+    ota_task_t *ctl = &g_ota_task;
     UpgradeNode ota_node = {0};
+    UpgradePlan plan = {0};
+
 
     static unsigned char tmp_data[1024] = {0};
     uint32_t offset = 0;
     uint32_t length = sizeof(tmp_data);
-    offset = ctl->plan.file[ctl->download_file_index].start_addr;
+
+    if(ctl->state == OTA_TASK_STATE_UPGRADEING)
+    {
+        log_debug("in upgrading state");
+        return 0;
+    }
+    else if(ctl->state == OTA_TASK_STATE_DOWNLOADING)
+    {
+        log_debug("in downloading state");
+        return 1;
+    }
+    
+    offset = ctl->compoment[ctl->current_copmment].startaddr;
 
     rt_memset(at_cmd, 0, sizeof(at_cmd));
     rt_snprintf(at_cmd, sizeof(at_cmd)-1, "AT+QIOTOTARD=%d,%d", offset, length-50);
@@ -1678,6 +1750,8 @@ int nbiot_save_ota_data(void)
         sscanf(resp_line, "+QIOTOTARD: %d,%d", &data_offset, &data_size);
         if(data_offset == offset && data_size > 0)
         {
+            log_debug("resp->line_counts:%d", resp->line_counts);
+
             resp_line = RT_NULL;
             resp_line = at_resp_get_line(resp, 2);
             if(resp_line == RT_NULL)
@@ -1686,24 +1760,53 @@ int nbiot_save_ota_data(void)
                 result =  -1;
                 goto EXIT;
             }
-            rt_memcpy(tmp_data, resp_line, data_size);
-            fseek(ctl->plan.file[ctl->download_file_index].fd, offset, SEEK_SET);
-            size_t written = fwrite(tmp_data, 1, data_size, ctl->plan.file[ctl->download_file_index].fd);
+
+            line_offset = resp_line - resp->buf;
+            log_debug("line_offset:%d", line_offset);
+            rt_memcpy(tmp_data, resp->raw_data_buf+line_offset, data_size);
+#if 0
+            for (size_t i = 0; i < 16; i++)
+            {
+                log_debug("0x%02x", tmp_data[i]);
+            }
+#endif
+            fseek(ctl->compoment[ctl->current_copmment].fd, offset, SEEK_SET);
+            size_t written = fwrite(tmp_data, 1, data_size, ctl->compoment[ctl->current_copmment].fd);
             if(written == data_size)
             {
-                ctl->plan.file[ctl->download_file_index].start_addr += data_size;
-                if(ctl->plan.file[ctl->download_file_index].start_addr == ctl->plan.file[ctl->download_file_index].piece_length)
+                ctl->compoment[ctl->current_copmment].startaddr += data_size;
+                if(ctl->compoment[ctl->current_copmment].startaddr == ctl->compoment[ctl->current_copmment].piece_length)
                 {
                     // 文件分片下载完成
-                    if(ctl->plan.file[ctl->download_file_index].piece_length == ctl->plan.file[ctl->download_file_index].file_size)
+                    if(ctl->compoment[ctl->current_copmment].piece_length == ctl->compoment[ctl->current_copmment].compomentSize)
                     {
-                        if(ctl->download_file_index == (ctl->plan.file_cnt - 1))
+                        if(ctl->compoment_downlaoded_cnt == (ctl->compoment_cnt - 1))
                         {
                             // 整个文件下载完成
-                            result = 0;
-                            fclose(ctl->plan.file[ctl->download_file_index].fd);
-                            ctl->plan.file[ctl->download_file_index].fd = RT_NULL;
-                            set_module(ctl->module, &ctl->plan);
+                            
+                            fclose(ctl->compoment[ctl->current_copmment].fd);
+                            ctl->compoment[ctl->current_copmment].fd = RT_NULL;
+
+                            rt_memset(&plan, 0, sizeof(UpgradePlan));
+                            plan.file_cnt = ctl->compoment_cnt;
+
+                            rt_strcpy(plan.target_version, ctl->compoment[ctl->current_copmment].target_version);
+                            for (size_t i = 0; i < ctl->compoment_cnt; i++)
+                            {
+                                rt_strcpy(plan.file[i].file_name,  ctl->compoment[i].fileName);
+                                log_debug("file:%s", plan.file[i].file_name);
+                                rt_memcpy(plan.file[i].file_md5, ctl->compoment[i].md5Bytes, 16);
+                                log_debug(
+                                    "md5 %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
+                                    plan.file[i].file_md5[0], plan.file[i].file_md5[1], plan.file[i].file_md5[2], plan.file[i].file_md5[3],
+                                    plan.file[i].file_md5[4], plan.file[i].file_md5[5], plan.file[i].file_md5[6], plan.file[i].file_md5[7],
+                                    plan.file[i].file_md5[8], plan.file[i].file_md5[9], plan.file[i].file_md5[10], plan.file[i].file_md5[11],
+                                    plan.file[i].file_md5[12], plan.file[i].file_md5[13], plan.file[i].file_md5[14], plan.file[i].file_md5[15]
+                                );
+                            }
+                            log_debug("ctl->module=%d", ctl->module);
+                            set_module(ctl->module, &plan);
+                            get_module(ctl->module, &ota_node);
                             log_debug("ota_node.status=%d", ota_node.status);
                             log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
                             log_debug("ota_node.plan.file[0].file_name=%s", ota_node.plan.file[0].file_name);
@@ -1713,14 +1816,25 @@ int nbiot_save_ota_data(void)
                             ota_node.status = UPGRADE_STATUS_DOWNLOADED;
                             log_debug("ota_node.status=%d", ota_node.status);
                             save_module(&ota_node);
+                            ctl->state = OTA_TASK_STATE_UPGRADEING;
+                            save_ota_task_to_file(ctl);
+
+                            nbiot_ota_update_action(3);
+                            result = 0;
                             goto EXIT;
                         }
                         else
                         {
                             // 下载下一个文件
-                            ctl->download_file_index++;
-                            fclose(ctl->plan.file[ctl->download_file_index].fd);
-                            ctl->plan.file[ctl->download_file_index].fd = RT_NULL;
+                            fclose(ctl->compoment[ctl->current_copmment].fd);
+                            ctl->compoment[ctl->current_copmment].fd = RT_NULL;
+                            ctl->compoment_downlaoded_cnt++;
+                            save_ota_task_to_file(ctl);
+                            nbiot_ota_update_action(3);
+                            // 上报组件新版本才能下载下一个组件
+                            nbiot_report_component_version(ctl->compoment[ctl->current_copmment].name,ctl->compoment[ctl->current_copmment].target_version);
+                            ctl->state = OTA_TASK_STATE_DOWNLOADING;
+                            save_ota_task_to_file(ctl);
                             result = 1;
                             goto EXIT;
                         }
@@ -1728,7 +1842,10 @@ int nbiot_save_ota_data(void)
                     }
                     
                     // 需要下载下一个片段
-                    ctl->plan.file[ctl->download_file_index].piece_length = 0;
+                    ctl->compoment[ctl->current_copmment].piece_length = 0;
+                    nbiot_ota_update_action(2);
+                    ctl->state = OTA_TASK_STATE_DOWNLOADING;
+                    save_ota_task_to_file(ctl);
                     result = 2;
                     goto EXIT;
                 }

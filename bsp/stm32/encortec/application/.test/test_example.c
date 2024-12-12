@@ -12,7 +12,6 @@
 #include "drv_nand_flash.h"
 #include "lpm.h"
 #include "logging.h"
-#include "upgrade_manager.h"
 
 #if 1
 
@@ -147,7 +146,6 @@ int application_start(int argc, char *argv[]) {
 
     // extern void test_antenna_auto_switch(void);
     // test_antenna_auto_switch();
-    upgrade_manager_init();
     extern void main_business_entry(void);
     main_business_entry();
 
