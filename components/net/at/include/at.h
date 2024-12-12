@@ -111,6 +111,7 @@ struct at_response
 {
     /* response buffer */
     char *buf;
+    char *raw_data_buf;
     /* the maximum response buffer size, it set by `at_create_resp()` function */
     rt_size_t buf_size;
     /* the length of current response buffer */
