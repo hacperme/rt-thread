@@ -379,11 +379,6 @@ enum nbiot_network_status nbiot_wait_network_ready()
                 log_debug("nbiot_set_network_config failed");
             }
         }
-        nbiot_set_cfun_mode(0);
-        log_debug("nbiot_set_cfun_mode 0");
-        rt_thread_mdelay(200);
-        nbiot_set_cfun_mode(1);
-        log_debug("nbiot_set_cfun_mode 1");
         return NBIOT_NETWORK_RETRY;
     }
 }
@@ -409,7 +404,7 @@ int nbiot_wait_server_connect_ready()
     rt_err_t result = RT_EOK;
 
     nbiot_lwm2m_deregister();
-    nbiot_config_mcu_version();
+    // nbiot_config_mcu_version();
     struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 86400, 1, 1, 1};
     if (! set_lwm2m_config_flag && nbiot_check_lwm2m_config(&config) != RT_EOK) {
         if (nbiot_set_lwm2m_config(&config) == RT_EOK) {
