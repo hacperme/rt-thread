@@ -351,7 +351,7 @@ void cat1_ota_apply(int* progress, void *node)
         log_info("transfer_cat1_ota_file %s", res_msg(res == RT_EOK));
         if (res != RT_EOK) goto _failed_;
 
-        res = rt_sem_take(&cat1_sem.fota_start, 60 * 1000);
+        res = rt_sem_take(&cat1_sem.fota_start, 3*60 * 1000);
         log_info("rt_sem_take cat1_sem.fota_start %s", res_msg(res == RT_EOK));
         if (res != RT_EOK) goto _failed_;
     }
