@@ -1276,7 +1276,7 @@ void main_business_entry(void)
                 if(state == OTA_TASK_STATE_DOWNLOADED)
                 {
                     int ret = nbiot_save_ota_data();
-                    log_debug("ret %d", ret);
+                    // log_debug("ret %d", ret);
                 }
                 else if(state == OTA_TASK_STATE_UPGRADEING)
                 {
@@ -1286,6 +1286,22 @@ void main_business_entry(void)
                         // 更新模组版本号
                         nbiot_config_mcu_version();
                     }
+
+                    nbiot_deinit();
+                    debug_led1_stop_flash();
+                    if (should_cat1_upload_files()) {
+                        sm_set_status(CAT1_INIT);
+                    }
+                    else {
+                        sm_set_status(ESP32_WIFI_TRANSFER_DATA);
+                    }
+                    break;
+                }
+                else if(state == OTA_TASK_STATE_FINISH)
+                {
+                    // clean old ota task
+                    log_debug("clean ota task");
+                    nbiot_clean_ota_task();
 
                     nbiot_deinit();
                     debug_led1_stop_flash();

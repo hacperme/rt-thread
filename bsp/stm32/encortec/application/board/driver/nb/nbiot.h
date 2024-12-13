@@ -139,4 +139,6 @@ ota_task_state_t nbiot_get_ota_task_state(void);
  */
 int nbiot_save_ota_data(void);
 
+void nbiot_clean_ota_task(void);
+
 #endif

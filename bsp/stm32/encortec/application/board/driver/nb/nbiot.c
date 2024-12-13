@@ -142,7 +142,7 @@ static int clean_ota_task(ota_task_t *task)
 static int get_file_index_by_componentNo(char *componentNo)
 {
     int ret = 0;
-    if(componentNo == NULL)
+    if(componentNo == NULL || strcasecmp(componentNo, "NB") == 0)
     {
         return ret;
     }
@@ -194,7 +194,7 @@ static int get_file_index_by_componentNo(char *componentNo)
 static UpgradeModule get_module_by_componentNo(char *componentNo)
 {
     UpgradeModule ret = UPGRADE_MODULE_NB;
-    if(componentNo == NULL)
+    if(componentNo == NULL || strcasecmp(componentNo, "NB") == 0)
     {
         return ret;
     }
@@ -289,7 +289,7 @@ static void parse_ota_task_data(const char* urcString, ota_task_t *ctl)
         ctl->type = FIRM_TYPE_MCU;
     }
 
-    if(ctl->type == FIRM_TYPE_MCU)
+    // if(ctl->type == FIRM_TYPE_MCU)
     {
         ctl->current_copmment = get_file_index_by_componentNo(componentNo);
         ctl->module = get_module_by_componentNo(componentNo);
@@ -357,68 +357,72 @@ static int parse_ota_firm_data(const char* urcString, ota_task_t *ctl)
     unsigned char md5Bytes[16] = {0};
 
     char cleanedString[256] = {0};
-    strncpy(cleanedString, urcString, sizeof(cleanedString) - 1);
-
-    cleanedString[strcspn(cleanedString, "\r\n")] = 0;
-
-    const char* start = cleanedString;
-    char* end;
-
-    end = strchr(start, '\"'); 
-    if (end) {
-        start = end + 1; 
-        end = strchr(start, '\"');
-        if (end) {
-            strncpy(componentNo, start, end - start);
-            componentNo[end - start] = '\0'; 
-            start = end + 2; 
-        }
-    }
-
-    log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
-    ctl->current_copmment = get_file_index_by_componentNo(componentNo);
-    
-    ctl->module = get_module_by_componentNo(componentNo);
-    log_debug("ctl->module: %d\n", ctl->module);
-
-    if (*start != '\0') {
-        length = atoi(start);
-        while (*start && *start != ',') start++; 
-        start++; 
-    }
-
-    log_debug("Length: %d\n", length);
-
-    if(length > 0)
+    if(ctl->type != FIRM_TYPE_MODULE)
     {
-        ctl->compoment[ctl->current_copmment].compomentSize = length;
-    }
+        strncpy(cleanedString, urcString, sizeof(cleanedString) - 1);
 
-    end = strchr(start, '\"');
-    if (end) {
-        start = end + 1; 
+        cleanedString[strcspn(cleanedString, "\r\n")] = 0;
+
+        const char* start = cleanedString;
+        char* end;
+
         end = strchr(start, '\"'); 
         if (end) {
-            strncpy(md5, start, end - start);
-            md5[end - start] = '\0';
+            start = end + 1; 
+            end = strchr(start, '\"');
+            if (end) {
+                strncpy(componentNo, start, end - start);
+                componentNo[end - start] = '\0'; 
+                start = end + 2; 
+            }
         }
-    }
 
-    if (convertMD5ToBytes(md5, md5Bytes, sizeof(md5Bytes)) == 0) 
-    {
-#if 0
-        log_debug("MD5 Bytes: ");
-        for (size_t i = 0; i < sizeof(md5Bytes); ++i) {
-            log_debug("%02x", md5Bytes[i]);
-            if (i < sizeof(md5Bytes) - 1) log_debug(" ");
+        log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
+        ctl->current_copmment = get_file_index_by_componentNo(componentNo);
+        
+        ctl->module = get_module_by_componentNo(componentNo);
+        log_debug("ctl->module: %d\n", ctl->module);
+
+        if (*start != '\0') {
+            length = atoi(start);
+            while (*start && *start != ',') start++; 
+            start++; 
         }
-        log_debug("\n");
+
+        log_debug("Length: %d\n", length);
+
+        if(length > 0)
+        {
+            ctl->compoment[ctl->current_copmment].compomentSize = length;
+        }
+
+        end = strchr(start, '\"');
+        if (end) {
+            start = end + 1; 
+            end = strchr(start, '\"'); 
+            if (end) {
+                strncpy(md5, start, end - start);
+                md5[end - start] = '\0';
+            }
+        }
+
+        if (convertMD5ToBytes(md5, md5Bytes, sizeof(md5Bytes)) == 0) 
+        {
+#if 0
+            log_debug("MD5 Bytes: ");
+            for (size_t i = 0; i < sizeof(md5Bytes); ++i) {
+                log_debug("%02x", md5Bytes[i]);
+                if (i < sizeof(md5Bytes) - 1) log_debug(" ");
+            }
+            log_debug("\n");
 #endif
-        rt_memcpy(ctl->compoment[ctl->current_copmment].md5Bytes, md5Bytes, sizeof(md5Bytes));
-    } else {
-        log_error("Invalid MD5 format.\n");
-        return -1;
+            rt_memcpy(ctl->compoment[ctl->current_copmment].md5Bytes, md5Bytes, sizeof(md5Bytes));
+        } else {
+            log_error("Invalid MD5 format.\n");
+            return -1;
+        }
     }
+    
     ctl->state = OTA_TASK_STATE_DOWNLOADING;
     save_ota_task_to_file(ctl);
 
@@ -433,79 +437,81 @@ static int parse_ota_downloaded_data(const char* urcString,  ota_task_t *ctl)
     int piece_length = 0;
 
     char cleanedString[256] = {0};
-    strncpy(cleanedString, urcString, sizeof(cleanedString) - 1);
+    if(ctl->type != FIRM_TYPE_MODULE)
+    {
+        strncpy(cleanedString, urcString, sizeof(cleanedString) - 1);
 
-    cleanedString[strcspn(cleanedString, "\r\n")] = 0;
+        cleanedString[strcspn(cleanedString, "\r\n")] = 0;
 
-    const char* start = cleanedString;
-    char* end;
+        const char* start = cleanedString;
+        char* end;
 
 
-    end = strchr(start, '\"'); 
-    if (end) {
-        start = end + 1; 
         end = strchr(start, '\"'); 
         if (end) {
-            strncpy(componentNo, start, end - start);
-            componentNo[end - start] = '\0'; 
-            start = end + 2; 
+            start = end + 1; 
+            end = strchr(start, '\"'); 
+            if (end) {
+                strncpy(componentNo, start, end - start);
+                componentNo[end - start] = '\0'; 
+                start = end + 2; 
+            }
+        }
+
+        log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
+        ctl->current_copmment = get_file_index_by_componentNo(componentNo);
+        if(strcasecmp(ctl->compoment[ctl->current_copmment].name, componentNo) != 0)
+        {
+            rt_memset(ctl->compoment[ctl->current_copmment].name, 0, sizeof(ctl->compoment[ctl->current_copmment].name));
+            rt_strcpy(ctl->compoment[ctl->current_copmment].name, componentNo);
+        }
+        ctl->module = get_module_by_componentNo(componentNo);
+        log_debug("ctl->module: %d\n", ctl->module);
+
+        if (*start != '\0') {
+            length = atoi(start);
+            while (*start && *start != ',') start++; 
+            start++;
+        }
+
+        log_debug("Length: %d\n", length);
+        if(length != ctl->compoment[ctl->current_copmment].compomentSize)
+        {
+            log_error("firm length mismatch: %d,%d", length, ctl->compoment[ctl->current_copmment].compomentSize);
+            ctl->compoment[ctl->current_copmment].compomentSize = length;
+        }
+
+        if (*start != '\0') {
+            startaddr = atoi(start);
+            while (*start && *start != ',') start++; 
+            start++; 
+        }
+
+        ctl->compoment[ctl->current_copmment].startaddr = startaddr;
+
+        if (*start != '\0') {
+            piece_length = atoi(start);
+        }
+
+        ctl->compoment[ctl->current_copmment].piece_length = piece_length;
+        rt_snprintf(ctl->compoment[ctl->current_copmment].fileName, 
+                        sizeof(ctl->compoment[ctl->current_copmment].fileName), "/fota/%s.bin", componentNo);
+        if(startaddr == 0)
+        {
+            ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "wb+");
+            ctl->compoment[ctl->current_copmment].downloaded_size = 0;
+        }
+        else
+        {
+            ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "rb+");
+        }
+        
+        if(ctl->compoment[ctl->current_copmment].fd == NULL)
+        {
+            log_debug("open ota file falid");
+            return -1;
         }
     }
-
-    log_debug("Component No: %s\n", strlen(componentNo) > 0 ? componentNo : "Empty");
-    ctl->current_copmment = get_file_index_by_componentNo(componentNo);
-    if(strcasecmp(ctl->compoment[ctl->current_copmment].name, componentNo) != 0)
-    {
-        rt_memset(ctl->compoment[ctl->current_copmment].name, 0, sizeof(ctl->compoment[ctl->current_copmment].name));
-        rt_strcpy(ctl->compoment[ctl->current_copmment].name, componentNo);
-    }
-    ctl->module = get_module_by_componentNo(componentNo);
-    log_debug("ctl->module: %d\n", ctl->module);
-
-    if (*start != '\0') {
-        length = atoi(start);
-        while (*start && *start != ',') start++; 
-        start++;
-    }
-
-    log_debug("Length: %d\n", length);
-    if(length != ctl->compoment[ctl->current_copmment].compomentSize)
-    {
-        log_error("firm length mismatch: %d,%d", length, ctl->compoment[ctl->current_copmment].compomentSize);
-        ctl->compoment[ctl->current_copmment].compomentSize = length;
-    }
-
-    if (*start != '\0') {
-        startaddr = atoi(start);
-        while (*start && *start != ',') start++; 
-        start++; 
-    }
-
-    ctl->compoment[ctl->current_copmment].startaddr = startaddr;
-
-    if (*start != '\0') {
-        piece_length = atoi(start);
-    }
-
-    ctl->compoment[ctl->current_copmment].piece_length = piece_length;
-    rt_snprintf(ctl->compoment[ctl->current_copmment].fileName, 
-                    sizeof(ctl->compoment[ctl->current_copmment].fileName), "/fota/%s.bin", componentNo);
-    if(startaddr == 0)
-    {
-        ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "wb+");
-        ctl->compoment[ctl->current_copmment].downloaded_size = 0;
-    }
-    else
-    {
-        ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "rb+");
-    }
-    
-    if(ctl->compoment[ctl->current_copmment].fd == NULL)
-    {
-        log_debug("open ota file falid");
-        return -1;
-    }
-
     ctl->state = OTA_TASK_STATE_DOWNLOADED;
     save_ota_task_to_file(ctl);
 
@@ -587,8 +593,37 @@ void nbiot_qiotevt_urc_handler(struct at_client *client, const char *data, rt_si
             case QIOT_OTA_UPDATING:
                 break;
             case QIOT_OTA_UPDATE_OK:
+                read_ota_task_from_file(&g_ota_task);
+                if(g_ota_task.type == FIRM_TYPE_MODULE)
+                {
+                    g_ota_task.state = OTA_TASK_STATE_FINISH;
+                    save_ota_task_to_file(&g_ota_task);
+                }
+                else
+                {
+                    if(g_ota_task.state == OTA_TASK_STATE_UPGRADEING)
+                    {
+                        g_ota_task.state = OTA_TASK_STATE_FINISH;
+                        save_ota_task_to_file(&g_ota_task);
+                    }
+                    
+                }
                 break;
             case QIOT_OTA_UPDATE_FAIL:
+                read_ota_task_from_file(&g_ota_task);
+                if(g_ota_task.type == FIRM_TYPE_MODULE)
+                {
+                    g_ota_task.state = OTA_TASK_STATE_FINISH;
+                    save_ota_task_to_file(&g_ota_task);
+                }
+                else
+                {
+                    if(g_ota_task.state == OTA_TASK_STATE_UPGRADEING)
+                    {
+                        g_ota_task.state = OTA_TASK_STATE_FINISH;
+                        save_ota_task_to_file(&g_ota_task);
+                    }
+                }
                 break;
             case QIOT_OTA_UPDATE_FLAG:
                 break;
@@ -1716,6 +1751,12 @@ int nbiot_save_ota_data(void)
     uint32_t offset = 0;
     uint32_t length = sizeof(tmp_data);
 
+    if(ctl->type == FIRM_TYPE_MODULE)
+    {
+        // log_debug("module firmware ota, no need downlaod to mcu");
+        return 0;
+    }
+
     if(ctl->state == OTA_TASK_STATE_UPGRADEING)
     {
         log_debug("in upgrading state");
@@ -1881,4 +1922,11 @@ EXIT:
     
     return (int)result;
 
+}
+
+void nbiot_clean_ota_task(void)
+{
+    ota_task_t *ctl = &g_ota_task;
+    ctl->state = OTA_TASK_STATE_NONE;
+    clean_ota_task(ctl);
 }
