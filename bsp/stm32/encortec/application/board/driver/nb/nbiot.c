@@ -47,6 +47,7 @@ typedef struct
     int compomentSize;
     unsigned char md5Bytes[16];
     int startaddr;
+    int downloaded_size;
     int piece_length;
     int state;
     FILE *fd;
@@ -309,6 +310,7 @@ static void parse_ota_task_data(const char* urcString, ota_task_t *ctl)
             ctl->compoment_cnt = 1;
         }
 
+        ctl->compoment_downlaoded_cnt = 0;
         ctl->state = OTA_TASK_STATE_RECV; // 有下发升级计划了
         
         rt_memset(&ctl->compoment[ctl->current_copmment], 0, sizeof(ota_compoment_t));
@@ -488,8 +490,16 @@ static int parse_ota_downloaded_data(const char* urcString,  ota_task_t *ctl)
     ctl->compoment[ctl->current_copmment].piece_length = piece_length;
     rt_snprintf(ctl->compoment[ctl->current_copmment].fileName, 
                     sizeof(ctl->compoment[ctl->current_copmment].fileName), "/fota/%s.bin", componentNo);
-
-    ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "wb+");
+    if(startaddr == 0)
+    {
+        ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "wb+");
+        ctl->compoment[ctl->current_copmment].downloaded_size = 0;
+    }
+    else
+    {
+        ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "rb+");
+    }
+    
     if(ctl->compoment[ctl->current_copmment].fd == NULL)
     {
         log_debug("open ota file falid");
@@ -557,6 +567,7 @@ void nbiot_qiotevt_urc_handler(struct at_client *client, const char *data, rt_si
             switch (QIOT_OTA_EVENT_CODE)
             {
             case QIOT_OTA_TASK_NOTIFY:
+                // read_ota_task_from_file(&g_ota_task);
                 parse_ota_task_data((const char *)event_data, &g_ota_task);
                 nbiot_ota_update_action(1);
                 break;
@@ -1716,7 +1727,7 @@ int nbiot_save_ota_data(void)
         return 1;
     }
     
-    offset = ctl->compoment[ctl->current_copmment].startaddr;
+    offset = ctl->compoment[ctl->current_copmment].startaddr+ctl->compoment[ctl->current_copmment].downloaded_size;
 
     rt_memset(at_cmd, 0, sizeof(at_cmd));
     rt_snprintf(at_cmd, sizeof(at_cmd)-1, "AT+QIOTOTARD=%d,%d", offset, length-50);
@@ -1774,11 +1785,11 @@ int nbiot_save_ota_data(void)
             size_t written = fwrite(tmp_data, 1, data_size, ctl->compoment[ctl->current_copmment].fd);
             if(written == data_size)
             {
-                ctl->compoment[ctl->current_copmment].startaddr += data_size;
-                if(ctl->compoment[ctl->current_copmment].startaddr == ctl->compoment[ctl->current_copmment].piece_length)
+                ctl->compoment[ctl->current_copmment].downloaded_size += data_size;
+                if(ctl->compoment[ctl->current_copmment].downloaded_size == ctl->compoment[ctl->current_copmment].piece_length)
                 {
                     // 文件分片下载完成
-                    if(ctl->compoment[ctl->current_copmment].piece_length == ctl->compoment[ctl->current_copmment].compomentSize)
+                    if(ctl->compoment[ctl->current_copmment].downloaded_size+ctl->compoment[ctl->current_copmment].startaddr == ctl->compoment[ctl->current_copmment].compomentSize)
                     {
                         if(ctl->compoment_downlaoded_cnt == (ctl->compoment_cnt - 1))
                         {
@@ -1828,6 +1839,8 @@ int nbiot_save_ota_data(void)
                             // 下载下一个文件
                             fclose(ctl->compoment[ctl->current_copmment].fd);
                             ctl->compoment[ctl->current_copmment].fd = RT_NULL;
+                            ctl->compoment[ctl->current_copmment].piece_length = 0;
+                            ctl->compoment[ctl->current_copmment].downloaded_size = 0;
                             ctl->compoment_downlaoded_cnt++;
                             save_ota_task_to_file(ctl);
                             nbiot_ota_update_action(3);
@@ -1843,6 +1856,9 @@ int nbiot_save_ota_data(void)
                     
                     // 需要下载下一个片段
                     ctl->compoment[ctl->current_copmment].piece_length = 0;
+                    ctl->compoment[ctl->current_copmment].downloaded_size = 0;
+                    fclose(ctl->compoment[ctl->current_copmment].fd);
+                    ctl->compoment[ctl->current_copmment].fd = RT_NULL;
                     nbiot_ota_update_action(2);
                     ctl->state = OTA_TASK_STATE_DOWNLOADING;
                     save_ota_task_to_file(ctl);
