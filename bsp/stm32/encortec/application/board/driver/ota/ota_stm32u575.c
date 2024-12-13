@@ -86,7 +86,25 @@ void stm32u575_ota_prepare(void *node)
 void stm32u575_ota_apply(int* progress, void *node)
 {
     UpgradeNode *_node = (UpgradeNode *)node;
-    rt_err_t res = set_stm32u575_ota_option(OTA_YES, _node->plan.file[0].file_name);
+    mbr_t mbr = RT_NULL;
+    rt_err_t res;
+    mbr = mbr_init();
+    if (mbr == RT_NULL) 
+    {
+        
+        _node->status = UPGRADE_STATUS_FAILED;
+        return;
+    }
+    log_debug("mbr->app_part:%d", mbr->app_part);
+    if(mbr->app_part == APP_B_PART)
+    {
+        res = set_stm32u575_ota_option(OTA_YES, _node->plan.file[0].file_name);
+    }
+    else
+    {
+        res = set_stm32u575_ota_option(OTA_YES, _node->plan.file[1].file_name);
+    }
+    
     log_debug("set_stm32u575_ota_option %s", res_msg(res == RT_EOK));
     _node->status = res == RT_EOK ? UPGRADE_STATUS_UPGRADING : UPGRADE_STATUS_FAILED;
 }
