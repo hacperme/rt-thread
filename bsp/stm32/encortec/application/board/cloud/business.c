@@ -1106,7 +1106,7 @@ void main_business_entry(void)
     wdg_init(100, feed_rtwdg);
     rt_device_control(wdg_device, RT_DEVICE_CTRL_WDT_START, RT_NULL);
 
-    wdg_create_soft(&wdg_id, 90*1000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
+    wdg_create_soft(&wdg_id, 300*1000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
     
     while (1)
     {
