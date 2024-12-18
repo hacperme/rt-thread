@@ -212,7 +212,7 @@ int collect_sensor_data()
     log_debug("collect sensor data");
 
     rt_uint16_t milliscond = 520;
-    rt_uint16_t threshold = 10;         // 0.1 g
+    rt_uint16_t threshold = 5;         // 0.1 g
     rt_uint8_t measure_val = 0x00;
     rt_uint8_t odr_val = 0x40;          // 1600Hz
     rt_uint8_t hpf_val = 0x03;
