@@ -742,7 +742,7 @@ rt_err_t cat1_set_network_config()
     // 先检查下 AT+QGMR 确认模组上面的固件是可以上云的包含 QTH字样的固件
     result = at_obj_exec_cmd(client, resp, "AT+QGMR");
     if (result != RT_EOK) {
-        LOG_D("at_obj_exec_cmd AT+QEREG=2 failed");
+        LOG_D("at_obj_exec_cmd AT+QGMR failed");
         goto ERROR;
     }
 
@@ -765,6 +765,13 @@ rt_err_t cat1_set_network_config()
         goto ERROR;
     }
     LOG_D("set AT+QIACT? success");
+
+	result = at_obj_exec_cmd(client, resp, "AT*BAND=5");
+    if (result != RT_EOK) {
+        LOG_E("at_obj_exec_cmd AT*BAND=5: %d", result);
+        goto ERROR;
+    }
+    LOG_D("set AT*BAND=5 success");
 
 ERROR:
     at_delete_resp(resp);

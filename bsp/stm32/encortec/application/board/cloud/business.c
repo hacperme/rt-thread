@@ -621,7 +621,6 @@ enum cat1_network_status cat1_wait_network_ready()
     }
     cat1_wait_network_retry_times += 1;
 
-    cat1_set_band();
     cat1_enable_echo(0);
     // wait network ready for cat1
     if (cat1_check_network(10) != RT_EOK) {
@@ -1224,8 +1223,10 @@ void main_business_entry(void)
                 if (rv == CAT1_NETWORK_NOT_RDY) {
                     antenna_type_switch();
                     cat1_set_cfun_mode(0);
+                    log_debug("cat1_set_cfun_mode 0");
                     rt_thread_mdelay(200);
                     cat1_set_cfun_mode(1);
+                    log_debug("cat1_set_cfun_mode 1");
                     sm_set_status(CAT1_WAIT_NETWORK_RDY);
                 }
                 else if (rv == CAT1_NETWORK_RDY) {

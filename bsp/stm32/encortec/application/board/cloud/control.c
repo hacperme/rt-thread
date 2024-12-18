@@ -225,12 +225,6 @@ rt_err_t cat1_power_ctrl(int state)
                 return result;
             }
             log_debug("recv rdy");
-
-            cat1_set_cfun_mode(0);
-            log_debug("cat1_set_cfun_mode 0");
-            rt_thread_mdelay(200);
-            cat1_set_cfun_mode(1);
-            log_debug("cat1_set_cfun_mode 1");
         }
         else {
              log_debug("cat1_check_state == RT_EOK");
