@@ -29,10 +29,7 @@
 typedef struct
 {
     rt_sem_t _rdy;
-    rt_sem_t _connected;
-    rt_sem_t _disconnected;
-    rt_sem_t _start;
-    rt_sem_t _stop;
+    rt_event_t esp_event;
 } qat_sem_s;
 
 static qat_sem_s _ql_at_sem = {0};
@@ -53,67 +50,51 @@ static struct at_urc urc_table[] = {
 static void urc_func(struct at_client *client ,const char *data, rt_size_t size)
 {
     LOG_E("urc data : %s, size:%d\n", data, size);
-    if(strncmp(data, "+ESPRDY", strlen("+ESPRDY")) == 0)
-    {
+    if(strncmp(data, "+ESPRDY", strlen("+ESPRDY")) == 0) {
         LOG_E("send +ESPRDY sem\n");
         rt_sem_release(_ql_at_sem._rdy);
     }
+    else if (strncmp(data, "+AP_STARTED", strlen("+AP_STARTED")) == 0) {
+        rt_event_send(_ql_at_sem.esp_event, AP_STARTED_EVENT);
+    }
     else if (strncmp(data, "+AP_STOPPED", strlen("+AP_STOPPED")) == 0) {
-
+        rt_event_send(_ql_at_sem.esp_event, AP_STOPPED_EVENT);
     }
     else if (strncmp(data, "+STA_DISCONNECTED", strlen("+STA_DISCONNECTED")) == 0) {
-        rt_sem_release(_ql_at_sem._disconnected);
+        rt_event_send(_ql_at_sem.esp_event, STA_DISCONNECT_EVENT);
     }
     else if (strncmp(data, "+STA_CONNECTED", strlen("+STA_CONNECTED")) == 0) {
-        rt_sem_release(_ql_at_sem._connected);
+        rt_event_send(_ql_at_sem.esp_event, STA_CONNECT_EVENT);
     }
-}
-
-rt_err_t esp_wait_start(rt_int32_t time)
-{
-    return rt_sem_take(_ql_at_sem._start, time);
-}
-
-rt_err_t esp_wait_stop(rt_int32_t time)
-{
-    return rt_sem_take(_ql_at_sem._stop, time);
-}
-
-rt_err_t esp_wait_connected(rt_int32_t time)
-{
-    return rt_sem_take(_ql_at_sem._connected, time);
-}
-
-rt_err_t esp_wait_disconnected(rt_int32_t time)
-{
-    return rt_sem_take(_ql_at_sem._disconnected, time);
 }
 
 static void dt_urc_func(struct at_client *client ,const char *data, rt_size_t size)
 {
     LOG_E("dt urc data : %s, size:%d\n", data, size);
-	if(strncmp(data, "+DT:START", strlen("+DT:START")) == 0)
-	{
-        rt_sem_release(_ql_at_sem._start);
+	if(strncmp(data, "+DT:START", strlen("+DT:START")) == 0) {
+        rt_event_send(_ql_at_sem.esp_event, DT_STARTED_EVENT);
 	} else if (strncmp(data, "+DT:ERR", strlen("+DT:ERR")) == 0)
 	{
         at_client_t client_urc = at_client_get(ESP_UART_NUM);
         AT_SEND_CMD(client_urc, resp, "AT+QTRANSF=0", ;);
         LOG_E("send +DT:ERR sem\n");
-        rt_sem_release(_ql_at_sem._stop);
+        rt_event_send(_ql_at_sem.esp_event, DT_ERROR_EVENT);
 	} else if (strncmp(data, "+DT:SUCCESS", strlen("+DT:SUCCESS")) == 0)
 	{
         at_client_t client_urc = at_client_get(ESP_UART_NUM);
         AT_SEND_CMD(client_urc, resp, "AT+QTRANSF=0", ;);
         LOG_E("send +DT:SUCCESS sem\n");
-        rt_sem_release(_ql_at_sem._stop);
+        rt_event_send(_ql_at_sem.esp_event, DT_SUCCESS_EVENT);
+        
 	} else if (strncmp(data, "+DT:STA_NO_CONNECT_LONG_TIME", strlen("+DT:STA_NO_CONNECT_LONG_TIME"))){
         LOG_E("send +DT:STA_NO_CONNECT_LONG_TIME sem\n");
-        rt_sem_release(_ql_at_sem._stop);
-    } else if (strncmp(data, "+DT:CLOSE", strlen("+DT:CLOSE")) == 0) 
-    {
+        rt_event_send(_ql_at_sem.esp_event, DT_NO_CONN_LONG_TIME);
+    } else if (strncmp(data, "+DT:CLOSE", strlen("+DT:CLOSE")) == 0) {
+        rt_event_send(_ql_at_sem.esp_event, DT_CLOSE_EVENT);
     }
 }
+
+
 bool esp_at_init(void)
 {
     /* 初始化第一个 AT Client */
@@ -129,11 +110,8 @@ bool esp_at_init(void)
     }
 
     _ql_at_sem._rdy = rt_sem_create("rdy_sem", 0, RT_IPC_FLAG_PRIO);
-    _ql_at_sem._start = rt_sem_create("start_sem", 0, RT_IPC_FLAG_PRIO);
-    _ql_at_sem._stop = rt_sem_create("stop_sem", 0, RT_IPC_FLAG_PRIO);
-    _ql_at_sem._connected = rt_sem_create("conn_sem", 0, RT_IPC_FLAG_PRIO);
-    _ql_at_sem._disconnected = rt_sem_create("disconn_sem", 0, RT_IPC_FLAG_PRIO);
-	
+    _ql_at_sem.esp_event = rt_event_create("esp_event", RT_IPC_FLAG_PRIO);
+
     LOG_I("AT Client1 (uart5) initialized success\n");
 	at_obj_set_urc_table(at_client_get(ESP_UART_NUM), urc_table, sizeof(urc_table) / sizeof(urc_table[0]));
 
@@ -148,6 +126,11 @@ bool esp_at_deinit(void)
 		_ql_at_sem._rdy = NULL;
 	}
 
+    if (_ql_at_sem.esp_event) {
+        rt_event_delete(_ql_at_sem.esp_event);
+        _ql_at_sem.esp_event = NULL;
+    }
+
     if(resp)
 	{
 		at_delete_resp(resp);
@@ -155,6 +138,11 @@ bool esp_at_deinit(void)
 	}
 
 	return true;
+}
+
+rt_err_t esp_recv_event(rt_uint32_t *event)
+{
+    return rt_event_recv(_ql_at_sem.esp_event, ESP_ALL_EVENT, RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, RT_WAITING_NO, event);
 }
 
 rt_err_t esp_wait_rdy()

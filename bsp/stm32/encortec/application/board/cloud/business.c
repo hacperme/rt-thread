@@ -20,6 +20,8 @@
 #include "voltage_adc.h"
 #include "led.h"
 #include "watch_dog.h"
+#include "at_data_transf.h"
+
 
 #include "logging.h"
 // #define DBG_TAG "business"
@@ -1262,15 +1264,7 @@ void main_business_entry(void)
     }
 }
 
-
-extern rt_err_t esp_wait_rdy();
-extern rt_err_t esp_wait_start(rt_int32_t time);
-extern rt_err_t esp_wait_stop(rt_int32_t time);
-extern rt_err_t esp_wait_connected(rt_int32_t time);
-extern rt_err_t esp_wait_disconnected(rt_int32_t time);
-extern bool esp_at_init(void);
 extern void nand_to_esp32(void);
-extern rt_err_t esp32_transf_data(const char* ssid, size_t ssid_len, const char* psw, size_t psw_len, const char* dk_str, size_t dk_len);
 rt_err_t esp32_wifi_transfer()
 {
     rt_err_t result = RT_EOK;
@@ -1304,39 +1298,19 @@ rt_err_t esp32_wifi_transfer()
             debug_led1_stop_flash();
             return result;
         }
-
-        int is_connected = 0;
-        for (int i=0; i < 30; i++) {
-            if (esp_wait_connected(rt_tick_from_millisecond(10000)) == 0) {
-                is_connected = 1;
+        
+        rt_uint32_t event;
+        for (int i=0; i<300; i++) {
+            rt_thread_mdelay(1000);
+            if (esp_recv_event(&event) != RT_EOK) {
+                continue;
+            }
+            if (event & (STA_CONNECT_EVENT | AP_STARTED_EVENT | DT_STARTED_EVENT)) {
+                i = 0;  // 重新计时
+            }
+            if (event & (STA_DISCONNECT_EVENT | AP_STOPPED_EVENT | DT_ERROR_EVENT | DT_SUCCESS_EVENT | DT_CLOSE_EVENT | DT_NO_CONN_LONG_TIME)) {
                 break;
             }
-            wdg_feed_soft(wdg_id);
-        }
-        log_debug("esp_wait_connected: %d", is_connected);
-
-        int is_started = 0;
-        if (is_connected) {
-            for (int j=0; j < 30; j++) {
-                if (esp_wait_start(rt_tick_from_millisecond(10000)) == 0) {
-                    is_started = 1;
-                    break;
-                }
-                wdg_feed_soft(wdg_id);
-            }
-            log_debug("esp_wait_start: %d", is_started);
-        }
-
-        int is_stopped = 0;
-        if (is_started) {
-            for (int k=0; k < 90; k++) {
-                if (esp_wait_stop(rt_tick_from_millisecond(10000)) == 0) {
-                    is_stopped = 1;
-                    break;
-                }
-                wdg_feed_soft(wdg_id);
-            }
-            log_debug("esp_wait_stop: %d", is_stopped);
         }
 
         debug_led1_stop_flash();
