@@ -1074,7 +1074,7 @@ void main_business_entry(void)
             settings_params->cat1_collect_interval = 600;
         }
         if (settings_params->nb_collect_interval == 0) {
-            settings_params->nb_collect_interval = 300;
+            settings_params->nb_collect_interval = 900;
         }
 
         log_info("settings_params->cat1_collect_interval: %d", settings_params->cat1_collect_interval);
