@@ -596,7 +596,7 @@ rt_err_t cat1_check_state()
         client = at_client_get("uart1");
     }
 
-    for (int i=0; i < 10; i++) {
+    for (int i=0; i < 3; i++) {
         result = at_obj_exec_cmd(client, resp, "AT");
         LOG_D("at_obj_exec_cmd result: %d", result);
         if (result == RT_EOK) {
