@@ -16,6 +16,15 @@
 // #define DBG_LVL DBG_LOG
 // #include <rtdbg.h>
 
+#define NBIOT_OTA_DATA_MSG_BUFFER_LENGTH (1024)
+typedef struct 
+{
+    uint32_t data_offset;
+    uint32_t data_size;
+    uint8_t data[NBIOT_OTA_DATA_MSG_BUFFER_LENGTH];
+}nbiot_ota_data_msg_t;
+
+
 #define NBIOT_OTA_TASK_CONFIG_FILE "/fota/ota_task.conf"
 
 extern void read_app_version_information(uint8_t **app_version, uint8_t **app_subedition, uint8_t **app_build_time);
@@ -34,7 +43,7 @@ static int QIOT_PLATFORM_EVENT_CODE = -1;
 static int QIOT_WAKEUP_EVENT_CODE = -1;
 
 static rt_mq_t cclk_data_urc_queue = RT_NULL;
-
+static rt_mq_t ota_data_urc_queue = RT_NULL;
 
 typedef struct
 {
@@ -659,9 +668,51 @@ void nbiot_cclk_urc_handler(struct at_client *client, const char *data, rt_size_
     }
 }
 
+void nbiot_ota_read_data_urc_handler(struct at_client *client, const char *data, rt_size_t size)
+{
+    // +QIOTOTARD: 37012,974\r\n
+    int data_offset = 0;
+    int data_size = 0;
+    nbiot_ota_data_msg_t send_msg = {0};
+    int read_size = 0;
+    rt_err_t result;
+    rt_memset(&send_msg, 0, sizeof(nbiot_ota_data_msg_t));
+    log_info("nbiot_ota_read_data_urc_handler called, size: %d; data: %s\n", size, data);
+    sscanf(data, "+QIOTOTARD: %d,%d", &data_offset, &data_size);
+    log_info(" data_offset %d; data_size %d\n", data_offset, data_size);
+    send_msg.data_offset = data_offset;
+    send_msg.data_size = 0;
+    if(data_size > 0)
+    {
+        do
+        {
+            read_size = at_client_obj_recv(client, send_msg.data, data_size, rt_tick_from_millisecond(10*1000));
+            // log_info("read_size %d\n", read_size);
+            if(read_size > 0)
+            {
+                send_msg.data_size += read_size;
+                data_size -= read_size;
+            }
+        } while (data_size);  
+    }
+
+    log_info("send_msg.data_size %d\n", send_msg.data_size);
+
+    if(ota_data_urc_queue)
+    {
+        result = rt_mq_send_wait(ota_data_urc_queue, &send_msg, sizeof(nbiot_ota_data_msg_t), RT_WAITING_FOREVER);
+        if (result != RT_EOK) {
+            log_error("nbiot_ota_read_data_urc_handler %d\n", result);
+        }
+    }
+    
+
+}
+
 static struct at_urc nbiot_urc_table[] = {
     {"+QIOTEVT: ", "\r\n", nbiot_qiotevt_urc_handler},
     {"+CCLK: ", "\r\n", nbiot_cclk_urc_handler},
+    {"+QIOTOTARD: ", "\r\n", nbiot_ota_read_data_urc_handler},
 };
 
 rt_err_t nbiot_at_client_init(void)
@@ -698,6 +749,12 @@ rt_err_t nbiot_at_client_init(void)
     cclk_data_urc_queue = rt_mq_create("cclk_data_urc_queue", 64, 1, RT_IPC_FLAG_FIFO);
     if (cclk_data_urc_queue == RT_NULL) {
         log_error("cclk_data_urc_queue create failed!\n");
+        return -RT_ERROR;
+    }
+
+    ota_data_urc_queue = rt_mq_create("ota_data_urc_queue", sizeof(nbiot_ota_data_msg_t), 1, RT_IPC_FLAG_FIFO);
+    if (ota_data_urc_queue == RT_NULL) {
+        log_error("ota_data_urc_queue create failed!\n");
         return -RT_ERROR;
     }
 
@@ -1736,20 +1793,17 @@ int nbiot_save_ota_data(void)
 {
     rt_err_t result = RT_EOK;
     at_client_t client = RT_NULL;
-    at_response_t resp = RT_NULL;
     char at_cmd[128] = {0};
     const char *resp_line = RT_NULL;
     int data_offset = 0;
     int data_size = 0;
-    int line_offset = 0;
     ota_task_t *ctl = &g_ota_task;
     UpgradeNode ota_node = {0};
     UpgradePlan plan = {0};
+    static nbiot_ota_data_msg_t recv_msg = {0};
+    int ret = 0;
 
-
-    static unsigned char tmp_data[1024] = {0};
     uint32_t offset = 0;
-    uint32_t length = sizeof(tmp_data);
 
     if(ctl->type == FIRM_TYPE_MODULE)
     {
@@ -1771,154 +1825,136 @@ int nbiot_save_ota_data(void)
     offset = ctl->compoment[ctl->current_copmment].startaddr+ctl->compoment[ctl->current_copmment].downloaded_size;
 
     rt_memset(at_cmd, 0, sizeof(at_cmd));
-    rt_snprintf(at_cmd, sizeof(at_cmd)-1, "AT+QIOTOTARD=%d,%d", offset, length-50);
+    rt_snprintf(at_cmd, sizeof(at_cmd)-1, "AT+QIOTOTARD=%d,%d", offset, NBIOT_OTA_DATA_MSG_BUFFER_LENGTH-50);
     client = at_client_get(NBIOT_AT_UART_NAME);
     if (client == RT_NULL) {
         log_error("nbiot at client not inited!");
         result =  -1;
         goto EXIT;
     }
-    resp = at_create_resp(1024, 0, rt_tick_from_millisecond(3000));
-    if (resp == RT_NULL) {
-        log_error("create resp failed.");
+
+    if(ota_data_urc_queue == NULL)
+    {
+        log_error("ota_data_urc_queue not inited!");
         result =  -1;
         goto EXIT;
     }
 
-    result = at_obj_exec_cmd(client, resp, at_cmd);
+
+    result = at_obj_exec_cmd(client, NULL, at_cmd);
     if (result != RT_EOK) {
         result =  -1;
         goto EXIT;
     }
     else
     {
-        resp_line = at_resp_get_line(resp, 1);
-        if (resp_line == RT_NULL) 
-        {
-            log_error("resp_line 2 is null");
-            result =  -1;
-            goto EXIT;
-        }
-        sscanf(resp_line, "+QIOTOTARD: %d,%d", &data_offset, &data_size);
-        if(data_offset == offset && data_size > 0)
-        {
-            log_debug("resp->line_counts:%d", resp->line_counts);
-
-            resp_line = RT_NULL;
-            resp_line = at_resp_get_line(resp, 2);
-            if(resp_line == RT_NULL)
+ 
+        rt_memset(&recv_msg, 0, sizeof(nbiot_ota_data_msg_t));
+        ret = rt_mq_recv(ota_data_urc_queue, &recv_msg, sizeof(nbiot_ota_data_msg_t), RT_WAITING_FOREVER);
+        log_info("rt_mq_recv ret %d\n", ret);
+        if(ret > 0)
+        {   
+            if(recv_msg.data_offset == offset && recv_msg.data_size > 0)
             {
-                log_error("resp_line 3 is null");
-                result =  -1;
-                goto EXIT;
-            }
-
-            line_offset = resp_line - resp->buf;
-            log_debug("line_offset:%d", line_offset);
-            rt_memcpy(tmp_data, resp->raw_data_buf+line_offset, data_size);
-#if 0
-            for (size_t i = 0; i < 16; i++)
-            {
-                log_debug("0x%02x", tmp_data[i]);
-            }
-#endif
-            fseek(ctl->compoment[ctl->current_copmment].fd, offset, SEEK_SET);
-            size_t written = fwrite(tmp_data, 1, data_size, ctl->compoment[ctl->current_copmment].fd);
-            if(written == data_size)
-            {
-                ctl->compoment[ctl->current_copmment].downloaded_size += data_size;
-                if(ctl->compoment[ctl->current_copmment].downloaded_size == ctl->compoment[ctl->current_copmment].piece_length)
+                fseek(ctl->compoment[ctl->current_copmment].fd, offset, SEEK_SET);
+                size_t written = fwrite(recv_msg.data, 1, recv_msg.data_size, ctl->compoment[ctl->current_copmment].fd);
+                if(written == recv_msg.data_size)
                 {
-                    // 文件分片下载完成
-                    if(ctl->compoment[ctl->current_copmment].downloaded_size+ctl->compoment[ctl->current_copmment].startaddr == ctl->compoment[ctl->current_copmment].compomentSize)
+                    ctl->compoment[ctl->current_copmment].downloaded_size += recv_msg.data_size;
+                    if(ctl->compoment[ctl->current_copmment].downloaded_size == ctl->compoment[ctl->current_copmment].piece_length)
                     {
-                        if(ctl->compoment_downlaoded_cnt == (ctl->compoment_cnt - 1))
+                        // 文件分片下载完成
+                        if(ctl->compoment[ctl->current_copmment].downloaded_size+ctl->compoment[ctl->current_copmment].startaddr == ctl->compoment[ctl->current_copmment].compomentSize)
                         {
-                            // 整个文件下载完成
-                            
-                            fclose(ctl->compoment[ctl->current_copmment].fd);
-                            ctl->compoment[ctl->current_copmment].fd = RT_NULL;
-
-                            rt_memset(&plan, 0, sizeof(UpgradePlan));
-                            plan.file_cnt = ctl->compoment_cnt;
-
-                            rt_strcpy(plan.target_version, ctl->compoment[ctl->current_copmment].target_version);
-                            for (size_t i = 0; i < ctl->compoment_cnt; i++)
+                            if(ctl->compoment_downlaoded_cnt == (ctl->compoment_cnt - 1))
                             {
-                                rt_strcpy(plan.file[i].file_name,  ctl->compoment[i].fileName);
-                                log_debug("file:%s", plan.file[i].file_name);
-                                rt_memcpy(plan.file[i].file_md5, ctl->compoment[i].md5Bytes, 16);
-                                log_debug(
-                                    "md5 %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
-                                    plan.file[i].file_md5[0], plan.file[i].file_md5[1], plan.file[i].file_md5[2], plan.file[i].file_md5[3],
-                                    plan.file[i].file_md5[4], plan.file[i].file_md5[5], plan.file[i].file_md5[6], plan.file[i].file_md5[7],
-                                    plan.file[i].file_md5[8], plan.file[i].file_md5[9], plan.file[i].file_md5[10], plan.file[i].file_md5[11],
-                                    plan.file[i].file_md5[12], plan.file[i].file_md5[13], plan.file[i].file_md5[14], plan.file[i].file_md5[15]
-                                );
-                            }
-                            log_debug("ctl->module=%d", ctl->module);
-                            set_module(ctl->module, &plan);
-                            get_module(ctl->module, &ota_node);
-                            log_debug("ota_node.status=%d", ota_node.status);
-                            log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
-                            log_debug("ota_node.plan.file[0].file_name=%s", ota_node.plan.file[0].file_name);
-                            log_debug("ota_node.ops.prepare=0x%08X", ota_node.ops.prepare);
-                            log_debug("ota_node.ops.apply=0x%08X", ota_node.ops.apply);
-                            log_debug("ota_node.ops.finish=0x%08X", ota_node.ops.finish);
-                            ota_node.status = UPGRADE_STATUS_DOWNLOADED;
-                            log_debug("ota_node.status=%d", ota_node.status);
-                            save_module(&ota_node);
-                            ctl->state = OTA_TASK_STATE_UPGRADEING;
-                            save_ota_task_to_file(ctl);
+                                // 整个文件下载完成
+                                
+                                fclose(ctl->compoment[ctl->current_copmment].fd);
+                                ctl->compoment[ctl->current_copmment].fd = RT_NULL;
 
-                            nbiot_ota_update_action(3);
-                            result = 0;
-                            goto EXIT;
-                        }
-                        else
-                        {
-                            // 下载下一个文件
-                            fclose(ctl->compoment[ctl->current_copmment].fd);
-                            ctl->compoment[ctl->current_copmment].fd = RT_NULL;
-                            ctl->compoment[ctl->current_copmment].piece_length = 0;
-                            ctl->compoment[ctl->current_copmment].downloaded_size = 0;
-                            ctl->compoment_downlaoded_cnt++;
-                            save_ota_task_to_file(ctl);
-                            nbiot_ota_update_action(3);
-                            // 上报组件新版本才能下载下一个组件
-                            nbiot_report_component_version(ctl->compoment[ctl->current_copmment].name,ctl->compoment[ctl->current_copmment].target_version);
-                            ctl->state = OTA_TASK_STATE_DOWNLOADING;
-                            save_ota_task_to_file(ctl);
-                            result = 1;
-                            goto EXIT;
+                                rt_memset(&plan, 0, sizeof(UpgradePlan));
+                                plan.file_cnt = ctl->compoment_cnt;
+
+                                rt_strcpy(plan.target_version, ctl->compoment[ctl->current_copmment].target_version);
+                                for (size_t i = 0; i < ctl->compoment_cnt; i++)
+                                {
+                                    rt_strcpy(plan.file[i].file_name,  ctl->compoment[i].fileName);
+                                    log_debug("file:%s", plan.file[i].file_name);
+                                    rt_memcpy(plan.file[i].file_md5, ctl->compoment[i].md5Bytes, 16);
+                                    log_debug(
+                                        "md5 %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
+                                        plan.file[i].file_md5[0], plan.file[i].file_md5[1], plan.file[i].file_md5[2], plan.file[i].file_md5[3],
+                                        plan.file[i].file_md5[4], plan.file[i].file_md5[5], plan.file[i].file_md5[6], plan.file[i].file_md5[7],
+                                        plan.file[i].file_md5[8], plan.file[i].file_md5[9], plan.file[i].file_md5[10], plan.file[i].file_md5[11],
+                                        plan.file[i].file_md5[12], plan.file[i].file_md5[13], plan.file[i].file_md5[14], plan.file[i].file_md5[15]
+                                    );
+                                }
+                                log_debug("ctl->module=%d", ctl->module);
+                                set_module(ctl->module, &plan);
+                                get_module(ctl->module, &ota_node);
+                                log_debug("ota_node.status=%d", ota_node.status);
+                                log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
+                                log_debug("ota_node.plan.file[0].file_name=%s", ota_node.plan.file[0].file_name);
+                                log_debug("ota_node.ops.prepare=0x%08X", ota_node.ops.prepare);
+                                log_debug("ota_node.ops.apply=0x%08X", ota_node.ops.apply);
+                                log_debug("ota_node.ops.finish=0x%08X", ota_node.ops.finish);
+                                ota_node.status = UPGRADE_STATUS_DOWNLOADED;
+                                log_debug("ota_node.status=%d", ota_node.status);
+                                save_module(&ota_node);
+                                ctl->state = OTA_TASK_STATE_UPGRADEING;
+                                save_ota_task_to_file(ctl);
+
+                                nbiot_ota_update_action(3);
+                                result = 0;
+                                goto EXIT;
+                            }
+                            else
+                            {
+                                // 下载下一个文件
+                                fclose(ctl->compoment[ctl->current_copmment].fd);
+                                ctl->compoment[ctl->current_copmment].fd = RT_NULL;
+                                ctl->compoment[ctl->current_copmment].piece_length = 0;
+                                ctl->compoment[ctl->current_copmment].downloaded_size = 0;
+                                ctl->compoment_downlaoded_cnt++;
+                                save_ota_task_to_file(ctl);
+                                nbiot_ota_update_action(3);
+                                // 上报组件新版本才能下载下一个组件
+                                nbiot_report_component_version(ctl->compoment[ctl->current_copmment].name,ctl->compoment[ctl->current_copmment].target_version);
+                                ctl->state = OTA_TASK_STATE_DOWNLOADING;
+                                save_ota_task_to_file(ctl);
+                                result = 1;
+                                goto EXIT;
+                            }
+                            
                         }
                         
+                        // 需要下载下一个片段
+                        ctl->compoment[ctl->current_copmment].piece_length = 0;
+                        ctl->compoment[ctl->current_copmment].downloaded_size = 0;
+                        fclose(ctl->compoment[ctl->current_copmment].fd);
+                        ctl->compoment[ctl->current_copmment].fd = RT_NULL;
+                        nbiot_ota_update_action(2);
+                        ctl->state = OTA_TASK_STATE_DOWNLOADING;
+                        save_ota_task_to_file(ctl);
+                        result = 2;
+                        goto EXIT;
                     }
-                    
-                    // 需要下载下一个片段
-                    ctl->compoment[ctl->current_copmment].piece_length = 0;
-                    ctl->compoment[ctl->current_copmment].downloaded_size = 0;
-                    fclose(ctl->compoment[ctl->current_copmment].fd);
-                    ctl->compoment[ctl->current_copmment].fd = RT_NULL;
-                    nbiot_ota_update_action(2);
-                    ctl->state = OTA_TASK_STATE_DOWNLOADING;
-                    save_ota_task_to_file(ctl);
-                    result = 2;
+
+                    // 持续读取固件数据
+                    result = 3;
                     goto EXIT;
                 }
-
-                // 持续读取固件数据
-                result = 3;
-                goto EXIT;
             }
+        }
+        else
+        {
+            result =  -1;
+            goto EXIT;
         }
     }
 
 EXIT:
-    if(resp)
-    {
-        at_delete_resp(resp);
-    }
     
     return (int)result;
 
