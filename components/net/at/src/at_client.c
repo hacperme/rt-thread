@@ -66,13 +66,6 @@ at_response_t at_create_resp(rt_size_t buf_size, rt_size_t line_num, rt_int32_t 
         rt_free(resp);
         return RT_NULL;
     }
-    resp->raw_data_buf = (char *) rt_calloc(1, buf_size);
-    if (resp->raw_data_buf == RT_NULL)
-    {
-        LOG_E("AT create response object failed! No memory for response buffer!");
-        rt_free(resp);
-        return RT_NULL;
-    }
 
     resp->buf_size = buf_size;
     resp->line_num = line_num;
@@ -92,11 +85,6 @@ void at_delete_resp(at_response_t resp)
     if (resp && resp->buf)
     {
         rt_free(resp->buf);
-    }
-
-    if(resp->raw_data_buf)
-    {
-        rt_free(resp->raw_data_buf);
     }
 
     if (resp)
@@ -138,18 +126,6 @@ at_response_t at_resp_set_info(at_response_t resp, rt_size_t buf_size, rt_size_t
         {
             resp->buf = p_temp;
         }
-
-        p_temp = (char *) rt_realloc(resp->raw_data_buf, buf_size);
-        if (p_temp == RT_NULL)
-        {
-            LOG_D("No memory for realloc response raw_data_buf size(%d).", buf_size);
-            return RT_NULL;
-        }
-        else
-        {
-            resp->raw_data_buf = p_temp;
-        }
-
     }
 
     resp->line_num = line_num;
@@ -756,9 +732,6 @@ static void client_parser(at_client_t client)
                 {
                     /* copy response lines, separated by '\0' */
                     rt_memcpy(resp->buf + resp->buf_len, client->recv_line_buf, client->recv_line_len);
-                    rt_memcpy(resp->raw_data_buf + resp->buf_len, client->recv_line_buf, client->recv_line_len-1);
-                    
-                    *(resp->raw_data_buf + resp->buf_len+client->recv_line_len-1) = end_ch;
 
                     /* update the current response information */
                     resp->buf_len += client->recv_line_len;
