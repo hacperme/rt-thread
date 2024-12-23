@@ -53,6 +53,7 @@ enum {
     CAT1_UPLOAD_FILE,
     ESP32_WIFI_TRANSFER_DATA,
     SLEEP,
+    CHECK_ANTENNA_SIGNAL_STRENGTH
 };
 
 // static rt_sem_t stm32_sleep_ack_sem = RT_NULL;
@@ -106,6 +107,9 @@ int external_devices_init()
 {
     log_debug("external devices init");
     rt_err_t res = RT_EOK;
+
+    nbiot_at_client_init();  // nb at engine
+    at_ssl_client_init();  // cat1 at engine
 
     //TODO: check file system `GNSS.reported`
     sensor_pwron_pin_enable(PIN_HIGH);
@@ -552,6 +556,9 @@ enum nbiot_report_sensor_data_status {
 
 int nbiot_report_sensor_data_to_server()
 {
+    int rssi = 99;
+    int ber = 99;
+
     if (nbiot_report_sensor_data_retry_times >= 3) {
         log_debug("nbiot_report_sensor_data_retry_times >= 3, goto cat1 upload file");
         return NBIOT_REPORT_SENSOR_DATA_FAILED;
@@ -587,7 +594,9 @@ int nbiot_report_sensor_data_to_server()
         cJSON_AddNumberToObject(data, "16", sensor_data.cur_vol);  // Conversion voltage
         cJSON_AddNumberToObject(data, "17", sensor_data.vcap_vol);  // Capacitance voltage
         cJSON_AddNumberToObject(data, "18", sensor_data.vbat_vol);  // Battery voltage
-        cJSON_AddNumberToObject(data, "20", 26);  // NB RSSI
+
+        get_nbiot_csq(&rssi, &ber);
+        cJSON_AddNumberToObject(data, "20", rssi);  // NB RSSI
     }
 
     char *data_string = cJSON_PrintUnformatted(data);
@@ -1130,6 +1139,13 @@ void main_business_entry(void)
                 if (reset_source_flag) {
                     debug_led1_off();
                 }
+                sm_set_status(CHECK_ANTENNA_SIGNAL_STRENGTH);
+                break;
+            case CHECK_ANTENNA_SIGNAL_STRENGTH:
+                // 首次上电检查主副天线信号强度
+                if (reset_source_flag || get_antenna_from_file() == RT_ERROR) {
+                    check_antenna_signal_strength(reset_source_flag);
+                }
                 sm_set_status(NBIOT_INIT);
                 break;
             case NBIOT_INIT:
@@ -1144,7 +1160,6 @@ void main_business_entry(void)
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_NETWORK_RETRY) {
-                    antenna_type_switch();
                     nbiot_set_cfun_mode(0);
                     log_debug("nbiot_set_cfun_mode 0");
                     rt_thread_mdelay(200);
@@ -1223,7 +1238,6 @@ void main_business_entry(void)
             case CAT1_WAIT_NETWORK_RDY:
                 rv = cat1_wait_network_ready();
                 if (rv == CAT1_NETWORK_NOT_RDY) {
-                    antenna_type_switch();
                     cat1_set_cfun_mode(0);
                     log_debug("cat1_set_cfun_mode 0");
                     rt_thread_mdelay(200);

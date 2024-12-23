@@ -88,4 +88,6 @@ rt_err_t get_nbiot_imei(char *output);
 /* report mcu version to cloud */
 rt_err_t nbiot_config_mcu_version(void);
 
+rt_err_t get_nbiot_csq(int *rssi, int *ber);
+
 #endif

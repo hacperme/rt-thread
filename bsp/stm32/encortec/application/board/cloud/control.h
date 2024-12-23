@@ -55,4 +55,7 @@ rt_err_t debug_led1_pin_enable(rt_uint8_t mode);
 void save_imei_to_file(const char *imei);
 void read_imei_from_file(char *output, int read_length);
 
+void check_antenna_signal_strength();
+rt_err_t get_antenna_from_file();
+
 #endif

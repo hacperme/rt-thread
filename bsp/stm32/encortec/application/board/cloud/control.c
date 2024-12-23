@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <rtthread.h>
 #include "board.h"
 #include "lpm.h"
@@ -185,10 +186,111 @@ void sim_deinit()
     // do nothing
 }
 
+
+// 从文件中读取最有信号天线
+rt_err_t get_antenna_from_file()
+{
+    FILE *fp = fopen("/antenna_signal.txt", "r");
+    if (fp == NULL) {
+        log_debug("cannot open antenna_signal.txt");
+        return RT_ERROR;
+    }
+
+    char antenna_type = '\0';
+    fread(&antenna_type, 1, 1, fp);
+    if (antenna_type == '0') {
+        current_antenna = MAIN_ANT;
+        log_debug("got antenna from file: %s\n", "MAIN_ANT");
+        fclose(fp);
+        return RT_EOK;
+    }
+    else if (antenna_type == '1') {
+        current_antenna = REMPTE_ANT;
+        log_debug("got antenna from file: %s\n", "REMPTE_ANT");
+        fclose(fp);
+        return RT_EOK;
+    }
+    else {
+        log_debug("got antenna from file: %s\n", "FAILED");
+        fclose(fp);
+        return RT_ERROR;
+    }
+}
+
+
+// 使用nb两次注网来选择最优信号强度的天线
+void check_antenna_signal_strength()
+{
+    // param: force, 1 表示首次上电强制检查；0 表示非首次上电检查记录
+    FILE *fp = fopen("/antenna_signal.txt", "w");
+    if (fp == NULL) {
+        current_antenna = MAIN_ANT;
+        log_debug("cannot open antenna_signal.txt, set antenna to default MAIN_ANT");
+        return;
+    }
+
+    // 测试主天线
+    antenna_active();
+    antenna_switch_to_module(NBIOT_MODULE);
+    sim_init(NBIOT_MODULE, SIM1);
+    nbiot_power_on();
+    nbiot_disable_sleep_mode();
+    
+    int main_rssi = 99;
+    int rempte_rssi = 99;
+    int ber = 99;
+    int count = 0;
+
+    count = 0;
+    while (count < 3) {
+        // 测试主天线信号强度
+        antenna_type_select(MAIN_ANT);
+        nbiot_set_cfun_mode(0);
+        rt_thread_mdelay(200);
+        nbiot_set_cfun_mode(1);
+        if ((nbiot_check_network(10) == RT_EOK) && (get_nbiot_csq(&main_rssi, &ber) == RT_EOK)) {
+            // 记录当前天线信号
+            log_debug("got MAIN_ANT rssi: %d; ber: %d\n", main_rssi, ber);
+            break;
+        }
+        count++;
+    }
+
+    count = 0;
+    while (count < 3) {
+        // 测试副天线信号强度
+        antenna_type_select(REMPTE_ANT);
+        nbiot_set_cfun_mode(0);
+        rt_thread_mdelay(200);
+        nbiot_set_cfun_mode(1);
+        if ((nbiot_check_network(10) == RT_EOK) && (get_nbiot_csq(&rempte_rssi, &ber) == RT_EOK)) {
+            // 记录当前天线信号
+            log_debug("got REMPTE_ANT rssi: %d; ber: %d\n", rempte_rssi, ber);
+            break;
+        }
+        count++;
+    }
+
+    log_info("MAIN_ANT rssi: %d; REMPTE_ANT rssi: %d\n", main_rssi, rempte_rssi);
+
+    if ((main_rssi != 99) && (rempte_rssi != 99)) {
+        // 成功获取主副天线信号值比较两个值大小
+        current_antenna = main_rssi >= rempte_rssi ? MAIN_ANT : REMPTE_ANT;
+    }
+    else {
+        // 副天线无信号值或者主副天线都无信号值则用主天线
+        current_antenna = rempte_rssi == 99 ? MAIN_ANT : REMPTE_ANT;
+    }
+
+    log_info("choose current_antenna: %s\n", current_antenna == MAIN_ANT ? "MAIN_ANT" : "REMPTE_ANT");
+    fwrite(current_antenna == MAIN_ANT ? "0" : "1", 1, 1 , fp);
+
+    fclose(fp);
+}
+
+
 void nbiot_init()
 {
-    nbiot_at_client_init();
-
     antenna_active();
     antenna_type_select(current_antenna);
     antenna_switch_to_module(NBIOT_MODULE);
@@ -244,7 +346,6 @@ rt_err_t cat1_power_ctrl(int state)
 rt_err_t cat1_init()
 {
     rt_err_t result = RT_EOK;
-    at_ssl_client_init();
 
     antenna_active();
     antenna_type_select(current_antenna);
@@ -296,29 +397,4 @@ void read_imei_from_file(char *output, int read_length)
     }
     fread(output, 1, read_length, f);
     fclose(f);
-}
-
-
-void test_antenna_auto_switch(void)
-{
-    nbiot_at_client_init();
-
-    antenna_active();
-    antenna_type_select(current_antenna);
-    antenna_switch_to_module(NBIOT_MODULE);
-
-    sim_init(NBIOT_MODULE, SIM1);
-    nbiot_power_on();
-    nbiot_disable_sleep_mode();
-
-    extern int get_nbiot_csq(int *, int *);
-    int rssi = -1;
-    int ber = -1;
-
-    while (1) {
-        antenna_type_switch();
-        get_nbiot_csq(&rssi, &ber);
-        rt_kprintf("rssi: %d, ber: %d\n", rssi, ber);
-        rt_thread_mdelay(3000);
-    }
 }

@@ -50,6 +50,7 @@
         "upgrade_manager.h": "c",
         "drv_fatfs_dhara_nand.h": "c",
         "stdlib.h": "c",
-        "drv_hash.h": "c"
+        "drv_hash.h": "c",
+        "nbiot.h": "c"
     }
 }

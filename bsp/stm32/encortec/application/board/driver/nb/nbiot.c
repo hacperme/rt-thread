@@ -173,7 +173,7 @@ rt_err_t nbiot_disable_sleep_mode()
     if (resp == RT_NULL) {
         log_debug("create resp failed.");
         result = RT_ERROR;
-        goto ERROR;
+        goto __ERROR__;
     }
 
     result = at_obj_exec_cmd(client, resp, "AT+QSCLK=0");
@@ -184,7 +184,7 @@ rt_err_t nbiot_disable_sleep_mode()
         log_debug("nbiot disable sleep mode failed");
     }
 
-ERROR:
+__ERROR__:
     at_delete_resp(resp);
     return result;
 }
@@ -270,17 +270,17 @@ rt_err_t nbiot_check_lwm2m_config(lwm2m_config_t config)
     result = at_obj_exec_cmd(client, resp, "AT+QIOTCFG=\"productinfo\"");
     if (result != RT_EOK) {
         log_error("check production info failed: %d", result);
-        goto ERROR;
+        goto __ERROR__;
     }
     if (at_resp_parse_line_args(resp, 2, "+QIOTCFG: \"productinfo\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\"", pk, ps, ver) <= 0) {
         result = RT_ERROR;
-        goto ERROR;
+        goto __ERROR__;
     }
     log_debug("pk: %s; ps: %s; ver: %s", pk, ps, ver);
     if (rt_strcmp(pk, config->pk) != 0) {
         log_warn("productinfo pk not equal to configure.");
         result = RT_ERROR;
-        goto ERROR;
+        goto __ERROR__;
     }
 
     // check server
@@ -289,17 +289,17 @@ rt_err_t nbiot_check_lwm2m_config(lwm2m_config_t config)
     result = at_obj_exec_cmd(client, resp, "AT+QIOTCFG=\"server\"");
     if (result != RT_EOK) {
         log_error("check server failed: %d", result);
-        goto ERROR;
+        goto __ERROR__;
     }
     if (at_resp_parse_line_args(resp, 2, "+QIOTCFG: \"server\",%d,\"%[^\"]\"", &server_type, server_URL) <= 0) {
         result = RT_ERROR;
-        goto ERROR;
+        goto __ERROR__;
     }
     log_debug("server_type: %d; server_URL: %s", server_type, server_URL);
     if (rt_strcmp(server_URL, config->server_URL) != 0) {
         log_warn("productinfo server not equal to configure.");
         result = RT_ERROR;
-        goto ERROR;
+        goto __ERROR__;
     }
 
     // check lifetime
@@ -307,20 +307,20 @@ rt_err_t nbiot_check_lwm2m_config(lwm2m_config_t config)
     result = at_obj_exec_cmd(client, resp, "AT+QIOTCFG=\"lifetime\"");
     if (result != RT_EOK) {
         log_error("check lifetime failed: %d", result);
-        goto ERROR;
+        goto __ERROR__;
     }
     if (at_resp_parse_line_args(resp, 2, "+QIOTCFG: \"lifetime\",%d", &lifetime) <= 0) {
         result = RT_ERROR;
-        goto ERROR;
+        goto __ERROR__;
     }
     log_debug("lifetime: %d", lifetime);
     if (lifetime != config->lifetime) {
         log_warn("productinfo liftime not equal to configure.");
         result = RT_ERROR;
-        goto ERROR;
+        goto __ERROR__;
     }
 
-ERROR:
+__ERROR__:
     at_delete_resp(resp);
     return result;
 }
@@ -416,7 +416,7 @@ rt_err_t nbiot_set_cfun_mode(int mode)
     snprintf(s, 20, "AT+CFUN=%d", mode);
     result = at_obj_exec_cmd(client, resp, s);
     if (result != RT_EOK) {
-        log_error("nbiot cfun0 err: %d", result);
+        log_error("nbiot cfun err: %d", result);
     }
 
     at_delete_resp(resp);
@@ -480,12 +480,12 @@ rt_err_t nbiot_set_network_config(network_config_t config)
     result = at_obj_exec_cmd(client, resp, "AT+QCGDEFCONT?");
     if (result != RT_EOK) {
         log_debug("at_obj_exec_cmd AT+QCGDEFCONT=? failed");
-        goto ERROR;
+        goto __ERROR__;
     }
     if (at_resp_parse_line_args(resp, 2, "+QCGDEFCONT: \"%[^,\"]\",\"%[^,\"]\",", PDP_type, APN) <= 0)
     {
         log_debug("at_resp_parse_line_args AT+QCGDEFCONT? failed");
-        goto ERROR;
+        goto __ERROR__;
     }
     log_debug("read PDP_type: %s", PDP_type);
     log_debug("read APN: %s", APN);
@@ -493,7 +493,7 @@ rt_err_t nbiot_set_network_config(network_config_t config)
         result = at_obj_exec_cmd(client, resp, "AT+QCGDEFCONT=\"IP\",\"%s\"", config->apn);
         if (result != RT_EOK) {
             log_error("set apn result: %d", result);
-            goto ERROR;
+            goto __ERROR__;
         }
         log_debug("set apn success");
     }
@@ -502,18 +502,18 @@ rt_err_t nbiot_set_network_config(network_config_t config)
     result = at_obj_exec_cmd(client, resp, "AT+QBAND?");
     if (result != RT_EOK) {
         log_debug("at_obj_exec_cmd AT+QBAND? failed");
-        goto ERROR;
+        goto __ERROR__;
     }
     if (at_resp_parse_line_args(resp, 2, "+QBAND: %s", band_info) <= 0) {
         log_debug("at_resp_parse_line_args AT+AT+QBAND? failed");
-        goto ERROR;
+        goto __ERROR__;
     }
     log_debug("read band_info: %s", band_info);
     if (rt_strcmp(band_info, config->band + 2) != 0) {
         result = at_obj_exec_cmd(client, resp, "AT+QBAND=%s", config->band);
         if (result != RT_EOK) {
             log_error("nbiot set band result: %d", result);
-            goto ERROR;
+            goto __ERROR__;
         }
         log_debug("set band success");
     }
@@ -522,22 +522,22 @@ rt_err_t nbiot_set_network_config(network_config_t config)
     result = at_obj_exec_cmd(client, resp, "AT+CIPCA?");
     if (result != RT_EOK) {
         log_debug("at_obj_exec_cmd AT+CIPCA? failed");
-        goto ERROR;
+        goto __ERROR__;
     }
     if (at_resp_parse_line_args(resp, 2, "+CIPCA: %s", cipca_info) <= 0) {
         log_debug("at_resp_parse_line_args AT+AT+CIPCA? failed");
-        goto ERROR;
+        goto __ERROR__;
     }
     if (rt_strcmp(cipca_info, config->cipca) != 0) {
         result = at_obj_exec_cmd(client, resp, "AT+CIPCA=%s", config->cipca);
         if (result != RT_EOK) {
             log_error("nbiot set cipca result: %d", result);
-            goto ERROR;
+            goto __ERROR__;
         }
         log_debug("set cipca success");
     }
 
-ERROR:
+__ERROR__:
     at_delete_resp(resp);
     return result;
 }
@@ -962,13 +962,13 @@ rt_err_t get_nbiot_imei(char *output)
         const char *resp_line = at_resp_get_line(resp, 2);
         if (resp_line == RT_NULL) {
             result = RT_ERROR;
-            goto ERROR;
+            goto __ERROR__;
         }
         memcpy(output, resp_line + 7, strlen(resp_line + 7));
         output[15] = '\0';
     }
 
-ERROR:
+__ERROR__:
     at_delete_resp(resp);
     return result;
 }
@@ -997,12 +997,12 @@ rt_err_t get_nbiot_csq(int *rssi, int *ber)
         const char *resp_line = at_resp_get_line(resp, 2);
         if (resp_line == RT_NULL) {
             result = RT_ERROR;
-            goto ERROR;
+            goto __ERROR__;
         }
         sscanf(resp_line, "+CSQ: %d,%d", rssi, ber);
     }
 
-ERROR:
+__ERROR__:
     at_delete_resp(resp);
     return result;
 }
@@ -1074,7 +1074,7 @@ rt_err_t nbiot_config_mcu_version(void)
         result = RT_ERROR;
     }   
 
-ERROR:
+__ERROR__:
     at_delete_resp(resp);
     return result;
 }
