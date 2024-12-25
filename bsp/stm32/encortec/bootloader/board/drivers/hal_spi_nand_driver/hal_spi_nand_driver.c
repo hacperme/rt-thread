@@ -516,6 +516,34 @@ void HAL_SPI_NAND_Check_Ecc_Status(uint32_t status, uint32_t *corrected, uint32_
 	}
 }
 
+// 使能 QE, 配置 OTP 寄存器的 QE bit，打开 QSPI 功能特性
+int HAL_SPI_NAND_Enable_QE(HAL_NAND_Device_t hal_nand_device)
+{
+    uint8_t cfg = 0;
+
+    HAL_SPI_NAND_Get_Cfg(hal_nand_device, &cfg);
+    if ((cfg & CFG_OTP_QE_MASK) == CFG_OTP_QE_ENABLE)
+    {
+		return 0;
+    }
+
+    cfg |= CFG_OTP_QE_ENABLE;
+    return HAL_SPI_NAND_Set_Cfg(hal_nand_device, &cfg);
+}
+
+// 关闭 QE, 配置 OTP 寄存器的 QE bit，关闭 QSPI 功能特性
+int HAL_SPI_NAND_Disable_QE(HAL_NAND_Device_t hal_nand_device)
+{
+    uint8_t cfg = 0;
+
+    HAL_SPI_NAND_Get_Cfg(hal_nand_device, &cfg);
+	if ((cfg & CFG_OTP_QE_MASK) == CFG_OTP_QE_ENABLE) {
+		cfg &= ~CFG_OTP_QE_ENABLE;
+		return HAL_SPI_NAND_Set_Cfg(hal_nand_device, &cfg);
+	}
+	return 0;
+}
+
 /**
  * @brief HAL_SPI_NAND_Wait 通过读取NAND的状态寄存器（0xc0），获取NAND是否处于BUSY状态，直到操作完成时退出
  * @param  status           状态寄存器读取的值，可以判断BUSY结束瞬间，进行的操作是否成功
@@ -593,7 +621,7 @@ int HAL_SPI_NAND_Read_Page_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t 
  */
 int HAL_SPI_NAND_Read_From_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *din_buf)
 {
-
+    HAL_SPI_NAND_Disable_QE(hal_nand_device);
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_READ_FROM_CACHE, column, din_buf, NULL, len, SPI_FIFO);
 }
 
@@ -616,10 +644,34 @@ int HAL_SPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32
     } else {
         cmd = SPINAND_CMD_PROG_LOAD_RDM_DATA;
     }
-
-
+    HAL_SPI_NAND_Disable_QE(hal_nand_device);
     return HAL_SPI_NAND_xfer(hal_nand_device, cmd, column, NULL, dout_buf, len, SPI_FIFO);
 }
+    
+#ifdef NAND_FLASH_QSPI_SUPPORT
+// 读取NAND缓存区数据
+int HAL_QSPI_NAND_Read_From_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *din_buf)
+{
+    
+    HAL_SPI_NAND_Enable_QE(hal_nand_device);
+    return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_READ_FROM_CACHE_X4, column, din_buf, NULL, len, SPI_FIFO);
+}
+
+// 将数据写入缓存区
+int HAL_QSPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *dout_buf, bool clr_cache)
+{
+    uint8_t cmd = 0;
+
+    if (clr_cache) {
+        cmd = SPINAND_CMD_PROG_LOAD_X4;
+    } else {
+        cmd = SPINAND_CMD_PROG_LOAD_RDM_DATA_X4;
+    }
+    HAL_SPI_NAND_Enable_QE(hal_nand_device);
+    
+    return HAL_SPI_NAND_xfer(hal_nand_device, cmd, column, NULL, dout_buf, len, SPI_FIFO);
+}
+#endif
 
 /**
  * @brief HAL_SPI_NAND_Program_Execute 写入缓存区数据到NAND
@@ -666,7 +718,11 @@ int HAL_SPI_NAND_Internal_Data_Move(HAL_NAND_Device_t hal_nand_device, uint32_t 
 	HAL_SPI_NAND_Write_Enable(hal_nand_device);
 	if (buf != NULL)
     {
+#ifdef NAND_FLASH_QSPI_SUPPORT
+        HAL_QSPI_NAND_Program_Data_To_Cache(hal_nand_device, page_dst_addr, offset, len, buf, 0);
+#else
         HAL_SPI_NAND_Program_Data_To_Cache(hal_nand_device, page_dst_addr, offset, len, buf, 0);
+#endif
     }
 
 	HAL_SPI_NAND_Program_Execute(hal_nand_device, page_dst_addr);
@@ -695,12 +751,15 @@ int HAL_SPI_NAND_Check_Bad_Block(HAL_NAND_Device_t hal_nand_device, uint32_t blk
     uint32_t blk_only_addr_mask = ~((1 << 6) - 1);
     
     blk_addr &= blk_only_addr_mask;
+
     HAL_SPI_NAND_Read_Page_To_Cache(hal_nand_device, blk_addr);
 
     HAL_SPI_NAND_Wait(hal_nand_device, NULL);
-
+#ifdef NAND_FLASH_QSPI_SUPPORT
+    HAL_QSPI_NAND_Read_From_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag);
+#else
     HAL_SPI_NAND_Read_From_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag);
-
+#endif
     LOG_D(
         "HAL_SPI_NAND_Check_Bad_Block bad_blk_flag[0]=0x%02X, bad_blk_flag[1]=0x%02X",
         bad_blk_flag[0], bad_blk_flag[1]
@@ -736,7 +795,11 @@ int HAL_SPI_NAND_Mark_Bad_Block(HAL_NAND_Device_t hal_nand_device, uint32_t blk_
     HAL_SPI_NAND_Wait(hal_nand_device, NULL);
     
     HAL_SPI_NAND_Write_Enable(hal_nand_device);
+    #ifdef NAND_FLASH_QSPI_SUPPORT
+    HAL_QSPI_NAND_Program_Data_To_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag, true);
+    #else
     HAL_SPI_NAND_Program_Data_To_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag, true);
+    #endif
     HAL_SPI_NAND_Program_Execute(hal_nand_device, blk_addr);
     HAL_SPI_NAND_Wait(hal_nand_device, &status);                    
     

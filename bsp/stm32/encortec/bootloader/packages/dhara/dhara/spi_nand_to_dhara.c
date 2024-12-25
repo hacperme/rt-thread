@@ -181,14 +181,20 @@ int dhara_nand_prog(const struct dhara_nand *n, dhara_page_t p, const uint8_t *d
         ret = -2;
         goto end;
     }
-    
-    if(HAL_SPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, 0, nand_page_size, (uint8_t *)data, false) != 0)
+#ifdef NAND_FLASH_QSPI_SUPPORT
+    if(HAL_QSPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, 0, nand_page_size, (uint8_t *)data, false) != 0)
+#else
+	if(HAL_SPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, 0, nand_page_size, (uint8_t *)data, false) != 0)
+#endif
     {
         ret = -3;
         goto end;
     }
-    
+#ifdef NAND_FLASH_QSPI_SUPPORT
+	if(HAL_QSPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker, false) != 0)
+#else
     if(HAL_SPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker, false) != 0)
+#endif
     {
         ret = -4;
         goto end;
@@ -235,8 +241,11 @@ int dhara_nand_is_free(const struct dhara_nand *n, dhara_page_t p)
     }
     
     HAL_SPI_NAND_Wait(spi_nand_device, &status);
-    
-    if(HAL_SPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker) != 0)
+#ifdef NAND_FLASH_QSPI_SUPPORT
+    if(HAL_QSPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker) != 0)
+#else
+	if(HAL_SPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker) != 0)
+#endif
     {
         ret = -2;
         goto end;
@@ -281,8 +290,11 @@ int dhara_nand_read(const struct dhara_nand *n, dhara_page_t p, size_t offset, s
         ret = -3;
         goto end;		
     }
-
+#ifdef NAND_FLASH_QSPI_SUPPORT
+	if(HAL_QSPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, offset, length, data) != 0)
+#else
     if(HAL_SPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, offset, length, data) != 0)
+#endif
     {
         ret = -4;
         goto end;

@@ -17,6 +17,8 @@
 #define NAND_MODEL_AS5F38G04SND_08LIN_SUPPORT
 #endif
 
+#define NAND_FLASH_QSPI_SUPPORT
+
 
 /****************************************************/
 /************* FLASH CMD SUPPORT LIST *************/
@@ -71,6 +73,8 @@
 #define CFG_OTP_ENTER		                    0x40
 #define CFG_OTP_EXIT		                    0x00
 #define CFG_OTP_PROTECT	                        0xc0
+#define CFG_OTP_QE_MASK                         0x01
+#define CFG_OTP_QE_ENABLE                       0x01
 #define CFG_SNOR_ENABLE	                        0x82
 
 /* block lock */
