@@ -979,11 +979,11 @@ void test_adxl372(void)
     rt_err_t res;
 
     /* Config args init. */
-    rt_uint16_t milliscond = 520;
-    rt_uint16_t threshold = 10;  // 0.1 g
-    rt_uint8_t measure_val = 0x00;
-    rt_uint8_t odr_val = 0x40;
-    rt_uint8_t hpf_val = 0x03;
+    rt_uint16_t milliscond = 520;        // 静止中断时间, 取值范围: (0 ~ 26 * 0xFFFF], 单位 ms, uint16
+    rt_uint16_t threshold = 10;          // 静止中断阈值, 取值范围: (0 ~ 0x7FF], 单位 0.1 g, uint16
+    rt_uint8_t measure_val = 0x00;       // 带宽枚举值, [0x00 - 200 Hz, 0x02 - 800 Hz], uint18, 只有这两个值
+    rt_uint8_t hpf_val = 0x03;           // 高通滤波器, 枚举值: [0, 1, 2, 3], uint8
+    rt_uint8_t odr_val = 0x40;           // 频率, 不可修改, 1600Hz, uint8
     rt_uint8_t run_always = 0;
     rt_uint8_t inact_enable = 1;
     rt_uint8_t set_config = 1;

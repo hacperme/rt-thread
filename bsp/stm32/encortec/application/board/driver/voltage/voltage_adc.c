@@ -269,6 +269,9 @@ static rt_err_t MX_ADC1_IN_Enable(uint32_t adc_channel)
 #define CUR_VOL_BUFF_SIZE               (VOL_COLLECTION_LIMIT_TIME * VOL_COLLECTION_RATE)
 #define VOL_BUFF_SIZE                   10
 #define ADC_VERF                        3300
+#define CUR_FACTOR                      ((float)1.5)
+#define VCAP_FACTOR                     ((float)1.5)
+#define VBAT_FACTOR                     4
 
 static uint16_t cur_vol_buff[CUR_VOL_BUFF_SIZE] = {0};
 static uint16_t cur_remain_size = 0;
@@ -358,7 +361,7 @@ rt_err_t vcap_vol_read(rt_uint16_t *value)
     rt_err_t res = adc_vol_read(ADC_CHANNEL_2, &vol_val);
     if (res == RT_EOK)
     {
-        *value = vol_val;
+        *value = (rt_uint16_t)(vol_val * VCAP_FACTOR);
     }
     return res;
 }
@@ -369,7 +372,7 @@ rt_err_t vbat_vol_read(rt_uint16_t *value)
     rt_err_t res = adc_vol_read(ADC_CHANNEL_VBAT, &vol_val);
     if (res == RT_EOK)
     {
-        *value = vol_val * 4;
+        *value = vol_val * VBAT_FACTOR;
     }
     return res;
 }
@@ -440,7 +443,7 @@ rt_err_t cur_vol_read(rt_uint16_t **cur_buff, rt_uint16_t *buff_size)
 
     for (rt_uint16_t i = 0; i < coll_size; i++)
     {
-        cur_vol_buff[i] = cur_vol_buff[i] * ADC_VERF / ((1 << 14) - 1);
+        cur_vol_buff[i] = (rt_uint16_t)(cur_vol_buff[i] * ADC_VERF / ((1 << 14) - 1) * CUR_FACTOR);
     }
 
     *cur_buff = cur_vol_buff;
