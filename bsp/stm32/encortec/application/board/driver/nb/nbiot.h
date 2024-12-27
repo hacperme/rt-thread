@@ -92,4 +92,6 @@ rt_err_t get_nbiot_csq(int *rssi, int *ber);
 
 rt_err_t check_and_set_macrai();
 
+rt_err_t check_and_set_psms();
+
 #endif
