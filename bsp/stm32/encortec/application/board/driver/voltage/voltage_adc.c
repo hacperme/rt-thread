@@ -312,6 +312,19 @@ rt_err_t adc_dma_init(void)
     return res;
 }
 
+rt_err_t adc_dma_deinit(void)
+{
+    rt_err_t res = adc_dma_init_tag == 0 ? RT_EOK : RT_ERROR;
+    if (res == RT_EOK) return res;
+
+    __HAL_DMA_DISABLE(handle_GPDMA1_Channel1);
+    HAL_ADC_DeInit(hadc1);
+
+    res = RT_EOK;
+    adc_dma_init_tag = 0;
+    return res;
+}
+
 static rt_err_t adc_vol_read(rt_uint32_t adc_channel, rt_uint16_t *value)
 {
     rt_err_t res = adc_dma_init_tag == 0 ? RT_ERROR : RT_EOK;
