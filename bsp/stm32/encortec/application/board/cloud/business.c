@@ -361,6 +361,7 @@ enum nbiot_network_status nbiot_wait_network_ready()
     log_debug("nbiot wait network ready");
 
     nbiot_enable_echo(0);
+    check_and_set_macrai();
     if (nbiot_check_network(10) == RT_EOK) {
         log_debug("nbiot network has been ready");
         rt_err_t result = RT_EOK;
