@@ -318,7 +318,8 @@ rt_err_t adc_dma_deinit(void)
     if (res == RT_EOK) return res;
 
     __HAL_DMA_DISABLE(handle_GPDMA1_Channel1);
-    HAL_ADC_DeInit(hadc1);
+    res = HAL_ADC_DeInit(hadc1);
+    log_debug("HAL_ADC_DeInit res %d", res);
 
     res = RT_EOK;
     adc_dma_init_tag = 0;
