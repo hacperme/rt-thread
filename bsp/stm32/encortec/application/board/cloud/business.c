@@ -327,6 +327,7 @@ int collect_sensor_data()
     sensor_data.vcap_vol = (int)vcap_vol;
     sensor_data.vbat_vol = (int)vbat_vol;
 
+    adc_dma_deinit();
     sensor_pwron_pin_enable(PIN_LOW);
 
     nmea_item nmea_item = {0};
