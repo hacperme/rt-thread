@@ -1007,6 +1007,97 @@ __ERROR__:
     return result;
 }
 
+
+rt_err_t check_and_set_macrai()
+{
+    // AT+CFUN=0
+    // AT+QCFG="MacRAI",1
+    // AT+CNMPSD
+    // AT+QR14FEATURE
+    // AT+CFUN=1
+
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(512, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        return RT_ERROR;
+    }
+
+    int macrai = 0;
+    result = at_obj_exec_cmd(client, resp, "AT+QCFG=\"MacRAI\"");
+    if (result == RT_EOK) {
+        const char *resp_line = at_resp_get_line(resp, 2);
+        if (resp_line == RT_NULL) {
+            result = RT_ERROR;
+            goto __ERROR__;
+        }
+        sscanf(resp_line, "+QCFG: \"MacRAI\",%d", &macrai);
+    }
+
+    if (macrai == 0) {
+        at_obj_exec_cmd(client, resp, "AT+CFUN=0");
+        rt_thread_mdelay(200);
+        at_obj_exec_cmd(client, resp, "AT+QCFG=\"MacRAI\",1");
+        at_obj_exec_cmd(client, resp, "AT+CNMPSD");
+        at_obj_exec_cmd(client, resp, "AT+QR14FEATURE");
+        at_obj_exec_cmd(client, resp, "AT+CFUN=1");
+    }
+
+__ERROR__:
+    at_delete_resp(resp);
+    return result;
+}
+
+
+rt_err_t check_and_set_psms()
+{
+    // AT+QPSMS=2,36000
+
+    rt_err_t result = RT_EOK;
+    at_client_t client = RT_NULL;
+
+    client = at_client_get(NBIOT_AT_UART_NAME);
+    if (client == RT_NULL) {
+        log_error("nbiot at client not inited!");
+        return RT_ERROR;
+    }
+
+    at_response_t resp = at_create_resp(512, 0, rt_tick_from_millisecond(3000));
+    if (resp == RT_NULL) {
+        log_error("create resp failed.");
+        return RT_ERROR;
+    }
+
+    int nt1 = -1;
+    int nt2 = -1;
+    result = at_obj_exec_cmd(client, resp, "AT+QPSMS?");
+    if (result == RT_EOK) {
+        const char *resp_line = at_resp_get_line(resp, 2);
+        if (resp_line == RT_NULL) {
+            result = RT_ERROR;
+            goto __ERROR__;
+        }
+        sscanf(resp_line, "+QPSMS: %d,%d", &nt1, &nt2);
+    }
+
+    if (nt1 != 2 || nt2 != 36000) {
+        at_obj_exec_cmd(client, resp, "AT+QPSMS=10,36000");
+    }
+
+__ERROR__:
+    at_delete_resp(resp);
+    return result;
+}
+
+
 rt_err_t nbiot_config_mcu_version(void)
 {
     rt_err_t result = RT_EOK;

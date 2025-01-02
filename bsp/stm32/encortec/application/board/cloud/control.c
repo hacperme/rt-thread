@@ -221,7 +221,6 @@ rt_err_t get_antenna_from_file()
 // 使用nb两次注网来选择最优信号强度的天线
 void check_antenna_signal_strength()
 {
-    // param: force, 1 表示首次上电强制检查；0 表示非首次上电检查记录
     FILE *fp = fopen("/antenna_signal.txt", "w");
     if (fp == NULL) {
         current_antenna = MAIN_ANT;
