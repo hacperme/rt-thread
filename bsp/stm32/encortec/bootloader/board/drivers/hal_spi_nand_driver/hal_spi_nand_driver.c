@@ -128,7 +128,7 @@ void MX_OSPI_Init(void) {
     hal_nand_ospi.Init.FreeRunningClock = HAL_OSPI_FREERUNCLK_DISABLE;
     hal_nand_ospi.Init.ClockMode = HAL_OSPI_CLOCK_MODE_0;
     hal_nand_ospi.Init.WrapSize = HAL_OSPI_WRAP_NOT_SUPPORTED;
-    hal_nand_ospi.Init.ClockPrescaler = 32;
+    hal_nand_ospi.Init.ClockPrescaler = 3; /* OCTOSPIx/HSPI/XSPIx_CLK = F Clock_source / (PRESCALER + 1) */
     hal_nand_ospi.Init.SampleShifting = HAL_OSPI_SAMPLE_SHIFTING_HALFCYCLE; //可能会存在信号延迟
     hal_nand_ospi.Init.ChipSelectBoundary = 0;
     hal_nand_ospi.Init.DelayHoldQuarterCycle = HAL_OSPI_DHQC_DISABLE; //可能会存在信号延迟
@@ -516,6 +516,34 @@ void HAL_SPI_NAND_Check_Ecc_Status(uint32_t status, uint32_t *corrected, uint32_
 	}
 }
 
+// 使能 QE, 配置 OTP 寄存器的 QE bit，打开 QSPI 功能特性
+int HAL_SPI_NAND_Enable_QE(HAL_NAND_Device_t hal_nand_device)
+{
+    uint8_t cfg = 0;
+
+    HAL_SPI_NAND_Get_Cfg(hal_nand_device, &cfg);
+    if ((cfg & CFG_OTP_QE_MASK) == CFG_OTP_QE_ENABLE)
+    {
+		return 0;
+    }
+
+    cfg |= CFG_OTP_QE_ENABLE;
+    return HAL_SPI_NAND_Set_Cfg(hal_nand_device, &cfg);
+}
+
+// 关闭 QE, 配置 OTP 寄存器的 QE bit，关闭 QSPI 功能特性
+int HAL_SPI_NAND_Disable_QE(HAL_NAND_Device_t hal_nand_device)
+{
+    uint8_t cfg = 0;
+
+    HAL_SPI_NAND_Get_Cfg(hal_nand_device, &cfg);
+	if ((cfg & CFG_OTP_QE_MASK) == CFG_OTP_QE_ENABLE) {
+		cfg &= ~CFG_OTP_QE_ENABLE;
+		return HAL_SPI_NAND_Set_Cfg(hal_nand_device, &cfg);
+	}
+	return 0;
+}
+
 /**
  * @brief HAL_SPI_NAND_Wait 通过读取NAND的状态寄存器（0xc0），获取NAND是否处于BUSY状态，直到操作完成时退出
  * @param  status           状态寄存器读取的值，可以判断BUSY结束瞬间，进行的操作是否成功
@@ -593,7 +621,7 @@ int HAL_SPI_NAND_Read_Page_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t 
  */
 int HAL_SPI_NAND_Read_From_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *din_buf)
 {
-
+    HAL_SPI_NAND_Disable_QE(hal_nand_device);
     return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_READ_FROM_CACHE, column, din_buf, NULL, len, SPI_FIFO);
 }
 
@@ -616,10 +644,34 @@ int HAL_SPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32
     } else {
         cmd = SPINAND_CMD_PROG_LOAD_RDM_DATA;
     }
-
-
+    HAL_SPI_NAND_Disable_QE(hal_nand_device);
     return HAL_SPI_NAND_xfer(hal_nand_device, cmd, column, NULL, dout_buf, len, SPI_FIFO);
 }
+    
+#ifdef NAND_FLASH_QSPI_SUPPORT
+// 读取NAND缓存区数据
+int HAL_QSPI_NAND_Read_From_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *din_buf)
+{
+    
+    HAL_SPI_NAND_Enable_QE(hal_nand_device);
+    return HAL_SPI_NAND_xfer(hal_nand_device, SPINAND_CMD_READ_FROM_CACHE_X4, column, din_buf, NULL, len, SPI_FIFO);
+}
+
+// 将数据写入缓存区
+int HAL_QSPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *dout_buf, bool clr_cache)
+{
+    uint8_t cmd = 0;
+
+    if (clr_cache) {
+        cmd = SPINAND_CMD_PROG_LOAD_X4;
+    } else {
+        cmd = SPINAND_CMD_PROG_LOAD_RDM_DATA_X4;
+    }
+    HAL_SPI_NAND_Enable_QE(hal_nand_device);
+    
+    return HAL_SPI_NAND_xfer(hal_nand_device, cmd, column, NULL, dout_buf, len, SPI_FIFO);
+}
+#endif
 
 /**
  * @brief HAL_SPI_NAND_Program_Execute 写入缓存区数据到NAND
@@ -666,7 +718,11 @@ int HAL_SPI_NAND_Internal_Data_Move(HAL_NAND_Device_t hal_nand_device, uint32_t 
 	HAL_SPI_NAND_Write_Enable(hal_nand_device);
 	if (buf != NULL)
     {
+#ifdef NAND_FLASH_QSPI_SUPPORT
+        HAL_QSPI_NAND_Program_Data_To_Cache(hal_nand_device, page_dst_addr, offset, len, buf, 0);
+#else
         HAL_SPI_NAND_Program_Data_To_Cache(hal_nand_device, page_dst_addr, offset, len, buf, 0);
+#endif
     }
 
 	HAL_SPI_NAND_Program_Execute(hal_nand_device, page_dst_addr);
@@ -695,12 +751,15 @@ int HAL_SPI_NAND_Check_Bad_Block(HAL_NAND_Device_t hal_nand_device, uint32_t blk
     uint32_t blk_only_addr_mask = ~((1 << 6) - 1);
     
     blk_addr &= blk_only_addr_mask;
+
     HAL_SPI_NAND_Read_Page_To_Cache(hal_nand_device, blk_addr);
 
     HAL_SPI_NAND_Wait(hal_nand_device, NULL);
-
+#ifdef NAND_FLASH_QSPI_SUPPORT
+    HAL_QSPI_NAND_Read_From_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag);
+#else
     HAL_SPI_NAND_Read_From_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag);
-
+#endif
     LOG_D(
         "HAL_SPI_NAND_Check_Bad_Block bad_blk_flag[0]=0x%02X, bad_blk_flag[1]=0x%02X",
         bad_blk_flag[0], bad_blk_flag[1]
@@ -736,7 +795,11 @@ int HAL_SPI_NAND_Mark_Bad_Block(HAL_NAND_Device_t hal_nand_device, uint32_t blk_
     HAL_SPI_NAND_Wait(hal_nand_device, NULL);
     
     HAL_SPI_NAND_Write_Enable(hal_nand_device);
+    #ifdef NAND_FLASH_QSPI_SUPPORT
+    HAL_QSPI_NAND_Program_Data_To_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag, true);
+    #else
     HAL_SPI_NAND_Program_Data_To_Cache(hal_nand_device, blk_addr, hal_nand_device.nand_flash_info->memory_info->page_size, 2, bad_blk_flag, true);
+    #endif
     HAL_SPI_NAND_Program_Execute(hal_nand_device, blk_addr);
     HAL_SPI_NAND_Wait(hal_nand_device, &status);                    
     
@@ -755,6 +818,7 @@ void hal_spi_test_oneline(void)
     // char dout_buff[4096] = {0};
     uint8_t din_buff[16] = {0};
     uint8_t lock_map = 0;
+    nand_to_stm32();
     HAL_NAND_BSP_Init();
     if(HAL_SPI_NAND_Init(hal_nand_device) != 0)
     {
@@ -840,4 +904,181 @@ void hal_spi_test_oneline(void)
 }
 
 // MSH_CMD_EXPORT(hal_spi_test_oneline, HAL SPI TEST ONELINE);
+
+
+void flashspeed(int page_start, int page_cnt, int page_size)
+{
+    int index, length;
+    char *buff_ptr;
+    int total_length = 0;
+    rt_tick_t tick;
+    uint8_t status = 0;
+    uint32_t ecc_err, ecc_corrected;
+    int err_occ = 0;
+
+    total_length = page_cnt * page_size;
+
+    buff_ptr = rt_malloc(page_size);
+    if (buff_ptr == RT_NULL)
+    {
+        rt_kprintf("no memory\n");
+        return;
+    }
+
+    /* prepare write data */
+    for (index = 0; index < page_size; index++)
+    {
+        buff_ptr[index] = index%256;
+    }
+    index = 0;
+    /* get the beginning tick */
+    tick = rt_tick_get();
+    while (index < page_cnt)
+    {
+        if((index % 64 ) == 0)
+        {
+            // 擦block
+            HAL_SPI_NAND_Write_Enable(hal_nand_device);
+            HAL_SPI_NAND_Erase_Block(hal_nand_device, index);
+            HAL_SPI_NAND_Wait(hal_nand_device, &status);
+            if((status & STATUS_E_FAIL_MASK) == STATUS_E_FAIL)
+            {
+                LOG_E(" SPI NAND Erase error");
+                err_occ = 1;
+                break;
+            }  
+        }
+        HAL_SPI_NAND_Write_Enable(hal_nand_device);
+        // HAL_QSPI_NAND_Program_Data_To_Cache(hal_nand_device, index, index, page_size, (uint8_t *)buff_ptr, false);
+        HAL_SPI_NAND_Program_Data_To_Cache(hal_nand_device, index, index, page_size, (uint8_t *)buff_ptr, false);
+        HAL_SPI_NAND_Wait(hal_nand_device, &status);
+        HAL_SPI_NAND_Program_Execute(hal_nand_device, index);
+        HAL_SPI_NAND_Wait(hal_nand_device, &status);
+        if((status & STATUS_P_FAIL_MASK) == STATUS_P_FAIL)
+        {
+            LOG_E(" SPI NAND Program error");
+            err_occ = 1;
+            break;
+        }   
+
+        index ++;
+    }
+    tick = rt_tick_get() - tick;
+
+    if(err_occ == 0)
+    {
+        /* calculate write speed */
+        rt_kprintf("\nflash write speed: %d byte/s\ntotal_length: %d bytes, cost: %d s\n", 
+            total_length / tick * RT_TICK_PER_SECOND, total_length, tick / RT_TICK_PER_SECOND);
+    }
+    else
+    {
+        /* calculate write speed */
+        rt_kprintf("flash write speed: %d byte/s\n", 0);
+    }
+    
+    err_occ = 0;
+    tick = rt_tick_get();
+    index = 0;
+    while (index < page_cnt)
+    {
+
+        HAL_SPI_NAND_Read_Page_To_Cache(hal_nand_device, index);
+        HAL_SPI_NAND_Wait(hal_nand_device, &status);
+        HAL_SPI_NAND_Check_Ecc_Status((uint32_t)status, &ecc_corrected, &ecc_err);
+        if(ecc_err)
+        {
+            LOG_E(" SPI NAND Read Ecc error");
+            err_occ = 1;
+            break;		
+        }
+        // HAL_QSPI_NAND_Read_From_Cache(hal_nand_device, index, index, page_size, buff_ptr);
+        HAL_SPI_NAND_Read_From_Cache(hal_nand_device, index, index, page_size, buff_ptr);
+
+        index ++;
+    }
+    tick = rt_tick_get() - tick;
+
+    if(err_occ == 0)
+    {
+        rt_kprintf("\nflash read speed: %d byte/s\ntotal_length: %d bytes, cost: %d s\n", 
+            total_length /tick * RT_TICK_PER_SECOND, total_length, tick / RT_TICK_PER_SECOND);
+    }
+    else
+    {
+        rt_kprintf("flash read speed: %d byte/s\n", 0);
+    }
+
+    index = 0;
+    /* get the beginning tick */
+    tick = rt_tick_get();
+    while (index < page_cnt)
+    {
+        if((index % 64 ) == 0)
+        {
+            // 擦block
+            HAL_SPI_NAND_Write_Enable(hal_nand_device);
+            HAL_SPI_NAND_Erase_Block(hal_nand_device, index);
+            HAL_SPI_NAND_Wait(hal_nand_device, &status);
+            if((status & STATUS_E_FAIL_MASK) == STATUS_E_FAIL)
+            {
+                LOG_E(" SPI NAND Erase error");
+                err_occ = 1;
+                break;
+            }  
+        }
+        index += 64;
+    }
+    tick = rt_tick_get() - tick;
+
+    if(err_occ == 0)
+    {
+        /* calculate write speed */
+        rt_kprintf("\nflash Erase speed: %d byte/s\ntotal_length: %d bytes, cost: %d s\n", 
+            total_length / tick * RT_TICK_PER_SECOND, total_length, tick / RT_TICK_PER_SECOND);
+    }
+    else
+    {
+        /* calculate write speed */
+        rt_kprintf("flash write speed: %d byte/s\n", 0);
+    }
+    
+
+    /* close file and release memory */
+    rt_free(buff_ptr);
+}
+
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+FINSH_FUNCTION_EXPORT(flashspeed, perform flash rw test);
+
+static void cmd_flashspeed(int argc, char *argv[])
+{
+    int page_start;
+    int page_cnt;
+    int page_size;
+
+    if(argc == 4)
+    {
+        page_start = atoi(argv[1]);
+        page_cnt = atoi(argv[2]);
+        page_size = atoi(argv[3]);
+    }
+    else if(argc == 2)
+    {
+        page_start = 0;
+        page_cnt = 1024;
+        page_size = 4*1024;
+    }
+    else
+    {
+       rt_kprintf("Usage:\flashspeed [page_start] [page_cnt] [page_size]\n");
+       rt_kprintf("flashspeed [page 0] with default length 4MB and page size 4k\n");
+       return;
+    }
+    flashspeed(page_start, page_cnt, page_size);
+}
+MSH_CMD_EXPORT_ALIAS(cmd_flashspeed, flashspeed, test flash system rw speed);
+#endif /* RT_USING_FINSH */
 #endif

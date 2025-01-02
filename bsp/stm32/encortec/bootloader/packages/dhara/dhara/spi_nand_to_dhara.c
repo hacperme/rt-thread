@@ -10,6 +10,9 @@
 #define DBG_LVL DBG_WARNING
 #include <rtdbg.h>
 
+#include "journal.h"
+#include <stdint.h>
+
 // #ifndef __containerof
 
 // #include <stddef.h>
@@ -17,6 +20,29 @@
 //     ((type *)((char *)(ptr) - offsetof(type, member)))
     
 // #endif
+
+// #define DHARA_CACHE_META_DATA_ENABLE 1
+
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+// meta data 缓存数量
+#define META_DATA_CACHE_MAX   30
+
+typedef struct 
+{
+    uint8_t valid;
+    uint32_t address;
+    uint32_t freq;
+    uint8_t data[DHARA_META_SIZE];
+}dhara_meta_item_t;
+
+typedef struct 
+{
+    dhara_meta_item_t metas[META_DATA_CACHE_MAX];
+    int cnt;
+    rt_mutex_t lock;
+}dhara_meta_cache_t;
+
+#endif
 
 typedef struct dhara_bind_spi_nand
 {
@@ -28,6 +54,139 @@ typedef struct dhara_bind_spi_nand
 #define DHARA_NAND_BIND_SPI_NAND_INDEX_MAX (3)
 
 static dhara_bind_spi_nand_t dhara_bind_spi_nand_list[DHARA_NAND_BIND_SPI_NAND_INDEX_MAX] = {0};
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+static dhara_meta_cache_t g_dhara_meta_cache = {0};
+
+static void dhara_meta_cache_init(dhara_meta_cache_t *cache)
+{   
+    if(cache->lock)
+    {
+        rt_mutex_delete(cache->lock);
+        cache->lock = NULL;
+    }
+    rt_memset(cache, 0, sizeof(dhara_meta_cache_t));
+    cache->lock = rt_mutex_create("dhara_cache", RT_IPC_FLAG_FIFO );
+}
+static int dhara_meta_cache_add(dhara_meta_cache_t *cache, uint32_t addr, uint8_t *meta)
+{
+    dhara_meta_item_t *item = NULL;
+    rt_mutex_take(cache->lock, RT_WAITING_FOREVER);
+
+    for (size_t i = 0; i < META_DATA_CACHE_MAX; i++)
+    {
+        if(cache->metas[i].valid == 1 && cache->metas[i].address == addr)
+        {
+            // LOG_E("will update cache:%x", addr);
+            item = &cache->metas[i];
+            break;
+        }
+    }
+
+    if(item == NULL)
+    {
+        for (size_t i = 0; i < META_DATA_CACHE_MAX; i++)
+        {
+            if(cache->metas[i].valid == 0)
+            {
+                item = &cache->metas[i];
+                break;
+            }
+        }
+    }
+
+    // 如果没有找到空闲的缓存项，替换freq最小的item
+    if(item == NULL)
+    {
+        uint32_t min_freq = UINT32_MAX;
+        for (size_t i = 0; i < META_DATA_CACHE_MAX; i++)
+        {
+            if (cache->metas[i].freq < min_freq)
+            {
+                min_freq = cache->metas[i].freq;
+                item = &cache->metas[i];
+            }
+        }
+        // LOG_E("will replace cache:%x", item->address);
+    }
+
+    if(item ==  RT_NULL)
+    {
+        // LOG_E("item is not found");
+        rt_mutex_release(cache->lock);
+        return -1;
+    }
+
+    item->address = addr;
+    rt_memcpy(item->data, meta, DHARA_META_SIZE);
+    item->valid = 1;
+    item->freq = 1;
+    // LOG_E("add cache:%x", addr);
+
+    cache->cnt++;
+
+    // 对所有 item 排序
+    for (size_t i = 0; i < META_DATA_CACHE_MAX - 1; i++)
+    {
+        for (size_t j = 0; j < META_DATA_CACHE_MAX - i - 1; j++)
+        {
+            if (cache->metas[j].freq < cache->metas[j + 1].freq)
+            {
+                dhara_meta_item_t temp = cache->metas[j];
+                cache->metas[j] = cache->metas[j + 1];
+                cache->metas[j + 1] = temp;
+            }
+        }
+    }
+
+    rt_mutex_release(cache->lock);
+
+    return 0;
+}
+static int dhara_meta_cache_get(dhara_meta_cache_t *cache, uint32_t addr, uint8_t *meta)
+{
+    dhara_meta_item_t *item = NULL;
+    rt_mutex_take(cache->lock, RT_WAITING_FOREVER);
+    for (size_t i = 0; i < META_DATA_CACHE_MAX; i++)
+    {
+        if(cache->metas[i].valid == 1 && cache->metas[i].address == addr)
+        {
+            item = &cache->metas[i];
+            break;
+        }
+    }
+
+    if(item == NULL)
+    {
+        rt_mutex_release(cache->lock);
+        return -1;
+    }
+
+    rt_memcpy(meta, item->data, DHARA_META_SIZE);
+    item->freq++;
+    // LOG_E("get cache:%x", addr);
+    rt_mutex_release(cache->lock);
+
+    return 0;
+}
+static int dhara_meta_cache_clean(dhara_meta_cache_t *cache, uint32_t addr, uint32_t len)
+{
+    rt_mutex_take(cache->lock, RT_WAITING_FOREVER);
+    for (size_t i = 0; i < META_DATA_CACHE_MAX; i++)
+    {
+        if((cache->metas[i].valid == 1) && ((cache->metas[i].address == addr) ||
+         (cache->metas[i].address > addr && cache->metas[i].address <= (addr+len))
+         ))
+        {
+            // LOG_E("clean cache:%x,metas address:%x, endaddr:%x", addr, cache->metas[i].address, addr+len);
+            rt_memset(&cache->metas[i], 0, sizeof(dhara_meta_item_t));
+            cache->cnt--;
+        }
+    }
+    rt_mutex_release(cache->lock);
+    return 0;
+}
+#endif
+
 
 int dhara_bind_with_spi_nand_device(struct dhara_nand *n, HAL_NAND_Device_t* spi_nand_device)
 {
@@ -52,7 +211,9 @@ int dhara_bind_with_spi_nand_device(struct dhara_nand *n, HAL_NAND_Device_t* spi
     
     dhara_bind_spi_nand_list[index].dhara_nand = n;
     dhara_bind_spi_nand_list[index].spi_nand_device = spi_nand_device; 
-    
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+    dhara_meta_cache_init(&g_dhara_meta_cache);
+#endif
     return 0;
 }
 
@@ -99,6 +260,10 @@ void dhara_nand_mark_bad(const struct dhara_nand *n, dhara_block_t b)
     
     HAL_SPI_NAND_Mark_Bad_Block(spi_nand_device, (uint32_t)blk_first_page_addr);
 
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+    dhara_meta_cache_clean(&g_dhara_meta_cache, blk_first_page_addr, 64);
+#endif
+
     return;
 }
 
@@ -140,7 +305,10 @@ int dhara_nand_erase(const struct dhara_nand *n, dhara_block_t b, dhara_error_t 
         dhara_set_error(err, DHARA_E_BAD_BLOCK);
         ret = -4;
     }
-    
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+    dhara_meta_cache_clean(&g_dhara_meta_cache, blk_first_page_addr, 64);
+#endif
+
 end:
     LOG_I("DHARA Erase blk %X, ret %d", b, ret);
     return ret;	
@@ -181,14 +349,20 @@ int dhara_nand_prog(const struct dhara_nand *n, dhara_page_t p, const uint8_t *d
         ret = -2;
         goto end;
     }
-    
-    if(HAL_SPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, 0, nand_page_size, (uint8_t *)data, false) != 0)
+#ifdef NAND_FLASH_QSPI_SUPPORT
+    if(HAL_QSPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, 0, nand_page_size, (uint8_t *)data, false) != 0)
+#else
+	if(HAL_SPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, 0, nand_page_size, (uint8_t *)data, false) != 0)
+#endif
     {
         ret = -3;
         goto end;
     }
-    
+#ifdef NAND_FLASH_QSPI_SUPPORT
+	if(HAL_QSPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker, false) != 0)
+#else
     if(HAL_SPI_NAND_Program_Data_To_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker, false) != 0)
+#endif
     {
         ret = -4;
         goto end;
@@ -210,7 +384,10 @@ int dhara_nand_prog(const struct dhara_nand *n, dhara_page_t p, const uint8_t *d
     {
         dhara_set_error(err, DHARA_E_BAD_BLOCK);
         ret = -6;
-    }   
+    }
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+    dhara_meta_cache_clean(&g_dhara_meta_cache, p, 0);
+#endif
 
 end:
     LOG_I("DHARA Program page %X, size %d, ret %d", p, sizeof(data), ret);
@@ -235,8 +412,11 @@ int dhara_nand_is_free(const struct dhara_nand *n, dhara_page_t p)
     }
     
     HAL_SPI_NAND_Wait(spi_nand_device, &status);
-    
-    if(HAL_SPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker) != 0)
+#ifdef NAND_FLASH_QSPI_SUPPORT
+    if(HAL_QSPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker) != 0)
+#else
+	if(HAL_SPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, nand_page_size + 2, sizeof(uint16_t), (uint8_t *)&used_marker) != 0)
+#endif
     {
         ret = -2;
         goto end;
@@ -261,6 +441,15 @@ int dhara_nand_read(const struct dhara_nand *n, dhara_page_t p, size_t offset, s
     uint32_t ecc_err, ecc_corrected;
 
     uint32_t nand_page_size = 1 << n->log2_page_size;
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+    if(length == DHARA_META_SIZE)
+    {
+        if(dhara_meta_cache_get(&g_dhara_meta_cache, p+offset, data) == 0)
+        {
+            return 0;
+        }
+    }
+#endif
 
     if(HAL_SPI_NAND_Read_Page_To_Cache(spi_nand_device, (uint32_t)p) != 0)
     {
@@ -281,13 +470,22 @@ int dhara_nand_read(const struct dhara_nand *n, dhara_page_t p, size_t offset, s
         ret = -3;
         goto end;		
     }
-
+#ifdef NAND_FLASH_QSPI_SUPPORT
+	if(HAL_QSPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, offset, length, data) != 0)
+#else
     if(HAL_SPI_NAND_Read_From_Cache(spi_nand_device, (uint32_t)p, offset, length, data) != 0)
+#endif
     {
         ret = -4;
         goto end;
     }
-    
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+    if(length == DHARA_META_SIZE)
+    {
+        dhara_meta_cache_add(&g_dhara_meta_cache, p+offset, data);
+    }
+#endif
+
 end:
     LOG_I("DHARA Read page %X, size %d, ret %d", p, length, ret);
     return ret;	
@@ -352,6 +550,9 @@ int dhara_nand_copy(const struct dhara_nand *n, dhara_page_t src, dhara_page_t d
     {
         return -7;
     }
+#ifdef DHARA_CACHE_META_DATA_ENABLE
+    dhara_meta_cache_clean(&g_dhara_meta_cache, dst, 0);
+#endif
 
 end:
     return ret;

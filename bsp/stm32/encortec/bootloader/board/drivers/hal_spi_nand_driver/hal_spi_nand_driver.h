@@ -55,6 +55,13 @@ int HAL_SPI_NAND_Disable_Ecc(HAL_NAND_Device_t hal_nand_device);
 // 检查ECC状态
 void HAL_SPI_NAND_Check_Ecc_Status(uint32_t status, uint32_t *corrected, uint32_t *ecc_error);
 
+// 使能 QE, 配置 OTP 寄存器的 QE bit，打开 QSPI 功能特性
+int HAL_SPI_NAND_Enable_QE(HAL_NAND_Device_t hal_nand_device);
+
+// 关闭 QE, 配置 OTP 寄存器的 QE bit，关闭 QSPI 功能特性
+int HAL_SPI_NAND_Disable_QE(HAL_NAND_Device_t hal_nand_device);
+
+
 // 通过读取NAND的状态寄存器（0xc0），获取NAND是否处于BUSY状态，直到操作完成时退出
 int HAL_SPI_NAND_Wait(HAL_NAND_Device_t hal_nand_device, uint8_t *s);
 
@@ -72,6 +79,14 @@ int HAL_SPI_NAND_Read_From_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t pag
 
 // 将数据写入缓存区
 int HAL_SPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *dout_buf, bool clr_cache);
+
+#ifdef NAND_FLASH_QSPI_SUPPORT
+// 读取NAND缓存区数据
+int HAL_QSPI_NAND_Read_From_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *din_buf);
+
+// 将数据写入缓存区
+int HAL_QSPI_NAND_Program_Data_To_Cache(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr, uint32_t column, size_t len, uint8_t *dout_buf, bool clr_cache);
+#endif
 
 // 写入缓存区数据到NAND
 int HAL_SPI_NAND_Program_Execute(HAL_NAND_Device_t hal_nand_device, uint32_t page_addr);

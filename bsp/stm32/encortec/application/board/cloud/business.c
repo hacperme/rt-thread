@@ -24,6 +24,7 @@
 
 
 #include "logging.h"
+#include "upgrade_manager.h"
 // #define DBG_TAG "business"
 // #define DBG_LVL DBG_LOG
 // #include <rtdbg.h>
@@ -53,7 +54,8 @@ enum {
     CAT1_UPLOAD_FILE,
     ESP32_WIFI_TRANSFER_DATA,
     SLEEP,
-    CHECK_ANTENNA_SIGNAL_STRENGTH
+    CHECK_ANTENNA_SIGNAL_STRENGTH,
+    NBIOT_OTA_PROCESS,
 };
 
 // static rt_sem_t stm32_sleep_ack_sem = RT_NULL;
@@ -414,7 +416,7 @@ int nbiot_wait_server_connect_ready()
     rt_err_t result = RT_EOK;
 
     nbiot_lwm2m_deregister();
-    // nbiot_config_mcu_version();
+    nbiot_config_mcu_version();
     struct lwm2m_config config = {"pe15TE", "aXp5Y0hudFBkbmho", 0, "coap://iot-south.quecteleu.com:5683", 86400, 1, 1, 1};
     if (! set_lwm2m_config_flag && nbiot_check_lwm2m_config(&config) != RT_EOK) {
         if (nbiot_set_lwm2m_config(&config) == RT_EOK) {
@@ -1074,6 +1076,7 @@ void main_business_entry(void)
     rt_err_t result;
     int status;
     int rv = 0;
+
     read_imei_from_file(nbiot_imei_string, 15);
     log_debug("read_imei_from_file: %s", nbiot_imei_string);
 
@@ -1120,6 +1123,10 @@ void main_business_entry(void)
     rt_device_control(wdg_device, RT_DEVICE_CTRL_WDT_START, RT_NULL);
 
     wdg_create_soft(&wdg_id, 300*1000, BLOCK_TYPE_NO_BLOCK, RT_NULL);
+
+    extern rt_err_t delete_ota_cfg_file(void);
+    delete_ota_cfg_file();
+    upgrade_manager_init();
     
     while (1)
     {
@@ -1181,6 +1188,8 @@ void main_business_entry(void)
                     sm_set_status(SLEEP);
                 }
                 else if (rv == NBIOT_SERVER_CONNECT_RDY) {
+                    // Check if there is an OTA task
+                    nbiot_ota_req();
                     sm_set_status(NBIOT_REPORT_CONTROL_DATA);
                 }
                 else if (rv == NBIOT_SERVER_CONNECT_RETRY) {
@@ -1211,14 +1220,23 @@ void main_business_entry(void)
             case NBIOT_REPORT_SENSOR_DATA:
                 rv = nbiot_report_sensor_data_to_server();
                 if (rv == NBIOT_REPORT_SENSOR_DATA_FAILED || rv == NBIOT_REPORT_SENSOR_DATA_SUCCESS) {
-                    nbiot_deinit();
-                    debug_led1_stop_flash();
-                    if (should_cat1_upload_files()) {
-                        sm_set_status(CAT1_INIT);
+                    if(nbiot_get_ota_task_state() > 0)
+                    {
+                        // 有升级计划则进入升级处理状态
+                        sm_set_status(NBIOT_OTA_PROCESS);
                     }
-                    else {
-                        sm_set_status(ESP32_WIFI_TRANSFER_DATA);
+                    else
+                    {
+                        nbiot_deinit();
+                        debug_led1_stop_flash();
+                        if (should_cat1_upload_files()) {
+                            sm_set_status(CAT1_INIT);
+                        }
+                        else {
+                            sm_set_status(ESP32_WIFI_TRANSFER_DATA);
+                        }
                     }
+                    
                 }
                 else if (rv == NBIOT_REPORT_SENSOR_DATA_RETRY) {
                     sm_set_status(NBIOT_REPORT_SENSOR_DATA);
@@ -1274,6 +1292,53 @@ void main_business_entry(void)
                 debug_led1_stop_flash();
                 stm32_sleep();
                 break;
+            case NBIOT_OTA_PROCESS:
+            {
+                int ret;
+                ota_task_state_t state = nbiot_get_ota_task_state();
+                if(state == OTA_TASK_STATE_DOWNLOADED)
+                {
+                    int ret = nbiot_save_ota_data();
+                    // log_debug("ret %d", ret);
+                }
+                else if(state == OTA_TASK_STATE_UPGRADEING)
+                {
+                    if (exit_upgrade_plan() > 0)
+                    {
+                        upgrade_all_module();
+                        // 更新模组版本号
+                        nbiot_config_mcu_version();
+                    }
+
+                    nbiot_deinit();
+                    debug_led1_stop_flash();
+                    if (should_cat1_upload_files()) {
+                        sm_set_status(CAT1_INIT);
+                    }
+                    else {
+                        sm_set_status(ESP32_WIFI_TRANSFER_DATA);
+                    }
+                    break;
+                }
+                else if(state == OTA_TASK_STATE_FINISH)
+                {
+                    // clean old ota task
+                    log_debug("clean ota task");
+                    nbiot_clean_ota_task();
+
+                    nbiot_deinit();
+                    debug_led1_stop_flash();
+                    if (should_cat1_upload_files()) {
+                        sm_set_status(CAT1_INIT);
+                    }
+                    else {
+                        sm_set_status(ESP32_WIFI_TRANSFER_DATA);
+                    }
+                    break;
+                }
+                sm_set_status(NBIOT_OTA_PROCESS);
+                break;
+            }
             default:
                 log_warn("unknown status: %d", status);
                 break;

@@ -489,7 +489,7 @@ rt_size_t at_client_obj_recv(at_client_t client, char *buf, rt_size_t size, rt_i
 
         rt_sem_control(client->rx_notice, RT_IPC_CMD_RESET, RT_NULL);
 
-        read_len = rt_device_read(client->device, 0, buf + len, size);
+        read_len = rt_device_read(client->device, 0, buf + len, 1);
         if (read_len > 0)
         {
             len += read_len;

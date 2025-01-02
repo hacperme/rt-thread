@@ -101,13 +101,15 @@ int get_module(UpgradeModule module, UpgradeNode *node)
     log_debug("fread rres=%d, sizeof(*node)=%d", rres, sizeof(*node));
     ret = fclose(ota_file);
     log_debug("fclose ret=%d", ret);
+    log_debug("node->module=%d", node->module);
     return rres == sizeof(*node) ? 0 : -1;
 }
 
 void save_module(UpgradeNode *node)
 {
     int ret;
-    FILE *ota_file = fopen(OTA_CFG_FILE, "wb");
+    log_debug("node->module=%d", node->module);
+    FILE *ota_file = fopen(OTA_CFG_FILE, "rb+");
     ret = fseek(ota_file, sizeof(*node) * node->module, SEEK_SET);
     log_debug("fseek offset=%d, ret=%d", sizeof(*node) * node->module, ret);
     size_t wret = fwrite(node, 1, sizeof(*node), ota_file);
@@ -117,6 +119,7 @@ void save_module(UpgradeNode *node)
 }
 
 void clear_module(UpgradeNode *node) {
+    log_debug("node->module=%d", node->module);
     node->status = UPGRADE_STATUS_NO_PLAN;
     node->download_progress = 0;
     node->upgrade_progress = 0;
@@ -179,16 +182,19 @@ void init_module_ops(UpgradeModule module, UpgradeModuleOps **ops)
 
 void set_module(UpgradeModule module, UpgradePlan *plan)
 {
+    
     get_module(module, &ota_node);
     UpgradeModuleOps *ops = RT_NULL;
     init_module_ops(module, &ops);
     init_module(&ota_node, plan, ops);
+    log_debug("ota_node.modules=%d",ota_node.module);
     log_debug("ota_node.status=%d", ota_node.status);
     log_debug("ota_node.plan.file_cnt=%d", ota_node.plan.file_cnt);
     log_debug("ota_node.plan.file[0].file_name=%s", ota_node.plan.file[0].file_name);
     log_debug("ota_node.ops.prepare=0x%08X", ota_node.ops.prepare);
     log_debug("ota_node.ops.apply=0x%08X", ota_node.ops.apply);
     log_debug("ota_node.ops.finish=0x%08X", ota_node.ops.finish);
+    ota_node.module = module;
     save_module(&ota_node);
 }
 
@@ -207,7 +213,31 @@ void start_download(UpgradeNode* node) {
         if (node->status == UPGRADE_STATUS_DOWNLOADED) break;
     }
 }
-
+#if 0
+static void show_data_file(char *name)
+{
+    uint32_t file_size = 0;
+    FILE *file = fopen(name, "rb");
+    fseek(file, 0, SEEK_END);
+    file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char file_data[16];
+    log_debug("file size %d", file_size);
+    for (rt_uint32_t i = 0; i < file_size; i += 16)
+    {
+        rt_memset(file_data, 0, 16);
+        fread(file_data, 1, 16, file);
+        log_debug(
+            "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+            file_data[0], file_data[1], file_data[2], file_data[3],
+            file_data[4], file_data[5], file_data[6], file_data[7],
+            file_data[8], file_data[9], file_data[10], file_data[11],
+            file_data[12], file_data[13], file_data[14], file_data[15]
+        );
+    }
+    fclose(file);
+}
+#endif
 void start_verify(UpgradeNode* node)
 {
     if (node->status != UPGRADE_STATUS_DOWNLOADED) goto _exit_;
@@ -290,6 +320,14 @@ void start_verify(UpgradeNode* node)
         else
         {
             log_debug("file %s md5 verfy failed.", node->plan.file[i].file_name);
+            log_debug(
+            "node->plan.file[i].file_md5 %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
+            node->plan.file[i].file_md5[0], node->plan.file[i].file_md5[1], node->plan.file[i].file_md5[2], node->plan.file[i].file_md5[3],
+            node->plan.file[i].file_md5[4], node->plan.file[i].file_md5[5], node->plan.file[i].file_md5[6], node->plan.file[i].file_md5[7],
+            node->plan.file[i].file_md5[8], node->plan.file[i].file_md5[9], node->plan.file[i].file_md5[10], node->plan.file[i].file_md5[11],
+            node->plan.file[i].file_md5[12], node->plan.file[i].file_md5[13], node->plan.file[i].file_md5[14], node->plan.file[i].file_md5[15]);
+            // log_debug("dump filedata %s:", node->plan.file[i].file_name);
+            // show_data_file(node->plan.file[i].file_name);
             node->plan.file[i].verified = 0;
             goto _exit_;
         }

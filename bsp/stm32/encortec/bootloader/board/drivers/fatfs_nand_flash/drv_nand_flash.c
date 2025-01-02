@@ -59,7 +59,7 @@ static void erase_nand_flash(void)
         HAL_SPI_NAND_Read_Status(hal_nand_device, &status);
 
         LOG_I("status before erase_nand_flash block %02X", status);
-        res = HAL_SPI_NAND_Erase_Block(hal_nand_device, i);
+        res = HAL_SPI_NAND_Erase_Block(hal_nand_device, i*hal_nand_device.nand_flash_info->memory_info->page_per_block);
         LOG_D("erase_nand_flash block=%d %s", i, res == 0 ? "success": "failed");
 
         HAL_SPI_NAND_Wait(hal_nand_device, &status);

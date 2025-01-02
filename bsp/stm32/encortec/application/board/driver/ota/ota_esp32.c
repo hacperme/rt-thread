@@ -173,6 +173,14 @@ _failed_:
 
 void esp_finish(void *node)
 {
+    if(esp32_at_resp)
+    {
+        at_delete_resp(esp32_at_resp);
+    }
+    
+    esp32_at_client = RT_NULL;
+    esp32_sem_deinit();
+
     esp32_power_off();
     nand_to_stm32();
     fatfs_dhara_nand_remount();
