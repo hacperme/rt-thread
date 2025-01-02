@@ -505,6 +505,15 @@ static int parse_ota_downloaded_data(const char* urcString,  ota_task_t *ctl)
         ctl->compoment[ctl->current_copmment].piece_length = piece_length;
         rt_snprintf(ctl->compoment[ctl->current_copmment].fileName, 
                         sizeof(ctl->compoment[ctl->current_copmment].fileName), "/fota/%s.bin", componentNo);
+        
+        log_debug("old fd=%0x", ctl->compoment[ctl->current_copmment].fd);
+        if(ctl->compoment[ctl->current_copmment].fd != RT_NULL)
+        {
+            log_debug("close old fd=%0x", ctl->compoment[ctl->current_copmment].fd);
+            fclose(ctl->compoment[ctl->current_copmment].fd);
+            ctl->compoment[ctl->current_copmment].fd = RT_NULL;
+        }
+
         if(startaddr == 0)
         {
             ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "wb+");
@@ -514,6 +523,8 @@ static int parse_ota_downloaded_data(const char* urcString,  ota_task_t *ctl)
         {
             ctl->compoment[ctl->current_copmment].fd = fopen(ctl->compoment[ctl->current_copmment].fileName, "rb+");
         }
+
+        log_debug("new old fd=%0x", ctl->compoment[ctl->current_copmment].fd);
         
         if(ctl->compoment[ctl->current_copmment].fd == NULL)
         {
@@ -619,7 +630,15 @@ void nbiot_qiotevt_urc_handler(struct at_client *client, const char *data, rt_si
                 }
                 break;
             case QIOT_OTA_UPDATE_FAIL:
+                log_debug("QIOT_OTA_UPDATE_FAIL, old fd=%0x", g_ota_task.compoment[g_ota_task.current_copmment].fd);
+                if(g_ota_task.compoment[g_ota_task.current_copmment].fd != RT_NULL)
+                {
+                    log_debug("close old fd=%0x", g_ota_task.compoment[g_ota_task.current_copmment].fd);
+                    fclose(g_ota_task.compoment[g_ota_task.current_copmment].fd);
+                    g_ota_task.compoment[g_ota_task.current_copmment].fd = RT_NULL;
+                }
                 read_ota_task_from_file(&g_ota_task);
+                
                 if(g_ota_task.type == FIRM_TYPE_MODULE)
                 {
                     g_ota_task.state = OTA_TASK_STATE_FINISH;
@@ -1854,6 +1873,13 @@ int nbiot_save_ota_data(void)
         log_info("rt_mq_recv ret %d\n", ret);
         if(ret > 0)
         {   
+            if(ctl->compoment[ctl->current_copmment].fd == RT_NULL)
+            {
+                log_error("flie fd is null");
+                result =  -1;
+                goto EXIT;
+            }
+            
             if(recv_msg.data_offset == offset && recv_msg.data_size > 0)
             {
                 fseek(ctl->compoment[ctl->current_copmment].fd, offset, SEEK_SET);
