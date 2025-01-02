@@ -128,7 +128,7 @@ void MX_OSPI_Init(void) {
     hal_nand_ospi.Init.FreeRunningClock = HAL_OSPI_FREERUNCLK_DISABLE;
     hal_nand_ospi.Init.ClockMode = HAL_OSPI_CLOCK_MODE_0;
     hal_nand_ospi.Init.WrapSize = HAL_OSPI_WRAP_NOT_SUPPORTED;
-    hal_nand_ospi.Init.ClockPrescaler = 4;
+    hal_nand_ospi.Init.ClockPrescaler = 3; /* OCTOSPIx/HSPI/XSPIx_CLK = F Clock_source / (PRESCALER + 1) */
     hal_nand_ospi.Init.SampleShifting = HAL_OSPI_SAMPLE_SHIFTING_HALFCYCLE; //可能会存在信号延迟
     hal_nand_ospi.Init.ChipSelectBoundary = 0;
     hal_nand_ospi.Init.DelayHoldQuarterCycle = HAL_OSPI_DHQC_DISABLE; //可能会存在信号延迟
