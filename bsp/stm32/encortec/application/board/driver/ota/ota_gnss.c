@@ -20,6 +20,8 @@
 #include "hdl_api.h"
 #include "gnss.h"
 
+extern void business_feed_watchdog(void);
+
 void init_cb_demo(void *usr_arg)
 {
     if (usr_arg != NULL && strlen((const char *)usr_arg) > 0) HDL_MAIN_LOG("%s", usr_arg);
@@ -29,12 +31,14 @@ void da_send_cb_demo(void *usr_arg, uint32_t sent_bytes, uint32_t da_total_bytes
 {
     uint8_t percent = sent_bytes * 100 / da_total_bytes;
     HDL_MAIN_LOG("DA Send Progress %d%% (%d/%d Bytes)", percent, sent_bytes, da_total_bytes);
+    business_feed_watchdog();
 }
 
 void download_cb_demo(void *usr_arg, char *cur_image_name, uint32_t sent_bytes, uint32_t total_bytes)
 {
     uint8_t percent = sent_bytes * 100 / total_bytes;
     HDL_MAIN_LOG("Image (%s) Download Progress %d%% (%d/%d Bytes)", cur_image_name, percent, sent_bytes, total_bytes);
+    business_feed_watchdog();
 }
 
 // Host Local Flash Read Buffer, only for Test Readback
@@ -42,11 +46,13 @@ void readback_cb_demo(void *usr_arg, char *cur_image_name, uint32_t read_len, ui
 {
     uint8_t percent = read_len * 100 / readback_total_len;
     HDL_MAIN_LOG("Readback (%s) Progress %d%% (%d/%d Bytes)", cur_image_name, percent, read_len, readback_total_len);
+    business_feed_watchdog();
 }
 
 void progress_cb_demo(void *usr_arg, uint8_t percent)
 {
     HDL_MAIN_LOG("%s %d%%", (usr_arg != NULL ? usr_arg : "percent "), percent);
+    business_feed_watchdog();
 }
 
 void check_gnss_version(void *node)

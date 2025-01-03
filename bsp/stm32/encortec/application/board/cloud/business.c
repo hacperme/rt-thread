@@ -1442,3 +1442,8 @@ void save_json_obj_to_file(const char *file_path, cJSON *root)
         free(data);
     }
 }
+
+void business_feed_watchdog(void)
+{
+    wdg_feed_soft(wdg_id);
+}

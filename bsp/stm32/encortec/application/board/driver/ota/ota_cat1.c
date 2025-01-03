@@ -65,6 +65,8 @@ static char fota_updating_proc[4] = {0};
 static rt_uint16_t fota_process_size = 0;
 static cat1_state_enum cat1_ota_state = CAT1_OTA_DEFAULT;
 
+extern void business_feed_watchdog(void);
+
 void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size);
 rt_err_t cat1_at_set_regression(rt_uint8_t enable);
 rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size);
@@ -281,6 +283,7 @@ rt_err_t transfer_cat1_ota_file(char *file_name)
             if (res != RT_EOK) break;
             rt_thread_mdelay(10);
         }
+        business_feed_watchdog();
     } while (read_size > 0 && ret > 0);
 
     res = rt_sem_take(&cat1_sem.file_end, 30 * 1000);
@@ -334,6 +337,7 @@ void cat1_ota_apply(int* progress, void *node)
     if (cat1_ota_state < CAT1_OTA_END)
     {
         do {
+            business_feed_watchdog();
             res = rt_sem_take(&cat1_sem.fota_updating, 120 * 1000);
             log_info("rt_sem_take cat1_sem.fota_updating %s, process %s", res_msg(res == RT_EOK), fota_updating_proc);
         } while (res == RT_EOK && rt_strcmp(fota_updating_proc, AT_FOTA_PERCENT) != 0);
@@ -342,7 +346,7 @@ void cat1_ota_apply(int* progress, void *node)
 
     res = rt_sem_take(&cat1_sem.fota_end, 60 * 1000);
     log_info("rt_sem_take cat1_sem.fota_end %s, fota_res_code %s", res_msg(res == RT_EOK), fota_res_code);
-
+    business_feed_watchdog();
     res = cat1_wait_rdy(60 * 1000);
     if (res == RT_EOK) 
     {
