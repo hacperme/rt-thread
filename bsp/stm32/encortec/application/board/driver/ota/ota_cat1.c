@@ -19,6 +19,7 @@
 #include "board.h"
 #include "at.h"
 #include "lpm.h"
+#include "at_client_ssl.h"
 
 #define CAT1_AT_BUFF_SIZE 512
 #define CAT1_SEND_FILE_SIZE 32
@@ -40,8 +41,6 @@ typedef struct {
     struct rt_semaphore fota_start;
     struct rt_semaphore fota_updating;
     struct rt_semaphore fota_end;
-    struct rt_semaphore rdy;
-    struct rt_semaphore power_down;
 } cat1_sem_st;
 
 typedef enum {
@@ -66,18 +65,13 @@ static char fota_updating_proc[4] = {0};
 static rt_uint16_t fota_process_size = 0;
 static cat1_state_enum cat1_ota_state = CAT1_OTA_DEFAULT;
 
-static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size);
+void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size);
 rt_err_t cat1_at_set_regression(rt_uint8_t enable);
 rt_err_t cat1_at_query_version(char *cat1_version, rt_size_t size);
 rt_err_t cat1_at_query_subedition(char *cat1_sub_edition, rt_size_t size);
 
-static struct at_urc cat1_ota_urc_table[] = {
-    {AT_QIND_HEAD,       "\r\n", cat1_ota_urc},
-    {AT_RDY_HEAD,        "\r\n", cat1_ota_urc},
-	{AT_POWERDOWN_HEAD,   "\r\n", cat1_ota_urc}
-};
 
-static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size)
+void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size)
 {
     log_info("[cat1_ota_urc] %s", data);
     if (rt_strncmp(data, AT_QIND_HEAD, rt_strlen(AT_QIND_HEAD)) == 0)
@@ -121,16 +115,6 @@ static void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t s
             rt_sem_release(&cat1_sem.fota_end);
         }
     }
-    else if (rt_strncmp(data, AT_RDY_HEAD, rt_strlen(AT_RDY_HEAD)) == 0)
-    {
-        cat1_ota_state = CAT1_RDY;
-        rt_sem_release(&cat1_sem.rdy);
-    }
-    else if (rt_strncmp(data, AT_POWERDOWN_HEAD, rt_strlen(AT_POWERDOWN_HEAD)) == 0)
-    {
-        cat1_ota_state = CAT1_POWER_DOWN;
-        rt_sem_release(&cat1_sem.power_down);
-    }
 }
 
 rt_err_t cat1_sem_init(void)
@@ -141,8 +125,6 @@ rt_err_t cat1_sem_init(void)
     res = rt_sem_init(&cat1_sem.fota_start, "cat1fotas", 0, RT_IPC_FLAG_PRIO);
     res = rt_sem_init(&cat1_sem.fota_updating, "cat1fotau", 0, RT_IPC_FLAG_PRIO);
     res = rt_sem_init(&cat1_sem.fota_end, "cat1fotae", 0, RT_IPC_FLAG_PRIO);
-    res = rt_sem_init(&cat1_sem.rdy, "cat1rdy", 0, RT_IPC_FLAG_PRIO);
-    res = rt_sem_init(&cat1_sem.power_down, "cat1pwdn", 0, RT_IPC_FLAG_PRIO);
     return res;
 }
 
@@ -154,8 +136,6 @@ rt_err_t cat1_sem_deinit(void)
     res = rt_sem_detach(&cat1_sem.fota_start);
     res = rt_sem_detach(&cat1_sem.fota_updating);
     res = rt_sem_detach(&cat1_sem.fota_end);
-    res = rt_sem_detach(&cat1_sem.rdy);
-    res = rt_sem_detach(&cat1_sem.power_down);
     return res;
 }
 
@@ -193,16 +173,6 @@ void cat1_ota_prepare(void *node)
         goto _failed_;
     }
 
-    int ret = at_obj_set_urc_table(cat1_at_client, cat1_ota_urc_table, sizeof(cat1_ota_urc_table) / sizeof(cat1_ota_urc_table[0]));
-    log_info("at_obj_set_urc_table %s", res_msg(ret == 0));
-    if (ret != 0)
-    {
-        at_delete_resp(cat1_at_resp);
-        cat1_at_client = RT_NULL;
-        cat1_sem_deinit();
-        goto _failed_;
-    }
-
 _cat1_power_on_:
     res = cat1_power_on();
 
@@ -219,11 +189,17 @@ _cat1_power_on_:
             rt_sem_release(&cat1_sem.fota_end);
             break;
         }
-        res = rt_sem_take(&cat1_sem.rdy, 500);
-        if (res == RT_EOK) break;
-        res = rt_sem_take(&cat1_sem.power_down, 500);
+
+        res = cat1_wait_rdy(500);
+        if (res == RT_EOK) 
+        {
+            cat1_ota_state = CAT1_RDY;
+            break;
+        }
+        res = cat1_wait_powered_down(500);
         if (res == RT_EOK)
         {
+            cat1_ota_state = CAT1_POWER_DOWN;
             rt_thread_mdelay(1000);
             goto _cat1_power_on_;
         }
@@ -367,7 +343,12 @@ void cat1_ota_apply(int* progress, void *node)
     res = rt_sem_take(&cat1_sem.fota_end, 60 * 1000);
     log_info("rt_sem_take cat1_sem.fota_end %s, fota_res_code %s", res_msg(res == RT_EOK), fota_res_code);
 
-    res = rt_sem_take(&cat1_sem.rdy, 60 * 1000);
+    res = cat1_wait_rdy(60 * 1000);
+    if (res == RT_EOK) 
+    {
+            cat1_ota_state = CAT1_RDY;
+            
+    }
     log_info("rt_sem_take cat1_sem.rdy %s", res_msg(res == RT_EOK));
 
     check_cat1_version(node);
@@ -383,7 +364,12 @@ void cat1_ota_finish(void *node)
     // Press power key to shutdown cat1.
     cat1_power_on();
     // Waiting shutdown urc.
-    rt_err_t res = rt_sem_take(&cat1_sem.power_down, 30 * 1000);
+    rt_err_t res = cat1_wait_powered_down(30 * 1000);
+    if (res == RT_EOK)
+    {
+        cat1_ota_state = CAT1_POWER_DOWN;
+
+    }
     // Turn off power for cat1.
     cat1_power_off();
 

@@ -43,6 +43,7 @@ static at_response_t resp = NULL;
 
 static void urc_func(struct at_client *client ,const char *data, rt_size_t size);
 bool at_ssl_close(at_client_t client);
+extern void cat1_ota_urc(struct at_client *client ,const char *data, rt_size_t size);
 
 
 static struct at_urc urc_table[] = {
@@ -50,7 +51,8 @@ static struct at_urc urc_table[] = {
     {"+QSSLURC:", 		"\r\n",		urc_func},
     {"+QFUPL:", 		"\r\n",		urc_func},
     {"RDY",         "\r\n",         urc_func},
-	{"POWERED DOWN", "\r\n",		urc_func}
+	{"POWERED DOWN", "\r\n",		urc_func},
+	{"+QIND:","\r\n",		 		cat1_ota_urc},
 };
 
 
@@ -546,14 +548,14 @@ int example_at_ssl1(void)
     return 0;
 }
 
-rt_err_t cat1_wait_rdy()
+rt_err_t cat1_wait_rdy(int time_ms)
 {
-    return rt_sem_take(_ql_at_sem._rdy, rt_tick_from_millisecond(15000));
+    return rt_sem_take(_ql_at_sem._rdy, rt_tick_from_millisecond(time_ms));
 }
 
-rt_err_t cat1_wait_powered_down()
+rt_err_t cat1_wait_powered_down(int time_ms)
 {
-    return rt_sem_take(_ql_at_sem._powered_down, rt_tick_from_millisecond(15000));
+    return rt_sem_take(_ql_at_sem._powered_down, rt_tick_from_millisecond(time_ms));
 }
 
 rt_err_t cat1_qpowd()

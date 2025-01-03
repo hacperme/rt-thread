@@ -320,7 +320,7 @@ rt_err_t cat1_power_ctrl(int state)
             cat1_power_on();
 
             // wait rdy
-            result = cat1_wait_rdy();
+            result = cat1_wait_rdy(15000);
             if (result != RT_EOK) {
                 log_debug("can not cat1_wait_rdy");
                 return result;
@@ -335,7 +335,7 @@ rt_err_t cat1_power_ctrl(int state)
         // AT+QPOWD
         log_debug("cat1 execute AT+QPOWD");
         cat1_qpowd();
-        cat1_wait_powered_down();
+        cat1_wait_powered_down(15000);
         cat1_power_off();
     }
 
