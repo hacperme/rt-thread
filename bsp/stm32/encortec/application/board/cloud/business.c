@@ -1336,6 +1336,11 @@ void main_business_entry(void)
                     }
                     break;
                 }
+                else if(OTA_TASK_STATE_DOWNLOADING == state)
+                {
+                    //log_debug("ota downloading");
+                    rt_thread_mdelay(1000);
+                }
                 sm_set_status(NBIOT_OTA_PROCESS);
                 break;
             }
